@@ -1,0 +1,206 @@
+// Portfolio Tracker Database Schema
+// Using PostgreSQL (Neon) with Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Asset Categories
+enum AssetCategory {
+  FUNDS
+  STOCKS
+  PP
+  OTHERS
+}
+
+// Transaction Types
+enum TransactionType {
+  BUY
+  SELL
+  DIVIDEND
+  FEE
+  TRANSFER
+}
+
+// Transfer Direction
+enum TransferType {
+  IN
+  OUT
+}
+
+// Price Data Source
+enum PriceSource {
+  EODHD
+  MANUAL
+}
+
+// Import Source
+enum ImportSource {
+  GMAIL
+  MANUAL
+}
+
+// Import Status
+enum ImportStatus {
+  PENDING
+  PREVIEWING
+  IMPORTING
+  COMPLETED
+  FAILED
+}
+
+// Core Asset Model
+model Asset {
+  id        String        @id @default(cuid())
+  isin      String        @unique
+  ticker    String?       @unique
+  name      String
+  category  AssetCategory @default(OTHERS)
+  currency  String        @default("EUR")
+  isActive  Boolean       @default(true)
+
+  transactions Transaction[]
+  prices       Price[]
+  holding      Holding?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+}
+
+// Transaction Model
+model Transaction {
+  id            String          @id @default(cuid())
+  assetId       String
+  asset         Asset           @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  type          TransactionType
+  date          DateTime
+  shares        Decimal         @db.Decimal(18, 8)
+  pricePerShare Decimal?        @db.Decimal(18, 8)
+  totalAmount   Decimal         @db.Decimal(18, 4)
+  fees          Decimal?        @default(0) @db.Decimal(18, 4)
+
+  transferType   TransferType?
+  importBatchId  String?
+  importBatch    ImportBatch?   @relation(fields: [importBatchId], references: [id])
+  sourceHash     String?
+  gmailMessageId String?        @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([assetId])
+  @@index([date])
+  @@index([type])
+  @@index([importBatchId])
+}
+
+// Holding Model (calculated from transactions)
+model Holding {
+  id             String  @id @default(cuid())
+  assetId        String  @unique
+  asset          Asset   @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  shares         Decimal @db.Decimal(18, 8)
+  costBasis      Decimal @db.Decimal(18, 4)
+  avgPrice       Decimal @db.Decimal(18, 8)
+  marketValue    Decimal? @db.Decimal(18, 4)
+  unrealizedGain Decimal? @db.Decimal(18, 4)
+
+  lastCalculatedAt DateTime @default(now())
+
+  @@index([shares])
+}
+
+// Historical Price Data
+model Price {
+  id      String      @id @default(cuid())
+  assetId String
+  asset   Asset       @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  date    DateTime    @db.Date
+  open    Decimal?    @db.Decimal(18, 8)
+  high    Decimal?    @db.Decimal(18, 8)
+  low     Decimal?    @db.Decimal(18, 8)
+  close   Decimal     @db.Decimal(18, 8)
+  volume  BigInt?
+  source  PriceSource @default(EODHD)
+
+  @@unique([assetId, date])
+  @@index([date])
+}
+
+// Price Cache for Quick Lookups
+model PriceCache {
+  id          String   @id @default(cuid())
+  ticker      String   @unique
+  latestPrice Decimal  @db.Decimal(18, 8)
+  priceDate   DateTime @db.Date
+  fetchedAt   DateTime @default(now())
+  expiresAt   DateTime
+
+  @@index([expiresAt])
+}
+
+// Import Batch for Gmail Import
+model ImportBatch {
+  id              String       @id @default(cuid())
+  source          ImportSource
+  status          ImportStatus @default(PENDING)
+
+  gmailQuery      String?
+  oldestEmailDate DateTime?
+  newestEmailDate DateTime?
+
+  totalRows    Int @default(0)
+  importedRows Int @default(0)
+  skippedRows  Int @default(0)
+  errors       Json?
+  preview      Json?
+
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+// Application Settings
+model Settings {
+  id                    String   @id @default("default")
+  eodhdApiKey           String?
+  eodhdBackupKey        String?
+  defaultCurrency       String   @default("EUR")
+  priceUpdateEnabled    Boolean  @default(true)
+  priceCacheDurationMin Int      @default(60)
+  theme                 String   @default("system")
+  locale                String   @default("es-ES")
+
+  gmailConnected    Boolean   @default(false)
+  gmailRefreshToken String?
+  lastGmailImport   DateTime?
+
+  updatedAt DateTime @updatedAt
+}
+
+// Ticker Mapping (for ISIN to Ticker resolution)
+model TickerMapping {
+  id          String        @id @default(cuid())
+  isin        String        @unique
+  ticker      String
+  displayName String
+  category    AssetCategory
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ticker])
+}
