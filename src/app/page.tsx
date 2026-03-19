@@ -3,10 +3,10 @@ import {
   PortfolioSummaryCard,
   PortfolioSection,
 } from "@/components/portfolio";
-import { getMockPortfolioData } from "@/data/mock-portfolio";
+import { getPortfolioData } from "@/services/portfolio.service";
 
-export default function PortfolioPage() {
-  const data = getMockPortfolioData();
+export default async function PortfolioPage() {
+  const data = await getPortfolioData();
 
   return (
     <div className="min-h-screen pb-12">

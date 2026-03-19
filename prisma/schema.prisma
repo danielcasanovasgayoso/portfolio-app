@@ -2,7 +2,8 @@
 // Using PostgreSQL (Neon) with Prisma ORM
 
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {

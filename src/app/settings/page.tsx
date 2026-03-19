@@ -1,19 +1,23 @@
 import Link from "next/link";
-import { ArrowLeft, Database, Key, Palette } from "lucide-react";
+import { ArrowLeft, Calculator, Database, Key, Palette, Tags } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { RecalculateHoldingsButton } from "@/components/settings/RecalculateHoldingsButton";
+import { RecategorizeAssetsButton } from "@/components/settings/RecategorizeAssetsButton";
 
 export default function SettingsPage() {
   return (
     <div className="min-h-screen pb-12">
       <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild className="h-9 w-9">
-            <Link href="/" aria-label="Back to portfolio">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
+          <Link
+            href="/"
+            aria-label="Back to portfolio"
+            className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
           <h1 className="text-lg font-bold tracking-tight text-foreground">
             Settings
           </h1>
@@ -60,6 +64,50 @@ export default function SettingsPage() {
             <p className="text-sm text-muted-foreground">
               Theme settings will be available in Phase 4. Currently using
               system preference.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Tags className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Asset Categories</CardTitle>
+                <CardDescription>
+                  Auto-categorize assets into Funds, Stocks, PP, or Others
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <RecategorizeAssetsButton />
+            <p className="text-sm text-muted-foreground mt-2">
+              Updates categories based on asset names (e.g., S.A. → Funds, ETF/ETC → Stocks, P.P. → PP).
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Calculator className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Holdings Maintenance</CardTitle>
+                <CardDescription>
+                  Recalculate holdings from transaction history
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <RecalculateHoldingsButton />
+            <p className="text-sm text-muted-foreground mt-2">
+              Use this if your portfolio totals seem incorrect after importing transactions.
             </p>
           </CardContent>
         </Card>

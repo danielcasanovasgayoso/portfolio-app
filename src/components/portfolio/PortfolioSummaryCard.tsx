@@ -13,7 +13,10 @@ export function PortfolioSummaryCard({
   grand,
   invested,
 }: PortfolioSummaryCardProps) {
-  if (!grand || !invested) {
+  // Use grand totals as fallback when invested is null (e.g., all assets in Others category)
+  const displayTotals = invested || grand;
+
+  if (!grand) {
     return (
       <div className="bg-gradient-to-br from-indigo-900 to-indigo-600 mx-4 rounded-2xl p-6 text-white shadow-lg">
         <p className="text-sm font-medium uppercase tracking-wide opacity-85">
@@ -24,7 +27,7 @@ export function PortfolioSummaryCard({
     );
   }
 
-  const gainClass = getGainClass(invested.gainLoss);
+  const gainClass = getGainClass(displayTotals?.gainLoss ?? 0);
 
   return (
     <article className="bg-gradient-to-br from-indigo-900 to-indigo-600 mx-4 rounded-2xl p-6 text-white shadow-lg">
@@ -40,7 +43,7 @@ export function PortfolioSummaryCard({
             Invested
           </p>
           <p className="text-base md:text-lg font-semibold tabular-nums">
-            {formatCurrency(invested.costBasis)}
+            {formatCurrency(displayTotals?.costBasis ?? 0)}
           </p>
         </div>
         <div className="text-center">
@@ -53,8 +56,8 @@ export function PortfolioSummaryCard({
               gainClass === "positive" ? "text-emerald-300" : "text-red-300"
             )}
           >
-            {invested.gainLoss >= 0 ? "+" : ""}
-            {formatCurrency(invested.gainLoss)}
+            {(displayTotals?.gainLoss ?? 0) >= 0 ? "+" : ""}
+            {formatCurrency(displayTotals?.gainLoss ?? 0)}
           </p>
         </div>
         <div className="text-center">
@@ -67,7 +70,7 @@ export function PortfolioSummaryCard({
               gainClass === "positive" ? "text-emerald-300" : "text-red-300"
             )}
           >
-            {formatPercent(invested.gainLossPercent)}
+            {formatPercent(displayTotals?.gainLossPercent ?? 0)}
           </p>
         </div>
       </div>
