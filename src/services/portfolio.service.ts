@@ -52,11 +52,14 @@ export async function getPortfolioData(): Promise<PortfolioSummary> {
     };
   });
 
-  // Group by category
-  const funds = holdings.filter((h) => h.category === "FUNDS");
-  const stocks = holdings.filter((h) => h.category === "STOCKS");
-  const pp = holdings.filter((h) => h.category === "PP");
-  const others = holdings.filter((h) => h.category === "OTHERS");
+  // Sort by market value descending
+  const sortByValue = (a: Holding, b: Holding) => b.marketValue - a.marketValue;
+
+  // Group by category and sort each group
+  const funds = holdings.filter((h) => h.category === "FUNDS").sort(sortByValue);
+  const stocks = holdings.filter((h) => h.category === "STOCKS").sort(sortByValue);
+  const pp = holdings.filter((h) => h.category === "PP").sort(sortByValue);
+  const others = holdings.filter((h) => h.category === "OTHERS").sort(sortByValue);
 
   // Calculate totals
   const fundsTotals = calculateCategoryTotal(funds);
@@ -139,4 +142,73 @@ export async function getHoldingByAssetId(assetId: string): Promise<Holding | nu
     gainLoss,
     gainLossPercent,
   };
+}
+
+/**
+ * Gets a single holding by holding ID
+ */
+export async function getHoldingById(holdingId: string): Promise<Holding | null> {
+  const dbHolding = await db.holding.findUnique({
+    where: { id: holdingId },
+    include: {
+      asset: {
+        include: {
+          prices: {
+            orderBy: { date: "desc" },
+            take: 1,
+          },
+        },
+      },
+    },
+  });
+
+  if (!dbHolding) return null;
+
+  const latestPrice = dbHolding.asset.prices[0];
+  const currentPrice = latestPrice?.close ? Number(latestPrice.close) : null;
+  const shares = Number(dbHolding.shares);
+  const costBasis = Number(dbHolding.costBasis);
+  const avgPrice = Number(dbHolding.avgPrice);
+  const marketValue = currentPrice ? shares * currentPrice : costBasis;
+  const gainLoss = marketValue - costBasis;
+  const gainLossPercent = costBasis > 0 ? gainLoss / costBasis : 0;
+
+  return {
+    id: dbHolding.id,
+    assetId: dbHolding.assetId,
+    name: dbHolding.asset.name,
+    isin: dbHolding.asset.isin,
+    ticker: dbHolding.asset.ticker ?? null,
+    category: dbHolding.asset.category,
+    shares,
+    costBasis,
+    avgPrice,
+    currentPrice,
+    priceDate: latestPrice?.date?.toISOString().split("T")[0] || null,
+    marketValue,
+    gainLoss,
+    gainLossPercent,
+  };
+}
+
+/**
+ * Gets transactions for a specific asset
+ */
+export async function getAssetTransactions(assetId: string) {
+  const transactions = await db.transaction.findMany({
+    where: { assetId },
+    orderBy: { date: "desc" },
+    take: 50,
+  });
+
+  return transactions.map((t) => ({
+    id: t.id,
+    type: t.type,
+    transferType: t.transferType,
+    date: t.date.toISOString().split("T")[0],
+    shares: Number(t.shares),
+    pricePerShare: t.pricePerShare ? Number(t.pricePerShare) : null,
+    totalAmount: Number(t.totalAmount),
+    fees: t.fees ? Number(t.fees) : 0,
+  }));
 }

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/update-prices",
+      "schedule": "0 18 * * 1-5"
+    }
+  ],
+  "functions": {
+    "app/api/cron/**/*.ts": {
+      "maxDuration": 60
+    },
+    "app/api/import/**/*.ts": {
+      "maxDuration": 30
+    },
+    "app/api/prices/**/*.ts": {
+      "maxDuration": 30
+    }
+  }
+}

@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 import { SKIP_PATTERNS } from "@/lib/gmail";
 import type { GmailEmail, ParsedEmail, ParsedTransaction, EmailType } from "@/types/import";
 import type { TransactionType, TransferType } from "@prisma/client";
+import { determineFundName } from "@/lib/myinvestor-funds";
 
 /**
  * Subject line regex patterns
@@ -301,7 +302,14 @@ function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
   }
 
   // Helper function to extract fund name for a given ISIN
+  // Uses MyInvestor fund lookup, then email text, then fallback
   const extractFundName = (isin: string, fallbackPrefix: string): string => {
+    // First try the MyInvestor fund lookup
+    const lookupName = determineFundName(isin);
+    if (lookupName && lookupName !== isin) {
+      return lookupName;
+    }
+    // Fall back to extracting from email text
     const fundNamePattern = new RegExp(`([A-Z][A-Z0-9\\s\\-\\.]+?)\\s*C[oó]digo ISIN[:\\s]*${isin}`, "i");
     const match = text.match(fundNamePattern);
     return match ? match[1].trim() : `${fallbackPrefix} ${isin}`;
@@ -386,11 +394,14 @@ function parsePensionContributionEmail(email: GmailEmail): ParsedTransaction[] {
   const isin = extractIsinFromHtml(email.body);
 
   if (amount > 0) {
+    // Use fund lookup for better name if available
+    const finalName = isin ? determineFundName(isin, name) : name;
+
     transactions.push({
       date,
       type: "BUY",
       isin: isin || "UNKNOWN_PP",
-      name,
+      name: finalName,
       shares: amount, // For PP, shares = amount (1:1)
       pricePerShare: 1,
       totalAmount: amount,
@@ -420,12 +431,14 @@ function parseDividendEmail(email: GmailEmail): ParsedTransaction[] {
   if (amountMatch) {
     const amount = parseSpanishNumber(amountMatch[1]);
     const isin = extractIsinFromHtml(email.body);
+    // Use fund lookup for better name if available
+    const name = isin ? determineFundName(isin, "Interest Settlement") : "Interest Settlement";
 
     transactions.push({
       date: email.date,
       type: "DIVIDEND",
       isin: isin || "UNKNOWN",
-      name: "Interest Settlement",
+      name,
       shares: 0,
       pricePerShare: 0,
       totalAmount: amount,
@@ -501,16 +514,21 @@ export function parseMyInvestorEmail(email: GmailEmail): ParsedEmail {
         const isin = extractIsinFromHtml(email.body);
         const fees = extractFeesFromHtml(email.body);
         const reference = extractReferenceFromHtml(email.body);
+        // Use fund lookup for better name if available, fallback to subject name
+        const name = isin
+          ? determineFundName(isin, subjectData.name || "Unknown Asset")
+          : subjectData.name || "Unknown Asset";
 
         console.log(`[PARSER] Subject parse result - Name: ${subjectData.name}, Shares: ${subjectData.shares}, Price: ${subjectData.pricePerShare}`);
         console.log(`[PARSER] HTML parse result - ISIN: ${isin}, Fees: ${fees}, Reference: ${reference}`);
+        console.log(`[PARSER] Final name (after lookup): ${name}`);
 
         result.transactions.push({
           date: subjectData.date || email.date,
           type: subjectData.type || "BUY",
           transferType: subjectData.transferType,
           isin: isin || "UNKNOWN",
-          name: subjectData.name || "Unknown Asset",
+          name,
           shares: subjectData.shares || 0,
           pricePerShare: subjectData.pricePerShare || 0,
           totalAmount: subjectData.totalAmount || 0,

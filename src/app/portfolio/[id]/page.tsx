@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getMockHoldingById } from "@/data/mock-portfolio";
+import { getHoldingById, getAssetTransactions } from "@/services/portfolio.service";
+import { getPriceHistory } from "@/services/price.service";
 import {
   formatCurrency,
   formatPercent,
@@ -13,6 +13,8 @@ import {
   getGainClass,
 } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { PriceChart } from "@/components/charts";
+import { TransactionTimeline } from "@/components/asset-detail/TransactionTimeline";
 
 interface AssetDetailPageProps {
   params: Promise<{ id: string }>;
@@ -22,17 +24,32 @@ export default async function AssetDetailPage({
   params,
 }: AssetDetailPageProps) {
   const { id } = await params;
-  const holding = getMockHoldingById(id);
+  const holding = await getHoldingById(id);
 
   if (!holding) {
     notFound();
   }
 
+  // Fetch price history and transactions in parallel
+  const [priceHistory, transactions] = await Promise.all([
+    holding.assetId ? getPriceHistory(holding.assetId) : Promise.resolve([]),
+    holding.assetId ? getAssetTransactions(holding.assetId) : Promise.resolve([]),
+  ]);
+
   const gainClass = getGainClass(holding.gainLoss);
   const isPositive = gainClass === "positive";
 
+  // Format price data for chart
+  const chartData = priceHistory.map((p) => ({
+    date: p.date.toISOString().split("T")[0],
+    close: p.close,
+    open: p.open,
+    high: p.high,
+    low: p.low,
+  }));
+
   return (
-    <div className="min-h-screen pb-12">
+    <div className="min-h-screen pb-20">
       <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3">
         <div className="flex items-center gap-3">
           <Link
@@ -111,6 +128,17 @@ export default async function AssetDetailPage({
           </Card>
         </div>
 
+        {chartData.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Price History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PriceChart data={chartData} avgPrice={holding.avgPrice} />
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Price Information</CardTitle>
@@ -187,6 +215,17 @@ export default async function AssetDetailPage({
             </div>
           </CardContent>
         </Card>
+
+        {transactions.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Transaction History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TransactionTimeline transactions={transactions} />
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );

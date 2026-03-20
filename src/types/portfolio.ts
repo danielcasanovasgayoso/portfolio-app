@@ -2,6 +2,7 @@ export type AssetCategory = "FUNDS" | "STOCKS" | "PP" | "OTHERS";
 
 export interface Holding {
   id: string;
+  assetId?: string;
   name: string;
   isin: string;
   ticker: string | null;

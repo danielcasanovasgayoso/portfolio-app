@@ -4,6 +4,15 @@ import { formatCurrency, formatPercent, getGainClass } from "@/lib/formatters";
 import type { Holding, CategoryTotal } from "@/types/portfolio";
 import { HoldingCard } from "./HoldingCard";
 import { cn } from "@/lib/utils";
+import { TrendingUp, TrendingDown, Wallet, Percent } from "lucide-react";
+
+// Category color mapping for section headers
+const CATEGORY_COLORS: Record<string, string> = {
+  Funds: "#00f5d4",
+  "Stocks & ETFs": "#fbbf24",
+  PP: "#a78bfa",
+  Others: "#60a5fa",
+};
 
 interface PortfolioSectionProps {
   title: string;
@@ -23,67 +32,118 @@ export function PortfolioSection({
   if (holdings.length === 0) return null;
 
   const gainClass = totals ? getGainClass(totals.gainLoss) : "positive";
+  const isPositive = gainClass === "positive";
+  const categoryColor = CATEGORY_COLORS[title] || "#00f5d4";
 
   return (
-    <section className="mt-6">
-      <header className="px-5 pb-3">
-        <div className="flex justify-between items-baseline mb-3">
-          <h2 className="text-lg font-bold text-foreground">{title}</h2>
-          <span className="text-lg font-bold text-primary">
-            {totals ? formatCurrency(totals.marketValue) : "—"}
-          </span>
-        </div>
-        {!isOther && totals && (
-          <div className="grid grid-cols-3 gap-3 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/15 p-3 rounded-xl border border-primary/10 dark:border-primary/20">
-            <div className="text-center">
-              <p className="text-[10px] font-semibold text-primary/70 uppercase tracking-wide mb-0.5">
-                Invested
-              </p>
-              <p className="text-sm font-semibold text-foreground tabular-nums">
-                {formatCurrency(totals.costBasis)}
-              </p>
+    <section className="mt-8 animate-slide-up">
+      {/* Section Header */}
+      <header className="px-5 pb-4">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-3">
+            {/* Category indicator */}
+            <div
+              className="w-1 h-8 rounded-full"
+              style={{ backgroundColor: categoryColor }}
+            />
+            <div>
+              <h2 className="text-lg font-bold text-foreground tracking-tight">
+                {title}
+              </h2>
+              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                {holdings.length} {holdings.length === 1 ? "asset" : "assets"}
+              </span>
             </div>
-            <div className="text-center">
-              <p className="text-[10px] font-semibold text-primary/70 uppercase tracking-wide mb-0.5">
-                Gain/Loss
-              </p>
-              <p
+          </div>
+
+          {/* Section total */}
+          <div className="text-right">
+            <p className="text-xl font-mono font-bold text-foreground tabular-nums">
+              {totals ? formatCurrency(totals.marketValue) : "—"}
+            </p>
+            {!isOther && totals && (
+              <div
                 className={cn(
-                  "text-sm font-semibold tabular-nums",
-                  gainClass === "positive"
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-red-600 dark:text-red-400"
+                  "inline-flex items-center gap-1 text-xs font-mono tabular-nums",
+                  isPositive ? "text-gain" : "text-loss"
                 )}
               >
-                {totals.gainLoss >= 0 ? "+" : ""}
-                {formatCurrency(totals.gainLoss)}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] font-semibold text-primary/70 uppercase tracking-wide mb-0.5">
-                Return
-              </p>
-              <p
-                className={cn(
-                  "text-sm font-semibold tabular-nums",
-                  gainClass === "positive"
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-red-600 dark:text-red-400"
+                {isPositive ? (
+                  <TrendingUp className="w-3 h-3" />
+                ) : (
+                  <TrendingDown className="w-3 h-3" />
                 )}
-              >
                 {formatPercent(totals.gainLossPercent)}
-              </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Category stats bar */}
+        {!isOther && totals && (
+          <div className="terminal-card p-3">
+            <div className="grid grid-cols-3 gap-4">
+              {/* Invested */}
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <Wallet className="w-3 h-3 text-muted-foreground" />
+                  <span className="data-label">Invested</span>
+                </div>
+                <p className="text-sm font-mono font-semibold text-foreground tabular-nums">
+                  {formatCurrency(totals.costBasis)}
+                </p>
+              </div>
+
+              {/* Gain/Loss */}
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  {isPositive ? (
+                    <TrendingUp className="w-3 h-3 text-gain" />
+                  ) : (
+                    <TrendingDown className="w-3 h-3 text-loss" />
+                  )}
+                  <span className="data-label">Gain/Loss</span>
+                </div>
+                <p
+                  className={cn(
+                    "text-sm font-mono font-semibold tabular-nums",
+                    isPositive ? "text-gain" : "text-loss"
+                  )}
+                >
+                  {totals.gainLoss >= 0 ? "+" : ""}
+                  {formatCurrency(totals.gainLoss)}
+                </p>
+              </div>
+
+              {/* Return */}
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <Percent className="w-3 h-3 text-muted-foreground" />
+                  <span className="data-label">Return</span>
+                </div>
+                <p
+                  className={cn(
+                    "text-sm font-mono font-semibold tabular-nums",
+                    isPositive ? "text-gain" : "text-loss"
+                  )}
+                >
+                  {formatPercent(totals.gainLossPercent)}
+                </p>
+              </div>
             </div>
           </div>
         )}
       </header>
-      <div className="mx-4 flex flex-col gap-2">
-        {holdings.map((holding) => (
+
+      {/* Holdings list */}
+      <div className="mx-4 flex flex-col gap-3">
+        {holdings.map((holding, index) => (
           <HoldingCard
             key={holding.id}
             holding={holding}
             totalPortfolioValue={totalPortfolioValue}
             isOther={isOther}
+            index={index}
           />
         ))}
       </div>

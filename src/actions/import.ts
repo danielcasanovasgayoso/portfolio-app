@@ -14,54 +14,7 @@ import type {
 } from "@/types/import";
 import { Decimal } from "@prisma/client/runtime/client";
 import { recalculateHolding } from "@/services/holdings.service";
-import type { AssetCategory } from "@prisma/client";
-
-/**
- * Determines the asset category based on the name
- */
-function determineAssetCategory(name: string): AssetCategory {
-  const nameLower = name.toLowerCase();
-
-  // Pension plans (PP)
-  if (
-    nameLower.includes("p.p.") ||
-    nameLower.includes("plan de pensiones") ||
-    nameLower.includes("pension")
-  ) {
-    return "PP";
-  }
-
-  // Stocks/ETFs/ETCs
-  if (
-    nameLower.includes(" etf") ||
-    nameLower.includes(" etc") ||
-    nameLower.includes("ishares") ||
-    nameLower.includes("invesco") ||
-    nameLower.includes("xtrackers") ||
-    nameLower.includes("lyxor") ||
-    nameLower.includes("amundi etf") ||
-    nameLower.includes("physical gold") ||
-    nameLower.includes("physical silver")
-  ) {
-    return "STOCKS";
-  }
-
-  // Investment funds (Spanish S.A. funds, Vanguard funds, etc.)
-  if (
-    nameLower.startsWith("s.a.") ||
-    nameLower.includes("fondo") ||
-    nameLower.includes("vanguard") && !nameLower.includes("etf") ||
-    nameLower.includes("amundi") && !nameLower.includes("etf") ||
-    nameLower.includes("blackrock") && !nameLower.includes("etf") ||
-    nameLower.includes("fidelity") ||
-    nameLower.includes("indexa") ||
-    nameLower.includes("myinvestor")
-  ) {
-    return "FUNDS";
-  }
-
-  return "OTHERS";
-}
+import { determineAssetCategory } from "@/lib/myinvestor-funds";
 
 /**
  * Check if Gmail is connected
@@ -360,7 +313,7 @@ export async function confirmImport(
             data: {
               isin: item.transaction.isin,
               name: item.transaction.name,
-              category: determineAssetCategory(item.transaction.name),
+              category: determineAssetCategory(item.transaction.isin, item.transaction.name),
               currency: item.transaction.currency,
             },
           });
