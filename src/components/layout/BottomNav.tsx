@@ -58,7 +58,7 @@ export function BottomNav() {
               {/* Active indicator glow */}
               {isActive && (
                 <div
-                  className="absolute -top-px left-1/2 -translate-x-1/2 w-12 h-[2px] bg-primary rounded-full glow-primary"
+                  className="absolute -top-px left-1/2 -translate-x-1/2 w-12 h-[2px] bg-primary rounded-full"
                   aria-hidden="true"
                 />
               )}
@@ -77,10 +77,6 @@ export function BottomNav() {
                   )}
                 />
 
-                {/* Pulse indicator for portfolio */}
-                {item.href === "/" && isActive && (
-                  <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-gain animate-pulse" />
-                )}
               </div>
 
               {/* Label */}

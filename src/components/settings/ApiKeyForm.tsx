@@ -8,7 +8,7 @@ import { updateApiKey, removeApiKey } from "@/actions/settings";
 import { Check, Loader2, Trash2, Eye, EyeOff } from "lucide-react";
 
 interface ApiKeyFormProps {
-  type: "primary" | "backup";
+  type: "primary";
   currentKey: string | null;
   label: string;
 }

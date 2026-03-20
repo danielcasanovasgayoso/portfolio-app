@@ -7,7 +7,6 @@ import { getUserId } from "@/lib/auth";
 
 export interface SettingsData {
   eodhdApiKey: string | null;
-  eodhdBackupKey: string | null;
   priceUpdateEnabled: boolean;
   priceCacheDurationMin: number;
   theme: string;
@@ -31,7 +30,6 @@ export async function getSettings(): Promise<SettingsData> {
 
     return {
       eodhdApiKey: null,
-      eodhdBackupKey: null,
       priceUpdateEnabled: newSettings.priceUpdateEnabled,
       priceCacheDurationMin: newSettings.priceCacheDurationMin,
       theme: newSettings.theme,
@@ -42,12 +40,9 @@ export async function getSettings(): Promise<SettingsData> {
   }
 
   return {
-    // Mask API keys for security (only show last 4 chars)
+    // Mask API key for security (only show last 4 chars)
     eodhdApiKey: settings.eodhdApiKey
       ? `${"•".repeat(20)}${settings.eodhdApiKey.slice(-4)}`
-      : null,
-    eodhdBackupKey: settings.eodhdBackupKey
-      ? `${"•".repeat(20)}${settings.eodhdBackupKey.slice(-4)}`
       : null,
     priceUpdateEnabled: settings.priceUpdateEnabled,
     priceCacheDurationMin: settings.priceCacheDurationMin,
@@ -59,7 +54,7 @@ export async function getSettings(): Promise<SettingsData> {
 }
 
 export async function updateApiKey(
-  type: "primary" | "backup",
+  type: "primary",
   apiKey: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -71,12 +66,10 @@ export async function updateApiKey(
       return { success: false, error: "Invalid API key" };
     }
 
-    const field = type === "primary" ? "eodhdApiKey" : "eodhdBackupKey";
-
     await db.settings.upsert({
       where: { userId },
-      update: { [field]: apiKey },
-      create: { userId, [field]: apiKey },
+      update: { eodhdApiKey: apiKey },
+      create: { userId, eodhdApiKey: apiKey },
     });
 
     revalidatePath("/settings");
@@ -91,15 +84,14 @@ export async function updateApiKey(
 }
 
 export async function removeApiKey(
-  type: "primary" | "backup"
+  type: "primary"
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const userId = await getUserId();
-    const field = type === "primary" ? "eodhdApiKey" : "eodhdBackupKey";
 
     await db.settings.update({
       where: { userId },
-      data: { [field]: null },
+      data: { eodhdApiKey: null },
     });
 
     revalidatePath("/settings");

@@ -228,22 +228,6 @@
     color: white;
   }
 
-  .glass-panel {
-    background-color: var(--popover);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-  }
-
-  .btn-gradient {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%);
-    color: white;
-    transition: transform 0.2s ease, opacity 0.2s ease;
-  }
-  .btn-gradient:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-  }
-
   .ghost-border {
     border: 1px solid var(--outline-variant);
   }

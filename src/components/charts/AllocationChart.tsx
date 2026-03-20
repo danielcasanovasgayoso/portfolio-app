@@ -125,11 +125,11 @@ export function AllocationChart({
   }
 
   return (
-    <div className={cn("bg-transparent animate-slide-up stagger-2 w-full", className)}>
+    <div className={cn("bg-transparent w-full", className)}>
       {/* Header */}
       {title && (
         <div className="flex items-center gap-2 mb-6">
-          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
           <span className="label-sm">{title}</span>
         </div>
       )}

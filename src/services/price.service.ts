@@ -168,8 +168,7 @@ export async function refreshAssetPrice(
 
   try {
     const prices = await fetchHistoricalPrices(ticker, {
-      primaryKey: settings.eodhdApiKey,
-      backupKey: settings.eodhdBackupKey,
+      apiKey: settings.eodhdApiKey,
     });
 
     if (!prices || prices.length === 0) {
@@ -308,8 +307,7 @@ export async function refreshAllPrices(
     if (stockTickers.length > 0) {
       try {
         const freshPrices = await fetchBatchRealTimePrices(stockTickers, {
-          primaryKey: settings.eodhdApiKey,
-          backupKey: settings.eodhdBackupKey,
+          apiKey: settings.eodhdApiKey,
         });
 
         for (const { assetId, ticker } of assetsWithTickers) {
@@ -377,8 +375,7 @@ export async function refreshAllPrices(
 
       try {
         const prices = await fetchHistoricalPrices(ticker, {
-          primaryKey: settings.eodhdApiKey,
-          backupKey: settings.eodhdBackupKey,
+          apiKey: settings.eodhdApiKey,
         });
 
         if (prices && prices.length > 0) {
@@ -462,8 +459,7 @@ export async function backfillHistoricalPrices(
       from,
       to,
       period: "d",
-      primaryKey: settings.eodhdApiKey,
-      backupKey: settings.eodhdBackupKey,
+      apiKey: settings.eodhdApiKey,
     });
 
     if (!prices || prices.length === 0) {
@@ -584,8 +580,7 @@ export async function resolveAssetTicker(
 
   try {
     const ticker = await resolveIsinToSymbol(isin, {
-      primaryKey: settings.eodhdApiKey,
-      backupKey: settings.eodhdBackupKey,
+      apiKey: settings.eodhdApiKey,
     });
 
     if (ticker) {

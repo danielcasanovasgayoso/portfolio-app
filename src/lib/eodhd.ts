@@ -72,18 +72,10 @@ function isError<T>(response: EODHDResponse<T>): response is EODHDError {
 /**
  * Get API key from settings or environment
  */
-async function getApiKey(
-  primaryKey?: string | null,
-  backupKey?: string | null
-): Promise<string> {
-  // Try primary key first
-  if (primaryKey) {
-    return primaryKey;
-  }
-
-  // Try backup key
-  if (backupKey) {
-    return backupKey;
+function getApiKey(apiKey?: string | null): string {
+  // Try provided key first
+  if (apiKey) {
+    return apiKey;
   }
 
   // Fall back to environment variable
@@ -96,17 +88,16 @@ async function getApiKey(
 }
 
 /**
- * Make a request to EODHD API with retry and failover logic
+ * Make a request to EODHD API with retry logic
  */
 async function fetchWithRetry<T>(
   url: string,
-  primaryKey?: string | null,
-  backupKey?: string | null,
+  apiKey?: string | null,
   retries: number = EODHD.RETRY_ATTEMPTS
 ): Promise<T> {
-  const apiKey = await getApiKey(primaryKey, backupKey);
+  const key = getApiKey(apiKey);
   const separator = url.includes("?") ? "&" : "?";
-  const fullUrl = `${url}${separator}api_token=${apiKey}&fmt=json`;
+  const fullUrl = `${url}${separator}api_token=${key}&fmt=json`;
 
   let lastError: Error | null = null;
 
@@ -139,12 +130,6 @@ async function fetchWithRetry<T>(
       return data;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-
-      // If primary key failed, try backup on next attempt
-      if (attempt === 0 && backupKey && primaryKey !== backupKey) {
-        console.log("Primary API key failed, trying backup...");
-        return fetchWithRetry<T>(url, backupKey, null, retries - 1);
-      }
 
       if (attempt < retries) {
         await delay(EODHD.RETRY_DELAY_MS * (attempt + 1));
@@ -186,8 +171,7 @@ export async function fetchHistoricalPrices(
     from?: Date;
     to?: Date;
     period?: "d" | "w" | "m"; // daily, weekly, monthly
-    primaryKey?: string | null;
-    backupKey?: string | null;
+    apiKey?: string | null;
   }
 ): Promise<EODHDPrice[]> {
   const formattedTicker = formatTicker(ticker);
@@ -211,11 +195,7 @@ export async function fetchHistoricalPrices(
     url += `?${params.join("&")}`;
   }
 
-  return fetchWithRetry<EODHDPrice[]>(
-    url,
-    options?.primaryKey,
-    options?.backupKey
-  );
+  return fetchWithRetry<EODHDPrice[]>(url, options?.apiKey);
 }
 
 /**
@@ -224,18 +204,13 @@ export async function fetchHistoricalPrices(
 export async function fetchRealTimePrice(
   ticker: string,
   options?: {
-    primaryKey?: string | null;
-    backupKey?: string | null;
+    apiKey?: string | null;
   }
 ): Promise<EODHDRealTimePrice> {
   const formattedTicker = formatTicker(ticker);
   const url = `${EODHD.BASE_URL}/real-time/${formattedTicker}`;
 
-  return fetchWithRetry<EODHDRealTimePrice>(
-    url,
-    options?.primaryKey,
-    options?.backupKey
-  );
+  return fetchWithRetry<EODHDRealTimePrice>(url, options?.apiKey);
 }
 
 /**
@@ -245,8 +220,7 @@ export async function fetchRealTimePrice(
 export async function fetchBatchRealTimePrices(
   tickers: string[],
   options?: {
-    primaryKey?: string | null;
-    backupKey?: string | null;
+    apiKey?: string | null;
   }
 ): Promise<Map<string, EODHDRealTimePrice>> {
   const results = new Map<string, EODHDRealTimePrice>();
@@ -270,8 +244,7 @@ export async function fetchBatchRealTimePrices(
     try {
       const data = await fetchWithRetry<EODHDRealTimePrice | EODHDRealTimePrice[]>(
         url,
-        options?.primaryKey,
-        options?.backupKey
+        options?.apiKey
       );
 
       // Single ticker returns object, multiple returns array
@@ -303,7 +276,7 @@ export async function fetchBatchRealTimePrices(
 export async function testApiKey(apiKey: string): Promise<boolean> {
   try {
     const url = `${EODHD.BASE_URL}/real-time/AAPL.US`;
-    await fetchWithRetry<EODHDRealTimePrice>(url, apiKey, null, 0);
+    await fetchWithRetry<EODHDRealTimePrice>(url, apiKey, 0);
     return true;
   } catch {
     return false;
@@ -318,14 +291,13 @@ export async function testApiKey(apiKey: string): Promise<boolean> {
 export async function resolveIsinToSymbol(
   isin: string,
   options?: {
-    primaryKey?: string | null;
-    backupKey?: string | null;
+    apiKey?: string | null;
   }
 ): Promise<string | null> {
   // Try ID mapping API first
   try {
-    const apiKey = await getApiKey(options?.primaryKey, options?.backupKey);
-    const idMappingUrl = `${EODHD.BASE_URL}/id-mapping?filter[isin]=${encodeURIComponent(isin)}&api_token=${apiKey}&fmt=json`;
+    const key = getApiKey(options?.apiKey);
+    const idMappingUrl = `${EODHD.BASE_URL}/id-mapping?filter[isin]=${encodeURIComponent(isin)}&api_token=${key}&fmt=json`;
 
     const response = await fetch(idMappingUrl, {
       headers: { Accept: "application/json" },
@@ -344,8 +316,8 @@ export async function resolveIsinToSymbol(
 
   // Fall back to search API
   try {
-    const apiKey = await getApiKey(options?.primaryKey, options?.backupKey);
-    const searchUrl = `${EODHD.BASE_URL}/search/${encodeURIComponent(isin)}?api_token=${apiKey}&fmt=json`;
+    const key = getApiKey(options?.apiKey);
+    const searchUrl = `${EODHD.BASE_URL}/search/${encodeURIComponent(isin)}?api_token=${key}&fmt=json`;
 
     const response = await fetch(searchUrl, {
       headers: { Accept: "application/json" },
@@ -375,8 +347,7 @@ export async function resolveIsinToSymbol(
 export async function batchResolveIsinsToSymbols(
   isins: string[],
   options?: {
-    primaryKey?: string | null;
-    backupKey?: string | null;
+    apiKey?: string | null;
   }
 ): Promise<Map<string, string>> {
   const results = new Map<string, string>();

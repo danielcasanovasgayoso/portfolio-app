@@ -60,7 +60,7 @@ export function RefreshPricesButton() {
         className={cn(
           "gap-2 h-8 px-3 rounded-lg border-border font-mono text-xs uppercase tracking-wider",
           "transition-all duration-300",
-          "hover:border-primary/50 hover:bg-primary/5 hover:text-primary hover:glow-primary",
+          "hover:border-primary/50 hover:bg-primary/5 hover:text-primary",
           isLoading && "border-primary bg-primary/10 text-primary"
         )}
       >
@@ -74,7 +74,7 @@ export function RefreshPricesButton() {
 
       {/* Success indicator */}
       {result && (
-        <div className="flex items-center gap-1.5 animate-slide-up">
+        <div className="flex items-center gap-1.5 ">
           <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-gain-muted">
             <Check className="h-3 w-3 text-gain" />
             <span className="text-[10px] font-mono text-gain uppercase tracking-wider">
@@ -86,7 +86,7 @@ export function RefreshPricesButton() {
 
       {/* Error indicator */}
       {error && (
-        <div className="flex items-center gap-1.5 animate-slide-up">
+        <div className="flex items-center gap-1.5 ">
           <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-loss-muted">
             <AlertCircle className="h-3 w-3 text-loss" />
             <span className="text-[10px] font-mono text-loss uppercase tracking-wider">

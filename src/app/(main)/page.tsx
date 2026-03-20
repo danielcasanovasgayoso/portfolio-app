@@ -93,20 +93,6 @@ async function PortfolioContent({ userId }: { userId: string }) {
         isOther
       />
 
-      {/* Footer timestamp */}
-      <div className="mt-10 px-4 md:px-8">
-        <div className="bg-muted rounded-xl border-0 shadow-sm p-4 flex items-center justify-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-            Last Updated: {new Date().toLocaleString("en-US", {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
-        </div>
-      </div>
     </>
   );
 }

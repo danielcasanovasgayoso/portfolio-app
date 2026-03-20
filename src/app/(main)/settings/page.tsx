@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Calculator,
   Database,
-  FolderSync,
   Key,
   Palette,
 } from "lucide-react";
@@ -21,8 +20,6 @@ import { RecalculateHoldingsButton } from "@/components/settings/RecalculateHold
 import { ApiKeyForm } from "@/components/settings/ApiKeyForm";
 import { ThemeToggle } from "@/components/settings/ThemeToggle";
 import { DatabaseReset } from "@/components/settings/DatabaseReset";
-import { ExportData } from "@/components/settings/ExportData";
-import { ImportData } from "@/components/settings/ImportData";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { getSettings } from "@/actions/settings";
 import { requireAuth } from "@/lib/auth";
@@ -93,22 +90,16 @@ async function SettingsContent() {
             <div>
               <CardTitle>API Configuration</CardTitle>
               <CardDescription>
-                Configure your EODHD API keys for price updates
+                Configure your EODHD API key for price updates
               </CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           <ApiKeyForm
             type="primary"
             currentKey={settings.eodhdApiKey}
-            label="Primary API Key"
-          />
-          <Separator />
-          <ApiKeyForm
-            type="backup"
-            currentKey={settings.eodhdBackupKey}
-            label="Backup API Key (Optional)"
+            label="API Key"
           />
           <p className="text-xs text-muted-foreground">
             Get your API key from{" "}
@@ -166,27 +157,6 @@ async function SettingsContent() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <FolderSync className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle>Data Import / Export</CardTitle>
-              <CardDescription>
-                Import or export your portfolio data as JSON
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <ExportData />
-          <Separator />
-          <ImportData />
-        </CardContent>
-      </Card>
-
       <Separator />
 
       <Card className="border-destructive/50">
@@ -218,7 +188,7 @@ async function SettingsContent() {
 function SettingsContentSkeleton() {
   return (
     <div className="space-y-4">
-      {[1, 2, 3, 4].map((i) => (
+      {[1, 2, 3].map((i) => (
         <Skeleton key={i} className="h-32 w-full rounded-xl" />
       ))}
     </div>

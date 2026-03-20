@@ -34,7 +34,7 @@ export function PortfolioSection({
   const categoryColor = CATEGORY_COLORS[title] || "#00f5d4";
 
   return (
-    <section className="mt-8 animate-slide-up">
+    <section className="mt-8">
       {/* Section Header */}
       <header className="px-5 pb-4">
         <div className="flex justify-between items-center mb-4">
@@ -130,13 +130,12 @@ export function PortfolioSection({
 
       {/* Holdings list */}
       <div className="mx-4 flex flex-col gap-3">
-        {holdings.map((holding, index) => (
+        {holdings.map((holding) => (
           <HoldingCard
             key={holding.id}
             holding={holding}
             totalPortfolioValue={totalPortfolioValue}
             isOther={isOther}
-            index={index}
           />
         ))}
       </div>

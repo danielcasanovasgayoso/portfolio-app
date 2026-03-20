@@ -14,14 +14,12 @@ interface HoldingCardProps {
   holding: Holding;
   totalPortfolioValue: number;
   isOther?: boolean;
-  index?: number;
 }
 
 export function HoldingCard({
   holding,
   totalPortfolioValue,
   isOther = false,
-  index = 0,
 }: HoldingCardProps) {
   const portfolioPercent =
     totalPortfolioValue > 0
@@ -31,17 +29,9 @@ export function HoldingCard({
   const gainClass = getGainClass(holding.gainLoss);
   const isPositive = gainClass === "positive";
 
-  // Stagger animation based on index
-  const staggerClass = `stagger-${Math.min(index + 1, 6)}`;
-
   if (isOther) {
     return (
-      <article
-        className={cn(
-          "bg-card rounded-xl shadow-sm p-5 animate-slide-up border-0",
-          staggerClass
-        )}
-      >
+      <article className="bg-card rounded-xl shadow-sm p-5 border-0">
         <div className="flex justify-between items-center gap-3">
             <div className="flex-1 min-w-0">
               <h3 className="text-[15px] font-semibold text-foreground truncate">
@@ -63,12 +53,7 @@ export function HoldingCard({
 
   return (
     <Link href={`/portfolio/${holding.id}`} className="block group">
-      <article
-        className={cn(
-          "bg-card rounded-xl shadow-sm p-5 card-hover animate-slide-up border-0",
-          staggerClass
-        )}
-      >
+      <article className="bg-card rounded-xl shadow-sm p-5 border-0">
         {/* Header row */}
         <div className="flex justify-between items-start gap-3 mb-4">
           <div className="flex-1 min-w-0">
@@ -148,8 +133,7 @@ export function HoldingCard({
 
         {/* Price date footer */}
         {holding.priceDate && (
-          <div className="flex items-center justify-center gap-1.5 mt-3 pt-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+          <div className="flex items-center justify-center mt-3 pt-2">
             <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
               Price as of {formatDate(holding.priceDate)}
             </p>

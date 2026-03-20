@@ -6,9 +6,8 @@ import { ConfigurationError } from "@/lib/errors";
  * Application settings with defaults
  */
 export interface AppSettings {
-  // API Keys
+  // API Key
   eodhdApiKey: string | null;
-  eodhdBackupKey: string | null;
 
   // Price settings
   priceCacheDurationMin: number;
@@ -42,7 +41,6 @@ const settingsCache = new Map<string, CachedSettings>();
  */
 const DEFAULT_SETTINGS: AppSettings = {
   eodhdApiKey: process.env.EODHD_API_KEY || null,
-  eodhdBackupKey: null,
   priceCacheDurationMin: PRICE_CACHE.DEFAULT_DURATION_MIN,
   priceUpdateEnabled: true,
   gmailConnected: false,
@@ -81,7 +79,6 @@ export async function getSettings(userId: string): Promise<AppSettings> {
     ...DEFAULT_SETTINGS,
     ...(dbSettings && {
       eodhdApiKey: dbSettings.eodhdApiKey,
-      eodhdBackupKey: dbSettings.eodhdBackupKey,
       priceCacheDurationMin: dbSettings.priceCacheDurationMin,
       priceUpdateEnabled: dbSettings.priceUpdateEnabled,
       gmailConnected: dbSettings.gmailConnected,
@@ -107,8 +104,7 @@ export async function getSettings(userId: string): Promise<AppSettings> {
  * Throws if no API key is configured
  */
 export async function getPriceSettings(userId: string): Promise<{
-  primaryKey: string;
-  backupKey: string | null;
+  apiKey: string;
   cacheDurationMin: number;
   updateEnabled: boolean;
 }> {
@@ -122,8 +118,7 @@ export async function getPriceSettings(userId: string): Promise<{
   }
 
   return {
-    primaryKey: settings.eodhdApiKey,
-    backupKey: settings.eodhdBackupKey,
+    apiKey: settings.eodhdApiKey,
     cacheDurationMin: settings.priceCacheDurationMin,
     updateEnabled: settings.priceUpdateEnabled,
   };
