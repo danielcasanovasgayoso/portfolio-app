@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
-import { BottomNav } from "@/components/layout/BottomNav";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -60,7 +59,6 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased bg-background text-foreground safe-bottom">
         {children}
-        <BottomNav />
       </body>
     </html>
   );

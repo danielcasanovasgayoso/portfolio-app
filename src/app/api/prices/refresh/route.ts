@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { refreshAllPrices } from "@/services/price.service";
+import { getUserId } from "@/lib/auth";
 
 /**
  * POST /api/prices/refresh
- * Manually trigger a price refresh for all holdings
+ * Manually trigger a price refresh for all holdings of the authenticated user
  */
 export async function POST() {
   try {
+    // Get authenticated user
+    const userId = await getUserId();
+
     // Enable ISIN resolution for assets without tickers
-    const result = await refreshAllPrices({ resolveIsins: true });
+    const result = await refreshAllPrices(userId, { resolveIsins: true });
 
     return NextResponse.json({
       success: result.success,
@@ -19,6 +23,14 @@ export async function POST() {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    // Check if it's an auth error
+    if (error instanceof Error && error.message === "Not authenticated") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     console.error("[API] Price refresh failed:", error);
 
     return NextResponse.json(

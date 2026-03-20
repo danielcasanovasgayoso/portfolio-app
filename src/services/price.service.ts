@@ -156,10 +156,11 @@ async function storeHistoricalPrices(
  * Fetch and store latest price for a single asset
  */
 export async function refreshAssetPrice(
+  userId: string,
   assetId: string,
   ticker: string
 ): Promise<PriceUpdateResult> {
-  const settings = await getSettings();
+  const settings = await getSettings(userId);
 
   if (!settings.priceUpdateEnabled) {
     return { ticker, success: false, error: "Price updates disabled" };
@@ -201,14 +202,16 @@ export async function refreshAssetPrice(
 }
 
 /**
- * Refresh prices for all holdings
+ * Refresh prices for all holdings of a user
  * Uses caching to minimize API calls
+ * @param userId - The user ID
  * @param resolveIsins - If true, attempt to resolve tickers for assets without them
  */
 export async function refreshAllPrices(
+  userId: string,
   options?: { resolveIsins?: boolean }
 ): Promise<RefreshPricesResult> {
-  const settings = await getSettings();
+  const settings = await getSettings(userId);
 
   if (!settings.priceUpdateEnabled) {
     return {
@@ -220,9 +223,9 @@ export async function refreshAllPrices(
     };
   }
 
-  // Get all holdings with their assets
+  // Get all holdings with their assets for this user
   const holdings = await db.holding.findMany({
-    where: { shares: { gt: 0 } },
+    where: { userId, shares: { gt: 0 } },
     include: { asset: true },
   });
 
@@ -230,12 +233,12 @@ export async function refreshAllPrices(
   if (options?.resolveIsins) {
     const assetsWithoutTickers = holdings.filter((h) => !h.asset.ticker);
     for (const holding of assetsWithoutTickers) {
-      await resolveAssetTicker(holding.assetId, holding.asset.isin);
+      await resolveAssetTicker(userId, holding.assetId, holding.asset.isin);
     }
 
     // Refresh holdings data after ticker resolution
     const refreshedHoldings = await db.holding.findMany({
-      where: { shares: { gt: 0 } },
+      where: { userId, shares: { gt: 0 } },
       include: { asset: true },
     });
     holdings.length = 0;
@@ -445,10 +448,11 @@ export async function refreshAllPrices(
  * Called when a new asset is added
  */
 export async function backfillHistoricalPrices(
+  userId: string,
   assetId: string,
   ticker: string
 ): Promise<{ success: boolean; count: number; error?: string }> {
-  const settings = await getSettings();
+  const settings = await getSettings(userId);
 
   try {
     const from = getHistoricalStartDate();
@@ -553,10 +557,11 @@ export async function clearExpiredCache(): Promise<number> {
  * Returns the resolved ticker or null if resolution failed
  */
 export async function resolveAssetTicker(
+  userId: string,
   assetId: string,
   isin: string
 ): Promise<string | null> {
-  const settings = await getSettings();
+  const settings = await getSettings(userId);
 
   try {
     const ticker = await resolveIsinToSymbol(isin, {
@@ -584,16 +589,17 @@ export async function resolveAssetTicker(
 }
 
 /**
- * Resolve tickers for all assets without tickers
+ * Resolve tickers for all assets without tickers for a user
  * Useful for batch processing newly imported assets
  */
-export async function resolveAllMissingTickers(): Promise<{
+export async function resolveAllMissingTickers(userId: string): Promise<{
   resolved: number;
   failed: number;
   results: Array<{ isin: string; ticker: string | null; error?: string }>;
 }> {
   const assetsWithoutTickers = await db.asset.findMany({
     where: {
+      userId,
       ticker: null,
       isActive: true,
     },
@@ -605,7 +611,7 @@ export async function resolveAllMissingTickers(): Promise<{
 
   for (const asset of assetsWithoutTickers) {
     try {
-      const ticker = await resolveAssetTicker(asset.id, asset.isin);
+      const ticker = await resolveAssetTicker(userId, asset.id, asset.isin);
       if (ticker) {
         resolved++;
         results.push({ isin: asset.isin, ticker });

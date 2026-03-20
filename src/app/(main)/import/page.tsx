@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { GmailConnectCard, ImportWizard } from "@/components/import";
 import { checkGmailConnection } from "@/actions/import";
+import { requireAuth } from "@/lib/auth";
 
 export const metadata = {
   title: "Import Transactions | Portfolio Tracker",
@@ -12,6 +13,7 @@ export default async function ImportPage({
 }: {
   searchParams: Promise<{ error?: string; success?: string }>;
 }) {
+  await requireAuth();
   const { error, success } = await searchParams;
 
   return (

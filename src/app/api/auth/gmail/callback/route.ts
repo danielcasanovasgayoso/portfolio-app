@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTokensFromCode } from "@/lib/gmail";
 import { db } from "@/lib/db";
+import { getUserId } from "@/lib/auth";
 
 /**
  * GET /api/auth/gmail/callback
- * Handles OAuth callback from Google, stores refresh token in settings
+ * Handles OAuth callback from Google, stores refresh token in user's settings
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -33,6 +34,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Get authenticated user
+    const userId = await getUserId();
+
     // Exchange code for tokens
     const tokens = await getTokensFromCode(code);
 
@@ -46,15 +50,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Store refresh token in settings
+    // Store refresh token in user's settings
     await db.settings.upsert({
-      where: { id: "default" },
+      where: { userId },
       update: {
         gmailConnected: true,
         gmailRefreshToken: tokens.refresh_token,
       },
       create: {
-        id: "default",
+        userId,
         gmailConnected: true,
         gmailRefreshToken: tokens.refresh_token,
       },
@@ -68,6 +72,11 @@ export async function GET(request: NextRequest) {
       )
     );
   } catch (error) {
+    // Check if it's an auth error
+    if (error instanceof Error && error.message === "Not authenticated") {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
     console.error("Failed to exchange Gmail auth code:", error);
     return NextResponse.redirect(
       new URL(

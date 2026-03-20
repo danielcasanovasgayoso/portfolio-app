@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PriceChart } from "@/components/charts";
 import { TransactionTimeline } from "@/components/asset-detail/TransactionTimeline";
+import { requireAuth } from "@/lib/auth";
 
 interface AssetDetailPageProps {
   params: Promise<{ id: string }>;
@@ -23,8 +24,9 @@ interface AssetDetailPageProps {
 export default async function AssetDetailPage({
   params,
 }: AssetDetailPageProps) {
+  const user = await requireAuth();
   const { id } = await params;
-  const holding = await getHoldingById(id);
+  const holding = await getHoldingById(user.id, id);
 
   if (!holding) {
     notFound();
@@ -33,7 +35,7 @@ export default async function AssetDetailPage({
   // Fetch price history and transactions in parallel
   const [priceHistory, transactions] = await Promise.all([
     holding.assetId ? getPriceHistory(holding.assetId) : Promise.resolve([]),
-    holding.assetId ? getAssetTransactions(holding.assetId) : Promise.resolve([]),
+    holding.assetId ? getAssetTransactions(user.id, holding.assetId) : Promise.resolve([]),
   ]);
 
   const gainClass = getGainClass(holding.gainLoss);

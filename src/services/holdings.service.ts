@@ -66,10 +66,10 @@ function addToLots(
  * Recalculates holdings for a specific asset using FIFO method
  * FIFO: First In, First Out - oldest shares are sold first
  */
-export async function recalculateHolding(assetId: string): Promise<void> {
-  // Get all transactions for this asset, ordered by date
+export async function recalculateHolding(userId: string, assetId: string): Promise<void> {
+  // Get all transactions for this asset and user, ordered by date
   const transactions = await db.transaction.findMany({
-    where: { assetId },
+    where: { userId, assetId },
     orderBy: [{ date: "asc" }, { createdAt: "asc" }],
   });
 
@@ -133,6 +133,7 @@ export async function recalculateHolding(assetId: string): Promise<void> {
       lastCalculatedAt: new Date(),
     },
     create: {
+      userId,
       assetId,
       shares: totalShares,
       costBasis: totalCostBasis,
@@ -149,15 +150,16 @@ export async function recalculateHolding(assetId: string): Promise<void> {
 }
 
 /**
- * Recalculates holdings for all assets
+ * Recalculates holdings for all assets belonging to a user
  */
-export async function recalculateAllHoldings(): Promise<{
+export async function recalculateAllHoldings(userId: string): Promise<{
   recalculated: number;
   errors: string[];
 }> {
-  // Get all unique asset IDs from transactions
+  // Get all unique asset IDs from user's transactions
   const assetIds = await db.transaction.groupBy({
     by: ["assetId"],
+    where: { userId },
   });
 
   let recalculated = 0;
@@ -165,7 +167,7 @@ export async function recalculateAllHoldings(): Promise<{
 
   for (const { assetId } of assetIds) {
     try {
-      await recalculateHolding(assetId);
+      await recalculateHolding(userId, assetId);
       recalculated++;
     } catch (error) {
       errors.push(
@@ -207,9 +209,9 @@ export async function updateHoldingMarketValue(
 /**
  * Gets holding summary for an asset
  */
-export async function getHoldingSummary(assetId: string) {
-  const holding = await db.holding.findUnique({
-    where: { assetId },
+export async function getHoldingSummary(userId: string, assetId: string) {
+  const holding = await db.holding.findFirst({
+    where: { userId, assetId },
     include: { asset: true },
   });
 

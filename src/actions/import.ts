@@ -14,16 +14,19 @@ import type {
 import { Decimal } from "@prisma/client/runtime/client";
 import { recalculateHolding } from "@/services/holdings.service";
 import { determineAssetCategory } from "@/lib/myinvestor-funds";
+import { getUserId } from "@/lib/auth";
 
 /**
- * Check if Gmail is connected
+ * Check if Gmail is connected for the current user
  */
 export async function checkGmailConnection(): Promise<
   ActionResult<{ connected: boolean; canFetch: boolean }>
 > {
   try {
+    const userId = await getUserId();
+
     const settings = await db.settings.findUnique({
-      where: { id: "default" },
+      where: { userId },
     });
 
     if (!settings?.gmailConnected || !settings.gmailRefreshToken) {
@@ -43,12 +46,14 @@ export async function checkGmailConnection(): Promise<
 }
 
 /**
- * Disconnect Gmail
+ * Disconnect Gmail for the current user
  */
 export async function disconnectGmail(): Promise<ActionResult<void>> {
   try {
+    const userId = await getUserId();
+
     await db.settings.update({
-      where: { id: "default" },
+      where: { userId },
       data: {
         gmailConnected: false,
         gmailRefreshToken: null,
@@ -73,9 +78,11 @@ export async function fetchGmailTransactions(options?: {
   maxResults?: number;
 }): Promise<ActionResult<{ batchId: string; summary: ImportBatchSummary }>> {
   try {
+    const userId = await getUserId();
+
     // Get refresh token from settings
     const settings = await db.settings.findUnique({
-      where: { id: "default" },
+      where: { userId },
     });
 
     if (!settings?.gmailRefreshToken) {
@@ -91,9 +98,10 @@ export async function fetchGmailTransactions(options?: {
     // Parse emails
     const parsedEmails = parseMyInvestorEmails(emails);
 
-    // Get all transactions and check for duplicates
+    // Get user's existing transactions and check for duplicates
     const existingMessageIds = await db.transaction.findMany({
       where: {
+        userId,
         gmailMessageId: { not: null },
       },
       select: { gmailMessageId: true },
@@ -124,6 +132,7 @@ export async function fetchGmailTransactions(options?: {
     // Create import batch
     const batch = await db.importBatch.create({
       data: {
+        userId,
         source: "GMAIL",
         status: "PREVIEWING",
         gmailQuery: options?.afterDate
@@ -185,8 +194,10 @@ export async function getImportPreview(
   batchId: string
 ): Promise<ActionResult<ImportPreviewItem[]>> {
   try {
-    const batch = await db.importBatch.findUnique({
-      where: { id: batchId },
+    const userId = await getUserId();
+
+    const batch = await db.importBatch.findFirst({
+      where: { id: batchId, userId },
     });
 
     if (!batch) {
@@ -211,8 +222,10 @@ export async function confirmImport(
   selectedIds: string[]
 ): Promise<ActionResult<ImportResult>> {
   try {
-    const batch = await db.importBatch.findUnique({
-      where: { id: batchId },
+    const userId = await getUserId();
+
+    const batch = await db.importBatch.findFirst({
+      where: { id: batchId, userId },
     });
 
     if (!batch) {
@@ -238,14 +251,15 @@ export async function confirmImport(
 
     for (const item of selectedItems) {
       try {
-        // Find or create asset
+        // Find or create asset for this user
         let asset = await db.asset.findFirst({
-          where: { isin: item.transaction.isin },
+          where: { userId, isin: item.transaction.isin },
         });
 
         if (!asset) {
           asset = await db.asset.create({
             data: {
+              userId,
               isin: item.transaction.isin,
               name: item.transaction.name,
               category: determineAssetCategory(item.transaction.isin, item.transaction.name),
@@ -260,6 +274,7 @@ export async function confirmImport(
         // Create transaction
         await db.transaction.create({
           data: {
+            userId,
             assetId: asset.id,
             type: item.transaction.type,
             transferType: item.transaction.transferType,
@@ -291,7 +306,7 @@ export async function confirmImport(
     // Recalculate holdings for all affected assets
     for (const assetId of affectedAssetIds) {
       try {
-        await recalculateHolding(assetId);
+        await recalculateHolding(userId, assetId);
       } catch (error) {
         console.error(`Failed to recalculate holding for ${assetId}:`, error);
       }
@@ -310,7 +325,7 @@ export async function confirmImport(
 
     // Update last import date
     await db.settings.update({
-      where: { id: "default" },
+      where: { userId },
       data: { lastGmailImport: new Date() },
     });
 
@@ -328,11 +343,14 @@ export async function confirmImport(
       },
     };
   } catch (error) {
-    // Mark batch as failed
-    await db.importBatch.update({
-      where: { id: batchId },
-      data: { status: "FAILED" },
-    });
+    const userId = await getUserId().catch(() => null);
+    if (userId) {
+      // Mark batch as failed
+      await db.importBatch.updateMany({
+        where: { id: batchId, userId },
+        data: { status: "FAILED" },
+      });
+    }
 
     return {
       success: false,
@@ -346,6 +364,17 @@ export async function confirmImport(
  */
 export async function cancelImport(batchId: string): Promise<ActionResult<void>> {
   try {
+    const userId = await getUserId();
+
+    // Verify batch belongs to user
+    const batch = await db.importBatch.findFirst({
+      where: { id: batchId, userId },
+    });
+
+    if (!batch) {
+      return { success: false, error: "Import batch not found" };
+    }
+
     await db.importBatch.delete({
       where: { id: batchId },
     });

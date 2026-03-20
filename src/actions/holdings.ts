@@ -6,6 +6,8 @@ import {
   recalculateAllHoldings,
 } from "@/services/holdings.service";
 import type { ActionResult } from "@/lib/action-utils";
+import { getUserId } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 /**
  * Recalculates holdings for a specific asset
@@ -14,7 +16,17 @@ export async function recalculateAssetHolding(
   assetId: string
 ): Promise<ActionResult<void>> {
   try {
-    await recalculateHolding(assetId);
+    const userId = await getUserId();
+
+    // Verify asset belongs to user
+    const asset = await db.asset.findFirst({
+      where: { id: assetId, userId },
+    });
+    if (!asset) {
+      return { success: false, error: "Asset not found" };
+    }
+
+    await recalculateHolding(userId, assetId);
     revalidatePath("/");
     revalidatePath(`/portfolio/${assetId}`);
     return { success: true, data: undefined };
@@ -30,13 +42,14 @@ export async function recalculateAssetHolding(
 }
 
 /**
- * Recalculates all holdings
+ * Recalculates all holdings for the current user
  */
 export async function recalculateAllAssetHoldings(): Promise<
   ActionResult<{ recalculated: number; errors: string[] }>
 > {
   try {
-    const result = await recalculateAllHoldings();
+    const userId = await getUserId();
+    const result = await recalculateAllHoldings(userId);
     revalidatePath("/");
     return { success: true, data: result };
   } catch (error) {

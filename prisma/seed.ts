@@ -125,11 +125,10 @@ function classifyAsset(
 async function main() {
   console.log("Starting seed...");
 
-  // Clear existing data
+  // Clear existing ticker mappings (global data)
   await prisma.tickerMapping.deleteMany();
-  await prisma.settings.deleteMany();
 
-  // Seed ticker mappings
+  // Seed ticker mappings (these are global, shared across all users)
   console.log("Seeding ticker mappings...");
   for (const mapping of TICKER_MAPPINGS) {
     await prisma.tickerMapping.create({
@@ -138,18 +137,8 @@ async function main() {
     console.log(`  Created: ${mapping.displayName}`);
   }
 
-  // Create default settings
-  console.log("Creating default settings...");
-  await prisma.settings.create({
-    data: {
-      id: "default",
-      defaultCurrency: "EUR",
-      priceUpdateEnabled: true,
-      priceCacheDurationMin: 60,
-      theme: "system",
-      locale: "es-ES",
-    },
-  });
+  // Note: Settings are now per-user and created when a user registers
+  // No default settings are seeded
 
   console.log("Seed completed successfully!");
 }

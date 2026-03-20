@@ -3,9 +3,10 @@ import {
   ArrowLeft,
   Calculator,
   Database,
-  Download,
+  FolderSync,
   Key,
   Palette,
+  LogOut,
 } from "lucide-react";
 import {
   Card,
@@ -20,29 +21,55 @@ import { ApiKeyForm } from "@/components/settings/ApiKeyForm";
 import { ThemeToggle } from "@/components/settings/ThemeToggle";
 import { DatabaseReset } from "@/components/settings/DatabaseReset";
 import { ExportData } from "@/components/settings/ExportData";
+import { ImportData } from "@/components/settings/ImportData";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import { getSettings } from "@/actions/settings";
+import { requireAuth } from "@/lib/auth";
 
 export default async function SettingsPage() {
+  const user = await requireAuth();
   const settings = await getSettings();
 
   return (
     <div className="min-h-screen pb-20">
       <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            aria-label="Back to portfolio"
-            className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <h1 className="text-lg font-bold tracking-tight text-foreground">
-            Settings
-          </h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              aria-label="Back to portfolio"
+              className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">
+              Settings
+            </h1>
+          </div>
         </div>
       </header>
 
       <main className="p-4 space-y-4">
+        {/* User info card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-lg font-semibold text-primary">
+                    {user.email.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <CardTitle className="text-base">{user.email}</CardTitle>
+                  <CardDescription>Signed in</CardDescription>
+                </div>
+              </div>
+              <LogoutButton />
+            </div>
+          </CardHeader>
+        </Card>
+
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -129,18 +156,20 @@ export default async function SettingsPage() {
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Download className="h-5 w-5 text-primary" />
+                <FolderSync className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle>Data Export</CardTitle>
+                <CardTitle>Data Import / Export</CardTitle>
                 <CardDescription>
-                  Download your portfolio data as JSON
+                  Import or export your portfolio data as JSON
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <ExportData />
+            <Separator />
+            <ImportData />
           </CardContent>
         </Card>
 

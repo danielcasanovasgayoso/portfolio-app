@@ -2,12 +2,13 @@ import { db } from "@/lib/db";
 import type { PortfolioSummary, Holding, CategoryTotal } from "@/types/portfolio";
 
 /**
- * Fetches all holdings from the database and formats them for the portfolio view
+ * Fetches all holdings for a user and formats them for the portfolio view
  */
-export async function getPortfolioData(): Promise<PortfolioSummary> {
-  // Get all holdings with their associated asset data
+export async function getPortfolioData(userId: string): Promise<PortfolioSummary> {
+  // Get all holdings with their associated asset data for this user
   const dbHoldings = await db.holding.findMany({
     where: {
+      userId,
       shares: { gt: 0 },
     },
     include: {
@@ -99,11 +100,11 @@ function calculateCategoryTotal(holdings: Holding[]): CategoryTotal | null {
 }
 
 /**
- * Gets a single holding by asset ID
+ * Gets a single holding by asset ID for a user
  */
-export async function getHoldingByAssetId(assetId: string): Promise<Holding | null> {
-  const dbHolding = await db.holding.findUnique({
-    where: { assetId },
+export async function getHoldingByAssetId(userId: string, assetId: string): Promise<Holding | null> {
+  const dbHolding = await db.holding.findFirst({
+    where: { userId, assetId },
     include: {
       asset: {
         include: {
@@ -145,11 +146,11 @@ export async function getHoldingByAssetId(assetId: string): Promise<Holding | nu
 }
 
 /**
- * Gets a single holding by holding ID
+ * Gets a single holding by holding ID for a user
  */
-export async function getHoldingById(holdingId: string): Promise<Holding | null> {
-  const dbHolding = await db.holding.findUnique({
-    where: { id: holdingId },
+export async function getHoldingById(userId: string, holdingId: string): Promise<Holding | null> {
+  const dbHolding = await db.holding.findFirst({
+    where: { id: holdingId, userId },
     include: {
       asset: {
         include: {
@@ -192,11 +193,11 @@ export async function getHoldingById(holdingId: string): Promise<Holding | null>
 }
 
 /**
- * Gets transactions for a specific asset
+ * Gets transactions for a specific asset belonging to a user
  */
-export async function getAssetTransactions(assetId: string) {
+export async function getAssetTransactions(userId: string, assetId: string) {
   const transactions = await db.transaction.findMany({
-    where: { assetId },
+    where: { userId, assetId },
     orderBy: { date: "desc" },
     take: 50,
   });

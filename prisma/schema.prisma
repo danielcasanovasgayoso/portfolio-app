@@ -1,5 +1,6 @@
 // Portfolio Tracker Database Schema
-// Using PostgreSQL (Neon) with Prisma ORM
+// Using PostgreSQL (Supabase) with Prisma ORM
+// Multi-tenant: Each user has isolated data
 
 generator client {
   provider   = "prisma-client-js"
@@ -54,11 +55,12 @@ enum ImportStatus {
   FAILED
 }
 
-// Core Asset Model
+// Core Asset Model (user-specific)
 model Asset {
   id        String        @id @default(cuid())
-  isin      String        @unique
-  ticker    String?       @unique
+  userId    String        // Supabase auth user ID
+  isin      String
+  ticker    String?
   name      String
   category  AssetCategory @default(OTHERS)
   currency  String        @default("EUR")
@@ -71,13 +73,19 @@ model Asset {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // ISIN unique per user (same asset can exist for different users)
+  @@unique([userId, isin])
+  // Ticker unique per user
+  @@unique([userId, ticker])
+  @@index([userId])
   @@index([category])
   @@index([isActive])
 }
 
-// Transaction Model
+// Transaction Model (user-specific)
 model Transaction {
   id            String          @id @default(cuid())
+  userId        String          // Supabase auth user ID (for direct queries)
   assetId       String
   asset         Asset           @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
@@ -92,24 +100,26 @@ model Transaction {
   importBatchId  String?
   importBatch    ImportBatch?   @relation(fields: [importBatchId], references: [id])
   sourceHash     String?
-  gmailMessageId String?        @unique
+  gmailMessageId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Gmail message ID unique per user (same email imported by different users is OK)
+  @@unique([userId, gmailMessageId])
+  @@index([userId])
   @@index([assetId])
   @@index([date])
   @@index([type])
   @@index([importBatchId])
   // Composite index for FIFO calculations (asset + date ordering)
   @@index([assetId, date])
-  // Index for duplicate detection during import
-  @@index([gmailMessageId])
 }
 
-// Holding Model (calculated from transactions)
+// Holding Model (user-specific, calculated from transactions)
 model Holding {
   id             String  @id @default(cuid())
+  userId         String  // Supabase auth user ID
   assetId        String  @unique
   asset          Asset   @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
@@ -121,10 +131,11 @@ model Holding {
 
   lastCalculatedAt DateTime @default(now())
 
+  @@index([userId])
   @@index([shares])
 }
 
-// Historical Price Data
+// Historical Price Data (shared globally - prices are same for everyone)
 model Price {
   id      String      @id @default(cuid())
   assetId String
@@ -144,7 +155,7 @@ model Price {
   @@index([assetId, date(sort: Desc)])
 }
 
-// Price Cache for Quick Lookups
+// Price Cache for Quick Lookups (shared globally)
 model PriceCache {
   id          String   @id @default(cuid())
   ticker      String   @unique
@@ -156,9 +167,10 @@ model PriceCache {
   @@index([expiresAt])
 }
 
-// Import Batch for Gmail Import
+// Import Batch for Gmail Import (user-specific)
 model ImportBatch {
   id              String       @id @default(cuid())
+  userId          String       // Supabase auth user ID
   source          ImportSource
   status          ImportStatus @default(PENDING)
 
@@ -177,12 +189,14 @@ model ImportBatch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([userId])
   @@index([status])
 }
 
-// Application Settings
+// User Settings (one per user)
 model Settings {
-  id                    String   @id @default("default")
+  id                    String   @id @default(cuid())
+  userId                String   @unique  // One settings record per user
   eodhdApiKey           String?
   eodhdBackupKey        String?
   defaultCurrency       String   @default("EUR")
@@ -195,10 +209,11 @@ model Settings {
   gmailRefreshToken String?
   lastGmailImport   DateTime?
 
+  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// Ticker Mapping (for ISIN to Ticker resolution)
+// Ticker Mapping (shared globally - reference data)
 model TickerMapping {
   id          String        @id @default(cuid())
   isin        String        @unique

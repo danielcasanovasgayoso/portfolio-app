@@ -6,9 +6,11 @@ import {
 import { RefreshPricesButton } from "@/components/portfolio/RefreshPricesButton";
 import { CategoryAllocationChart } from "@/components/charts";
 import { getPortfolioData } from "@/services/portfolio.service";
+import { requireAuth } from "@/lib/auth";
 
 export default async function PortfolioPage() {
-  const data = await getPortfolioData();
+  const user = await requireAuth();
+  const data = await getPortfolioData(user.id);
 
   return (
     <div className="min-h-screen">

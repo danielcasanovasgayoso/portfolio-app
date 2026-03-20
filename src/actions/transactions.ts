@@ -18,6 +18,7 @@ import type {
   SerializedTransaction,
   PaginatedResult,
 } from "@/types/transaction";
+import { getUserId } from "@/lib/auth";
 
 // Helper to serialize Decimal and Date fields for client components
 function serializeTransaction(tx: TransactionWithAsset): SerializedTransaction {
@@ -37,10 +38,11 @@ function serializeTransaction(tx: TransactionWithAsset): SerializedTransaction {
 export async function getTransactions(
   filters: TransactionFiltersInput
 ): Promise<PaginatedResult<SerializedTransaction>> {
+  const userId = await getUserId();
   const validated = TransactionFiltersSchema.parse(filters);
   const { types, dateFrom, dateTo, assetId, page, perPage } = validated;
 
-  const where: Prisma.TransactionWhereInput = {};
+  const where: Prisma.TransactionWhereInput = { userId };
 
   if (types && types.length > 0) {
     where.type = { in: types };
@@ -86,10 +88,11 @@ export async function getTransactions(
   };
 }
 
-// Get all assets for dropdown
+// Get all assets for dropdown (user-specific)
 export async function getAssets() {
+  const userId = await getUserId();
   return db.asset.findMany({
-    where: { isActive: true },
+    where: { userId, isActive: true },
     select: {
       id: true,
       name: true,
@@ -106,10 +109,20 @@ export async function createTransaction(
   data: TransactionCreateInput
 ): Promise<ActionResult<TransactionWithAsset>> {
   try {
+    const userId = await getUserId();
     const validated = TransactionCreateSchema.parse(data);
+
+    // Verify asset belongs to user
+    const asset = await db.asset.findFirst({
+      where: { id: validated.assetId, userId },
+    });
+    if (!asset) {
+      return { success: false, error: "Asset not found" };
+    }
 
     const transaction = await db.transaction.create({
       data: {
+        userId,
         assetId: validated.assetId,
         type: validated.type,
         date: validated.date,
@@ -135,7 +148,7 @@ export async function createTransaction(
     });
 
     // Recalculate holdings for the affected asset
-    await recalculateHolding(validated.assetId);
+    await recalculateHolding(userId, validated.assetId);
 
     revalidatePath("/transactions");
     revalidatePath("/");
@@ -157,11 +170,30 @@ export async function updateTransaction(
   data: Partial<TransactionCreateInput>
 ): Promise<ActionResult<TransactionWithAsset>> {
   try {
+    const userId = await getUserId();
     const validated = TransactionUpdateSchema.parse(data);
+
+    // Verify transaction belongs to user
+    const existingTx = await db.transaction.findFirst({
+      where: { id, userId },
+      select: { assetId: true },
+    });
+    if (!existingTx) {
+      return { success: false, error: "Transaction not found" };
+    }
 
     const updateData: Prisma.TransactionUpdateInput = {};
 
-    if (validated.assetId) updateData.asset = { connect: { id: validated.assetId } };
+    if (validated.assetId) {
+      // Verify new asset belongs to user
+      const asset = await db.asset.findFirst({
+        where: { id: validated.assetId, userId },
+      });
+      if (!asset) {
+        return { success: false, error: "Asset not found" };
+      }
+      updateData.asset = { connect: { id: validated.assetId } };
+    }
     if (validated.type) updateData.type = validated.type;
     if (validated.date) updateData.date = validated.date;
     if (validated.shares) updateData.shares = new Decimal(validated.shares);
@@ -177,12 +209,6 @@ export async function updateTransaction(
     if (validated.transferType !== undefined) {
       updateData.transferType = validated.transferType || null;
     }
-
-    // Get the original transaction to track asset changes
-    const original = await db.transaction.findUnique({
-      where: { id },
-      select: { assetId: true },
-    });
 
     const transaction = await db.transaction.update({
       where: { id },
@@ -201,9 +227,9 @@ export async function updateTransaction(
     });
 
     // Recalculate holdings for affected assets
-    await recalculateHolding(transaction.assetId);
-    if (original && original.assetId !== transaction.assetId) {
-      await recalculateHolding(original.assetId);
+    await recalculateHolding(userId, transaction.assetId);
+    if (existingTx.assetId !== transaction.assetId) {
+      await recalculateHolding(userId, existingTx.assetId);
     }
 
     revalidatePath("/transactions");
@@ -225,9 +251,11 @@ export async function deleteTransaction(
   id: string
 ): Promise<ActionResult<{ id: string }>> {
   try {
-    // Get the transaction first to know which asset to recalculate
-    const transaction = await db.transaction.findUnique({
-      where: { id },
+    const userId = await getUserId();
+
+    // Verify transaction belongs to user
+    const transaction = await db.transaction.findFirst({
+      where: { id, userId },
       select: { assetId: true },
     });
 
@@ -238,7 +266,7 @@ export async function deleteTransaction(
     await db.transaction.delete({ where: { id } });
 
     // Recalculate holdings for the affected asset
-    await recalculateHolding(transaction.assetId);
+    await recalculateHolding(userId, transaction.assetId);
 
     revalidatePath("/transactions");
     revalidatePath("/");
@@ -258,8 +286,9 @@ export async function deleteTransaction(
 export async function getTransaction(
   id: string
 ): Promise<TransactionWithAsset | null> {
-  return db.transaction.findUnique({
-    where: { id },
+  const userId = await getUserId();
+  return db.transaction.findFirst({
+    where: { id, userId },
     include: {
       asset: {
         select: {

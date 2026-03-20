@@ -26,16 +26,16 @@ export interface AppSettings {
 }
 
 /**
- * Cached settings entry
+ * Cached settings entry (per user)
  */
 interface CachedSettings {
   data: AppSettings;
   expiresAt: Date;
 }
 
-// In-memory cache for settings (1 minute TTL)
+// In-memory cache for settings (1 minute TTL, keyed by userId)
 const CACHE_TTL_MS = 60 * 1000;
-let settingsCache: CachedSettings | null = null;
+const settingsCache = new Map<string, CachedSettings>();
 
 /**
  * Default settings values
@@ -54,25 +54,26 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 /**
- * Check if cache is still valid
+ * Check if cache is still valid for a user
  */
-function isCacheValid(): boolean {
-  return settingsCache !== null && settingsCache.expiresAt > new Date();
+function isCacheValid(userId: string): boolean {
+  const cached = settingsCache.get(userId);
+  return cached !== null && cached !== undefined && cached.expiresAt > new Date();
 }
 
 /**
- * Get application settings with caching
+ * Get application settings for a user with caching
  * Reduces database calls for frequently accessed settings
  */
-export async function getSettings(): Promise<AppSettings> {
+export async function getSettings(userId: string): Promise<AppSettings> {
   // Return cached settings if valid
-  if (isCacheValid() && settingsCache) {
-    return settingsCache.data;
+  if (isCacheValid(userId)) {
+    return settingsCache.get(userId)!.data;
   }
 
   // Fetch from database
   const dbSettings = await db.settings.findUnique({
-    where: { id: "default" },
+    where: { userId },
   });
 
   // Merge with defaults
@@ -93,25 +94,25 @@ export async function getSettings(): Promise<AppSettings> {
   };
 
   // Update cache
-  settingsCache = {
+  settingsCache.set(userId, {
     data: settings,
     expiresAt: new Date(Date.now() + CACHE_TTL_MS),
-  };
+  });
 
   return settings;
 }
 
 /**
- * Get settings for price operations
+ * Get settings for price operations for a user
  * Throws if no API key is configured
  */
-export async function getPriceSettings(): Promise<{
+export async function getPriceSettings(userId: string): Promise<{
   primaryKey: string;
   backupKey: string | null;
   cacheDurationMin: number;
   updateEnabled: boolean;
 }> {
-  const settings = await getSettings();
+  const settings = await getSettings(userId);
 
   if (!settings.eodhdApiKey) {
     throw new ConfigurationError(
@@ -129,14 +130,14 @@ export async function getPriceSettings(): Promise<{
 }
 
 /**
- * Get Gmail settings
+ * Get Gmail settings for a user
  */
-export async function getGmailSettings(): Promise<{
+export async function getGmailSettings(userId: string): Promise<{
   connected: boolean;
   refreshToken: string | null;
   lastImport: Date | null;
 }> {
-  const settings = await getSettings();
+  const settings = await getSettings(userId);
 
   return {
     connected: settings.gmailConnected,
@@ -146,48 +147,49 @@ export async function getGmailSettings(): Promise<{
 }
 
 /**
- * Invalidate settings cache
+ * Invalidate settings cache for a user
  * Call this after updating settings
  */
-export function invalidateSettingsCache(): void {
-  settingsCache = null;
+export function invalidateSettingsCache(userId: string): void {
+  settingsCache.delete(userId);
 }
 
 /**
- * Update settings in database and invalidate cache
+ * Update settings in database for a user and invalidate cache
  */
 export async function updateSettings(
+  userId: string,
   updates: Partial<Omit<AppSettings, "lastGmailImport">>
 ): Promise<AppSettings> {
   await db.settings.upsert({
-    where: { id: "default" },
+    where: { userId },
     update: updates,
     create: {
-      id: "default",
+      userId,
       ...DEFAULT_SETTINGS,
       ...updates,
     },
   });
 
   // Invalidate cache to force refresh
-  invalidateSettingsCache();
+  invalidateSettingsCache(userId);
 
-  return getSettings();
+  return getSettings(userId);
 }
 
 /**
- * Ensure settings record exists in database
+ * Ensure settings record exists in database for a user
  */
-export async function ensureSettingsExist(): Promise<void> {
+export async function ensureSettingsExist(userId: string): Promise<void> {
   const exists = await db.settings.findUnique({
-    where: { id: "default" },
+    where: { userId },
     select: { id: true },
   });
 
   if (!exists) {
     await db.settings.create({
       data: {
-        id: "default",
+        userId,
         ...DEFAULT_SETTINGS,
       },
     });

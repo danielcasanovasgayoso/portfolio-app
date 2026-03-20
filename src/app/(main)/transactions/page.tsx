@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getTransactions, getAssets } from "@/actions/transactions";
 import { TransactionsContent } from "./TransactionsContent";
+import { requireAuth } from "@/lib/auth";
 
 interface TransactionsPageProps {
   searchParams: Promise<{
@@ -20,6 +20,8 @@ interface TransactionsPageProps {
 export default async function TransactionsPage({
   searchParams,
 }: TransactionsPageProps) {
+  await requireAuth();
+
   return (
     <div className="min-h-screen pb-20">
       <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3">
