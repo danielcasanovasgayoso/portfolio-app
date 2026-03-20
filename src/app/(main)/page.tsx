@@ -13,34 +13,45 @@ export default async function PortfolioPage() {
   const data = await getPortfolioData(user.id);
 
   return (
-    <div className="min-h-screen">
-      <Header title="Portfolio" />
+    <div className="min-h-screen bg-background">
+      <Header title="" />
 
-      <main className="pt-6 pb-8">
-        {/* Action bar */}
-        <div className="flex justify-between items-center px-4 mb-6">
-          <div className="flex items-center gap-2">
+      <main className="py-20 pb-24 max-w-5xl mx-auto">
+        {/* Action bar and Heavy Header (Asymmetrical Tension) */}
+        <div className="flex justify-between items-start px-8 mb-12">
+          <div className="flex flex-col max-w-[60%]">
+             <h1 className="display-lg tracking-tight">Portfolio</h1>
+             <p className="body-md text-muted-foreground mt-2">Monitor and curate your assets with precision.</p>
           </div>
-          <RefreshPricesButton />
+          <div className="mt-2">
+            <RefreshPricesButton />
+          </div>
         </div>
 
-        {/* Hero Summary Card */}
-        <PortfolioSummaryCard
-          grand={data.totals.grand}
-          invested={data.totals.invested}
-        />
-
-        {/* Allocation Chart */}
-        {data.totals.grand && (
-          <div className="mx-4 mt-6">
-            <CategoryAllocationChart
-              funds={data.totals.funds?.marketValue ?? 0}
-              stocks={data.totals.stocks?.marketValue ?? 0}
-              pp={data.totals.pp?.marketValue ?? 0}
-              others={data.totals.others?.marketValue ?? 0}
+        {/* Hero Section Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-8 mb-12">
+          {/* Hero Summary Card */}
+          <div className="lg:col-span-2">
+            <PortfolioSummaryCard
+              grand={data.totals.grand}
+              invested={data.totals.invested}
             />
           </div>
-        )}
+
+          {/* Allocation Chart */}
+          <div className="lg:col-span-1">
+            {data.totals.grand && (
+              <div className="h-full bg-card rounded-xl shadow-ambient p-6 flex flex-col justify-center">
+                <CategoryAllocationChart
+                  funds={data.totals.funds?.marketValue ?? 0}
+                  stocks={data.totals.stocks?.marketValue ?? 0}
+                  pp={data.totals.pp?.marketValue ?? 0}
+                  others={data.totals.others?.marketValue ?? 0}
+                />
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Holdings by Category */}
         <PortfolioSection
@@ -73,8 +84,8 @@ export default async function PortfolioPage() {
         />
 
         {/* Footer timestamp */}
-        <div className="mt-10 px-4">
-          <div className="terminal-card p-3 flex items-center justify-center gap-2">
+        <div className="mt-10 px-4 md:px-8">
+          <div className="bg-muted rounded-xl border-0 shadow-sm p-4 flex items-center justify-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
             <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
               Last Updated: {new Date().toLocaleString("en-US", {

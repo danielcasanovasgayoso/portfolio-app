@@ -40,7 +40,7 @@ export function HoldingCard({
     return (
       <article
         className={cn(
-          "terminal-card p-4 pl-5 animate-slide-up",
+          "bg-card rounded-xl shadow-sm p-5 pl-6 animate-slide-up border-0",
           staggerClass
         )}
       >
@@ -69,7 +69,7 @@ export function HoldingCard({
     <Link href={`/portfolio/${holding.id}`} className="block group">
       <article
         className={cn(
-          "terminal-card p-4 pl-5 card-hover animate-slide-up",
+          "bg-card rounded-xl shadow-sm p-5 pl-6 card-hover animate-slide-up border-0",
           staggerClass
         )}
       >
@@ -123,23 +123,23 @@ export function HoldingCard({
         </div>
 
         {/* Data grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-border pl-3">
-          <div>
-            <p className="data-label mb-1">Invested</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-4 mt-2 pl-3">
+          <div className="bg-muted p-3 rounded-md">
+            <p className="label-sm mb-1 text-muted-foreground">Invested</p>
             <p className="text-sm font-mono font-medium text-foreground tabular-nums">
               {formatCurrency(holding.costBasis)}
             </p>
           </div>
 
-          <div>
-            <p className="data-label mb-1">Avg Price</p>
+          <div className="bg-muted p-3 rounded-md">
+            <p className="label-sm mb-1 text-muted-foreground">Avg Price</p>
             <p className="text-sm font-mono font-medium text-foreground tabular-nums">
               {formatCurrency(holding.avgPrice, true)}
             </p>
           </div>
 
-          <div>
-            <p className="data-label mb-1">Current</p>
+          <div className="bg-muted p-3 rounded-md">
+            <p className="label-sm mb-1 text-muted-foreground">Current</p>
             <p className="text-sm font-mono font-medium text-foreground tabular-nums">
               {holding.currentPrice
                 ? formatCurrency(holding.currentPrice, true)
@@ -147,8 +147,8 @@ export function HoldingCard({
             </p>
           </div>
 
-          <div>
-            <p className="data-label mb-1">Return</p>
+          <div className="bg-muted p-3 rounded-md">
+            <p className="label-sm mb-1 text-muted-foreground">Return</p>
             <p
               className={cn(
                 "text-sm font-mono font-semibold tabular-nums",

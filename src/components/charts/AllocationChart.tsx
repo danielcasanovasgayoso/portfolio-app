@@ -24,28 +24,25 @@ interface AllocationChartProps {
   title?: string;
 }
 
-// Swiss Terminal color palette - bold, distinct, memorable
+// High-Growth Indigo color palette
 const CATEGORY_COLORS: Record<string, string> = {
-  FUNDS: "#00f5d4",    // Electric Cyan (Primary)
-  STOCKS: "#fbbf24",   // Amber Gold
-  PP: "#a78bfa",       // Soft Violet
-  OTHERS: "#60a5fa",   // Light Blue
+  FUNDS: "#6063EE",    // Primary Indigo
+  STOCKS: "#00e676",   // Neon Growth Green
+  PP: "#818cf8",       // Soft Indigo
+  OTHERS: "#A1A1C3",   // Slate
 };
 
 // Extended palette for individual holdings
 const HOLDING_COLORS = [
-  "#00f5d4", // Electric Cyan
-  "#fbbf24", // Amber Gold
-  "#a78bfa", // Soft Violet
-  "#f472b6", // Pink
-  "#60a5fa", // Light Blue
+  "#6063EE", // Primary Indigo
+  "#00e676", // Neon Growth Green
+  "#4648D4", // Deep Indigo
+  "#818cf8", // Soft Indigo
+  "#c084fc", // Bright Purple
   "#34d399", // Emerald
-  "#fb7185", // Rose
-  "#facc15", // Yellow
-  "#818cf8", // Indigo
-  "#2dd4bf", // Teal
-  "#c084fc", // Purple
-  "#38bdf8", // Sky
+  "#a78bfa", // Violet
+  "#6366f1", // Brand Indigo
+  "#A1A1C3", // Slate
 ];
 
 function getColorForItem(item: AllocationItem, index: number): string {
@@ -73,19 +70,19 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   const data = payload[0].payload;
 
   return (
-    <div className="terminal-card px-3 py-2 shadow-lg">
+    <div className="bg-popover text-popover-foreground rounded-lg px-3 py-2 shadow-lg border border-border/10">
       <div className="flex items-center gap-2 mb-1">
         <div
           className="w-2 h-2 rounded-full"
           style={{ backgroundColor: data.color }}
         />
-        <span className="text-xs font-medium text-foreground">{data.name}</span>
+        <span className="text-xs font-medium">{data.name}</span>
       </div>
       <div className="flex items-baseline gap-2">
-        <span className="text-sm font-mono font-semibold text-foreground">
+        <span className="text-sm font-mono font-semibold">
           {formatCurrency(data.value)}
         </span>
-        <span className="text-xs font-mono text-muted-foreground">
+        <span className="text-xs font-mono opacity-70">
           {data.percent.toFixed(1)}%
         </span>
       </div>
@@ -118,7 +115,7 @@ export function AllocationChart({
     return (
       <div
         className={cn(
-          "terminal-card flex items-center justify-center h-64",
+          "bg-transparent flex items-center justify-center h-64",
           className
         )}
       >
@@ -128,18 +125,18 @@ export function AllocationChart({
   }
 
   return (
-    <div className={cn("terminal-card p-4 animate-slide-up stagger-2", className)}>
+    <div className={cn("bg-transparent animate-slide-up stagger-2 w-full", className)}>
       {/* Header */}
       {title && (
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-6">
           <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          <span className="data-label">{title}</span>
+          <span className="label-sm">{title}</span>
         </div>
       )}
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col items-center gap-8 w-full">
         {/* Chart */}
-        <div className="h-48 w-48 flex-shrink-0 relative">
+        <div className="h-40 w-40 flex-shrink-0 relative">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -180,7 +177,7 @@ export function AllocationChart({
 
         {/* Legend */}
         {showLegend && (
-          <div className="flex-1 space-y-2">
+          <div className="w-full space-y-2">
             {chartData.map((item, index) => (
               <div
                 key={item.name}
@@ -237,6 +234,7 @@ export function CategoryAllocationChart({
       data={data}
       className={className}
       title="Asset Allocation"
+      showLegend={false}
     />
   );
 }

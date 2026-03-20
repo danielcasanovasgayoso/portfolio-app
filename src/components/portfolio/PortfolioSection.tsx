@@ -81,13 +81,13 @@ export function PortfolioSection({
 
         {/* Category stats bar */}
         {!isOther && totals && (
-          <div className="terminal-card p-3">
+          <div className="bg-card rounded-xl p-6 border-0 shadow-ambient">
             <div className="grid grid-cols-3 gap-4">
               {/* Invested */}
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
+                <div className="flex items-center justify-center gap-1.5 mb-1 text-muted-foreground">
                   <Wallet className="w-3 h-3 text-muted-foreground" />
-                  <span className="data-label">Invested</span>
+                  <span className="label-sm">Invested</span>
                 </div>
                 <p className="text-sm font-mono font-semibold text-foreground tabular-nums">
                   {formatCurrency(totals.costBasis)}
@@ -96,13 +96,13 @@ export function PortfolioSection({
 
               {/* Gain/Loss */}
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
+                <div className="flex items-center justify-center gap-1.5 mb-1 text-muted-foreground">
                   {isPositive ? (
                     <TrendingUp className="w-3 h-3 text-gain" />
                   ) : (
                     <TrendingDown className="w-3 h-3 text-loss" />
                   )}
-                  <span className="data-label">Gain/Loss</span>
+                  <span className="label-sm">Gain/Loss</span>
                 </div>
                 <p
                   className={cn(
@@ -117,9 +117,9 @@ export function PortfolioSection({
 
               {/* Return */}
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
+                <div className="flex items-center justify-center gap-1.5 mb-1 text-muted-foreground">
                   <Percent className="w-3 h-3 text-muted-foreground" />
-                  <span className="data-label">Return</span>
+                  <span className="label-sm">Return</span>
                 </div>
                 <p
                   className={cn(

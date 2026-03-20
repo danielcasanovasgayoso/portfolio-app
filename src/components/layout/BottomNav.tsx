@@ -9,19 +9,19 @@ const navItems = [
   {
     href: "/",
     label: "Portfolio",
-    shortLabel: "PORT",
+    shortLabel: "HOME",
     icon: PieChart,
   },
   {
     href: "/transactions",
     label: "Transactions",
-    shortLabel: "TXN",
+    shortLabel: "ORDERS",
     icon: FileText,
   },
   {
     href: "/settings",
     label: "Settings",
-    shortLabel: "CFG",
+    shortLabel: "CONFIG",
     icon: Settings,
   },
 ];

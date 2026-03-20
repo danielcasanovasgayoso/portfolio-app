@@ -18,11 +18,11 @@ export function PortfolioSummaryCard({
 
   if (!grand) {
     return (
-      <article className="hero-card mx-4 p-6 animate-slide-up">
+      <article className="dark bg-hero-gradient rounded-xl border-0 shadow-ambient p-8 relative overflow-hidden h-full flex flex-col justify-center">
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse" />
-            <span className="data-label">Net Worth</span>
+            <span className="label-sm">Net Worth</span>
           </div>
           <p className="text-4xl font-mono font-bold tracking-tight text-muted-foreground">
             —
@@ -36,12 +36,12 @@ export function PortfolioSummaryCard({
   const isPositive = gainClass === "positive";
 
   return (
-    <article className="hero-card mx-4 p-6 animate-slide-up">
+    <article className="dark bg-hero-gradient rounded-xl border-0 shadow-ambient p-8 relative overflow-hidden h-full">
       {/* Ambient glow effect */}
       <div
         className={cn(
           "absolute -top-20 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full blur-3xl opacity-20 pointer-events-none",
-          isPositive ? "bg-[#00e676]" : "bg-[#ff5252]"
+          isPositive ? "bg-gain" : "bg-loss"
         )}
         aria-hidden="true"
       />
@@ -53,12 +53,12 @@ export function PortfolioSummaryCard({
             <div
               className={cn(
                 "w-2 h-2 rounded-full animate-pulse",
-                isPositive ? "bg-[#00e676]" : "bg-[#ff5252]"
+                isPositive ? "bg-gain" : "bg-loss"
               )}
             />
-            <span className="data-label">Total Net Worth</span>
+            <span className="label-sm">Total Net Worth</span>
           </div>
-          <span className="data-label opacity-60">LIVE</span>
+          <span className="label-sm opacity-60">LIVE</span>
         </div>
 
         {/* Main Value */}
@@ -74,7 +74,7 @@ export function PortfolioSummaryCard({
           <div className="space-y-2">
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Wallet className="w-3.5 h-3.5" />
-              <span className="data-label">Invested</span>
+              <span className="label-sm text-muted-foreground">Invested</span>
             </div>
             <p className="text-lg md:text-xl font-mono font-semibold text-foreground tabular-nums">
               {formatCurrency(displayTotals?.costBasis ?? 0)}
@@ -89,7 +89,7 @@ export function PortfolioSummaryCard({
               ) : (
                 <TrendingDown className="w-3.5 h-3.5 text-loss" />
               )}
-              <span className="data-label">Gain/Loss</span>
+              <span className="label-sm text-muted-foreground">Gain/Loss</span>
             </div>
             <p
               className={cn(
@@ -106,7 +106,7 @@ export function PortfolioSummaryCard({
           <div className="space-y-2">
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Percent className="w-3.5 h-3.5" />
-              <span className="data-label">Return</span>
+              <span className="label-sm text-muted-foreground">Return</span>
             </div>
             <div className="flex items-center gap-2">
               <p
@@ -138,8 +138,8 @@ export function PortfolioSummaryCard({
         className={cn(
           "absolute bottom-0 left-0 right-0 h-[2px] opacity-60",
           isPositive
-            ? "bg-gradient-to-r from-transparent via-[#00e676] to-transparent"
-            : "bg-gradient-to-r from-transparent via-[#ff5252] to-transparent"
+            ? "bg-gradient-to-r from-transparent via-[var(--gain)] to-transparent"
+            : "bg-gradient-to-r from-transparent via-[var(--loss)] to-transparent"
         )}
         aria-hidden="true"
       />
