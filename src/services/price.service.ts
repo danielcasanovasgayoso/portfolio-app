@@ -488,6 +488,9 @@ export async function backfillHistoricalPrices(
   }
 }
 
+// Keep track of failed backfill attempts in memory to avoid API spam
+const failedBackfills = new Set<string>();
+
 /**
  * Get price history for an asset
  */
@@ -507,11 +510,40 @@ export async function getPriceHistory(
     if (options.to) where.date.lte = options.to;
   }
 
-  const prices = await db.price.findMany({
+  let prices = await db.price.findMany({
     where,
     orderBy: { date: "asc" },
     take: options?.limit,
   });
+
+  // Lazy backfill if we have very little to no history (meaning it was probably just imported)
+  if (prices.length < 10 && !failedBackfills.has(assetId)) {
+    const asset = await db.asset.findUnique({ where: { id: assetId } });
+    
+    if (asset && asset.ticker) {
+      console.log(`[PriceService] Lazy backfilling historical prices for ${asset.ticker}`);
+      try {
+        const result = await backfillHistoricalPrices(asset.userId, asset.id, asset.ticker);
+        
+        if (result.success && result.count > 0) {
+          // Re-fetch now that we have history
+          prices = await db.price.findMany({
+            where,
+            orderBy: { date: "asc" },
+            take: options?.limit,
+          });
+        } else {
+          // Mark as failed so we don't keep trying this session
+          failedBackfills.add(assetId);
+        }
+      } catch (e) {
+        console.error(`[PriceService] Failed to lazy backfill ${asset.ticker}:`, e);
+        failedBackfills.add(assetId);
+      }
+    } else {
+      failedBackfills.add(assetId);
+    }
+  }
 
   return prices.map((p) => ({
     date: p.date,
