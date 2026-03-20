@@ -9,6 +9,8 @@ import {
 } from "@/lib/eodhd";
 import { Decimal } from "@prisma/client/runtime/client";
 import { updateHoldingMarketValue } from "./holdings.service";
+import { getSettings } from "./settings.service";
+import { MARKET_HOURS, PRICE_CACHE } from "@/lib/constants";
 
 interface PriceUpdateResult {
   ticker: string;
@@ -26,22 +28,6 @@ interface RefreshPricesResult {
 }
 
 /**
- * Get settings with API keys
- */
-async function getSettings() {
-  const settings = await db.settings.findUnique({
-    where: { id: "default" },
-  });
-
-  return settings || {
-    eodhdApiKey: process.env.EODHD_API_KEY || null,
-    eodhdBackupKey: null,
-    priceCacheDurationMin: 60,
-    priceUpdateEnabled: true,
-  };
-}
-
-/**
  * Check if cached price is still valid
  */
 function isCacheValid(expiresAt: Date): boolean {
@@ -55,15 +41,15 @@ function getCacheExpiration(cacheDurationMin: number): Date {
   const now = new Date();
   const hours = now.getUTCHours();
 
-  // European market hours: roughly 7:00 - 17:30 UTC
-  // US market hours: roughly 14:30 - 21:00 UTC
-  const isMarketHours = hours >= 7 && hours <= 21;
+  // Check if within combined market hours window
+  const isMarketHours =
+    hours >= MARKET_HOURS.START_UTC && hours <= MARKET_HOURS.END_UTC;
 
   // During market hours: use configured duration
-  // After hours: cache for longer (24 hours)
+  // After hours: cache for longer
   const durationMs = isMarketHours
     ? cacheDurationMin * 60 * 1000
-    : 24 * 60 * 60 * 1000;
+    : PRICE_CACHE.AFTER_HOURS_DURATION_HOURS * 60 * 60 * 1000;
 
   return new Date(now.getTime() + durationMs);
 }
@@ -121,42 +107,49 @@ async function updatePriceCache(
 }
 
 /**
- * Store historical prices in the Price table
+ * Store historical prices in the Price table using batch operations
+ * Uses a transaction to ensure atomicity and improve performance
  */
 async function storeHistoricalPrices(
   assetId: string,
   prices: EODHDPrice[]
 ): Promise<void> {
-  // Upsert each price to avoid duplicates
-  for (const price of prices) {
-    const date = parseEODHDDate(price.date);
+  if (prices.length === 0) return;
 
-    await db.price.upsert({
+  // Prepare all price records
+  const priceRecords = prices.map((price) => {
+    const date = parseEODHDDate(price.date);
+    return {
+      assetId,
+      date,
+      open: new Decimal(price.open),
+      high: new Decimal(price.high),
+      low: new Decimal(price.low),
+      close: new Decimal(price.close),
+      volume: BigInt(price.volume || 0),
+      source: "EODHD" as const,
+    };
+  });
+
+  // Get all dates we're about to insert
+  const dates = priceRecords.map((p) => p.date);
+
+  // Use transaction for atomic batch operation
+  await db.$transaction(async (tx) => {
+    // Delete existing prices for these dates (faster than individual upserts)
+    await tx.price.deleteMany({
       where: {
-        assetId_date: {
-          assetId,
-          date,
-        },
-      },
-      update: {
-        open: new Decimal(price.open),
-        high: new Decimal(price.high),
-        low: new Decimal(price.low),
-        close: new Decimal(price.close),
-        volume: BigInt(price.volume || 0),
-      },
-      create: {
         assetId,
-        date,
-        open: new Decimal(price.open),
-        high: new Decimal(price.high),
-        low: new Decimal(price.low),
-        close: new Decimal(price.close),
-        volume: BigInt(price.volume || 0),
-        source: "EODHD",
+        date: { in: dates },
       },
     });
-  }
+
+    // Batch insert all prices
+    await tx.price.createMany({
+      data: priceRecords,
+      skipDuplicates: true,
+    });
+  });
 }
 
 /**

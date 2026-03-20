@@ -7,6 +7,61 @@ interface CostBasisLot {
   date: Date;
 }
 
+interface FifoRemovalResult {
+  costBasisRemoved: Decimal;
+  sharesRemoved: Decimal;
+}
+
+/**
+ * Remove shares from lots using FIFO method
+ * Mutates the lots array in place
+ * @returns The cost basis of removed shares
+ */
+function removeFifoShares(
+  lots: CostBasisLot[],
+  sharesToRemove: Decimal
+): FifoRemovalResult {
+  let costBasisRemoved = new Decimal(0);
+  let sharesRemoved = new Decimal(0);
+  let remaining = sharesToRemove;
+
+  while (remaining.greaterThan(0) && lots.length > 0) {
+    const oldestLot = lots[0];
+
+    if (oldestLot.shares.lessThanOrEqualTo(remaining)) {
+      // Remove entire lot
+      remaining = remaining.minus(oldestLot.shares);
+      costBasisRemoved = costBasisRemoved.plus(
+        oldestLot.shares.times(oldestLot.pricePerShare)
+      );
+      sharesRemoved = sharesRemoved.plus(oldestLot.shares);
+      lots.shift();
+    } else {
+      // Partial lot removal
+      costBasisRemoved = costBasisRemoved.plus(
+        remaining.times(oldestLot.pricePerShare)
+      );
+      sharesRemoved = sharesRemoved.plus(remaining);
+      oldestLot.shares = oldestLot.shares.minus(remaining);
+      remaining = new Decimal(0);
+    }
+  }
+
+  return { costBasisRemoved, sharesRemoved };
+}
+
+/**
+ * Add shares to lots
+ */
+function addToLots(
+  lots: CostBasisLot[],
+  shares: Decimal,
+  pricePerShare: Decimal,
+  date: Date
+): void {
+  lots.push({ shares, pricePerShare, date });
+}
+
 /**
  * Recalculates holdings for a specific asset using FIFO method
  * FIFO: First In, First Out - oldest shares are sold first
@@ -32,33 +87,12 @@ export async function recalculateHolding(assetId: string): Promise<void> {
       case "TRANSFER": {
         if (txn.type === "TRANSFER" && txn.transferType === "OUT") {
           // Transfer out - remove shares using FIFO
-          let sharesToRemove = shares;
-          while (sharesToRemove.greaterThan(0) && lots.length > 0) {
-            const oldestLot = lots[0];
-            if (oldestLot.shares.lessThanOrEqualTo(sharesToRemove)) {
-              // Remove entire lot
-              sharesToRemove = sharesToRemove.minus(oldestLot.shares);
-              totalCostBasis = totalCostBasis.minus(
-                oldestLot.shares.times(oldestLot.pricePerShare)
-              );
-              lots.shift();
-            } else {
-              // Partial lot removal
-              oldestLot.shares = oldestLot.shares.minus(sharesToRemove);
-              totalCostBasis = totalCostBasis.minus(
-                sharesToRemove.times(oldestLot.pricePerShare)
-              );
-              sharesToRemove = new Decimal(0);
-            }
-          }
+          const { costBasisRemoved } = removeFifoShares(lots, shares);
+          totalCostBasis = totalCostBasis.minus(costBasisRemoved);
           totalShares = totalShares.minus(shares);
         } else {
           // BUY or TRANSFER IN - add to lots
-          lots.push({
-            shares,
-            pricePerShare,
-            date: txn.date,
-          });
+          addToLots(lots, shares, pricePerShare, txn.date);
           totalShares = totalShares.plus(shares);
           totalCostBasis = totalCostBasis.plus(shares.times(pricePerShare));
         }
@@ -67,25 +101,8 @@ export async function recalculateHolding(assetId: string): Promise<void> {
 
       case "SELL": {
         // FIFO: remove shares from oldest lots first
-        let sharesToRemove = shares;
-        while (sharesToRemove.greaterThan(0) && lots.length > 0) {
-          const oldestLot = lots[0];
-          if (oldestLot.shares.lessThanOrEqualTo(sharesToRemove)) {
-            // Remove entire lot
-            sharesToRemove = sharesToRemove.minus(oldestLot.shares);
-            totalCostBasis = totalCostBasis.minus(
-              oldestLot.shares.times(oldestLot.pricePerShare)
-            );
-            lots.shift();
-          } else {
-            // Partial lot removal
-            oldestLot.shares = oldestLot.shares.minus(sharesToRemove);
-            totalCostBasis = totalCostBasis.minus(
-              sharesToRemove.times(oldestLot.pricePerShare)
-            );
-            sharesToRemove = new Decimal(0);
-          }
-        }
+        const { costBasisRemoved } = removeFifoShares(lots, shares);
+        totalCostBasis = totalCostBasis.minus(costBasisRemoved);
         totalShares = totalShares.minus(shares);
         break;
       }

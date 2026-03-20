@@ -3,7 +3,8 @@
  * https://eodhd.com/financial-apis/api-for-historical-data-and-volumes
  */
 
-const EODHD_BASE_URL = "https://eodhd.com/api";
+import { EODHD, HISTORICAL_DATA } from "./constants";
+import { PriceServiceError, ConfigurationError } from "./errors";
 
 export interface EODHDPrice {
   date: string;
@@ -91,7 +92,7 @@ async function getApiKey(
     return envKey;
   }
 
-  throw new Error("No EODHD API key configured");
+  throw new ConfigurationError("No EODHD API key configured", "eodhdApiKey");
 }
 
 /**
@@ -101,7 +102,7 @@ async function fetchWithRetry<T>(
   url: string,
   primaryKey?: string | null,
   backupKey?: string | null,
-  retries = 2
+  retries: number = EODHD.RETRY_ATTEMPTS
 ): Promise<T> {
   const apiKey = await getApiKey(primaryKey, backupKey);
   const separator = url.includes("?") ? "&" : "?";
@@ -115,23 +116,24 @@ async function fetchWithRetry<T>(
         headers: {
           Accept: "application/json",
         },
-        // Cache for 5 minutes in Next.js
-        next: { revalidate: 300 },
+        next: { revalidate: EODHD.CACHE_REVALIDATE_SECONDS },
       });
 
       if (!response.ok) {
         if (response.status === 429) {
-          // Rate limited - wait and retry
+          // Rate limited - wait and retry with exponential backoff
           await delay(1000 * (attempt + 1));
           continue;
         }
-        throw new Error(`EODHD API error: ${response.status} ${response.statusText}`);
+        throw new PriceServiceError(
+          `EODHD API error: ${response.status} ${response.statusText}`
+        );
       }
 
       const data: EODHDResponse<T> = await response.json();
 
       if (isError(data)) {
-        throw new Error(data.message || data.error);
+        throw new PriceServiceError(data.message || data.error);
       }
 
       return data;
@@ -145,12 +147,12 @@ async function fetchWithRetry<T>(
       }
 
       if (attempt < retries) {
-        await delay(300 * (attempt + 1));
+        await delay(EODHD.RETRY_DELAY_MS * (attempt + 1));
       }
     }
   }
 
-  throw lastError || new Error("EODHD API request failed");
+  throw lastError || new PriceServiceError("EODHD API request failed");
 }
 
 /**
@@ -189,7 +191,7 @@ export async function fetchHistoricalPrices(
   }
 ): Promise<EODHDPrice[]> {
   const formattedTicker = formatTicker(ticker);
-  let url = `${EODHD_BASE_URL}/eod/${formattedTicker}`;
+  let url = `${EODHD.BASE_URL}/eod/${formattedTicker}`;
 
   const params: string[] = [];
 
@@ -227,7 +229,7 @@ export async function fetchRealTimePrice(
   }
 ): Promise<EODHDRealTimePrice> {
   const formattedTicker = formatTicker(ticker);
-  const url = `${EODHD_BASE_URL}/real-time/${formattedTicker}`;
+  const url = `${EODHD.BASE_URL}/real-time/${formattedTicker}`;
 
   return fetchWithRetry<EODHDRealTimePrice>(
     url,
@@ -257,13 +259,13 @@ export async function fetchBatchRealTimePrices(
     codeToTicker.set(code, ticker);
   }
 
-  // Process in batches of 50
-  const batches = chunk(tickers, 50);
+  // Process in batches
+  const batches = chunk(tickers, EODHD.BATCH_SIZE);
 
   for (const batch of batches) {
     const formattedTickers = batch.map(formatTicker);
     const symbols = formattedTickers.join(",");
-    const url = `${EODHD_BASE_URL}/real-time/${formattedTickers[0]}?s=${symbols}`;
+    const url = `${EODHD.BASE_URL}/real-time/${formattedTickers[0]}?s=${symbols}`;
 
     try {
       const data = await fetchWithRetry<EODHDRealTimePrice | EODHDRealTimePrice[]>(
@@ -288,7 +290,7 @@ export async function fetchBatchRealTimePrices(
 
     // Rate limiting: wait between batches
     if (batches.length > 1) {
-      await delay(100);
+      await delay(EODHD.RATE_LIMIT_DELAY_MS);
     }
   }
 
@@ -300,7 +302,7 @@ export async function fetchBatchRealTimePrices(
  */
 export async function testApiKey(apiKey: string): Promise<boolean> {
   try {
-    const url = `${EODHD_BASE_URL}/real-time/AAPL.US`;
+    const url = `${EODHD.BASE_URL}/real-time/AAPL.US`;
     await fetchWithRetry<EODHDRealTimePrice>(url, apiKey, null, 0);
     return true;
   } catch {
@@ -323,11 +325,11 @@ export async function resolveIsinToSymbol(
   // Try ID mapping API first
   try {
     const apiKey = await getApiKey(options?.primaryKey, options?.backupKey);
-    const idMappingUrl = `${EODHD_BASE_URL}/id-mapping?filter[isin]=${encodeURIComponent(isin)}&api_token=${apiKey}&fmt=json`;
+    const idMappingUrl = `${EODHD.BASE_URL}/id-mapping?filter[isin]=${encodeURIComponent(isin)}&api_token=${apiKey}&fmt=json`;
 
     const response = await fetch(idMappingUrl, {
       headers: { Accept: "application/json" },
-      next: { revalidate: 86400 }, // Cache for 24 hours
+      next: { revalidate: EODHD.ISIN_CACHE_SECONDS },
     });
 
     if (response.ok) {
@@ -343,11 +345,11 @@ export async function resolveIsinToSymbol(
   // Fall back to search API
   try {
     const apiKey = await getApiKey(options?.primaryKey, options?.backupKey);
-    const searchUrl = `${EODHD_BASE_URL}/search/${encodeURIComponent(isin)}?api_token=${apiKey}&fmt=json`;
+    const searchUrl = `${EODHD.BASE_URL}/search/${encodeURIComponent(isin)}?api_token=${apiKey}&fmt=json`;
 
     const response = await fetch(searchUrl, {
       headers: { Accept: "application/json" },
-      next: { revalidate: 86400 }, // Cache for 24 hours
+      next: { revalidate: EODHD.ISIN_CACHE_SECONDS },
     });
 
     if (response.ok) {
@@ -387,7 +389,7 @@ export async function batchResolveIsinsToSymbols(
         results.set(isin, symbol);
       }
       // Small delay between requests to avoid rate limiting
-      await delay(100);
+      await delay(EODHD.RATE_LIMIT_DELAY_MS);
     } catch (error) {
       console.error(`Failed to resolve ISIN ${isin}:`, error);
     }
@@ -415,10 +417,10 @@ export function parseEODHDDate(dateString: string): Date {
 }
 
 /**
- * Get date 5 years ago for historical backfill
+ * Get start date for historical backfill
  */
 export function getHistoricalStartDate(): Date {
   const date = new Date();
-  date.setFullYear(date.getFullYear() - 5);
+  date.setFullYear(date.getFullYear() - HISTORICAL_DATA.BACKFILL_YEARS);
   return date;
 }

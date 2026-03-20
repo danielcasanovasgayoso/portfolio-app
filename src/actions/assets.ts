@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import type { ActionResult } from "@/types/transaction";
+import type { ActionResult } from "@/lib/action-utils";
 import type { AssetCategory } from "@prisma/client";
 
 /**

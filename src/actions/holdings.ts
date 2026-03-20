@@ -5,7 +5,7 @@ import {
   recalculateHolding,
   recalculateAllHoldings,
 } from "@/services/holdings.service";
-import type { ActionResult } from "@/types/transaction";
+import type { ActionResult } from "@/lib/action-utils";
 
 /**
  * Recalculates holdings for a specific asset

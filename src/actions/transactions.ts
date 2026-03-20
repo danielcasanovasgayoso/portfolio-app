@@ -12,11 +12,11 @@ import {
   type TransactionFiltersInput,
 } from "@/lib/validators";
 import { recalculateHolding } from "@/services/holdings.service";
+import type { ActionResult } from "@/lib/action-utils";
 import type {
   TransactionWithAsset,
   SerializedTransaction,
   PaginatedResult,
-  ActionResult,
 } from "@/types/transaction";
 
 // Helper to serialize Decimal and Date fields for client components

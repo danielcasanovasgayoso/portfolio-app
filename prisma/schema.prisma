@@ -101,6 +101,10 @@ model Transaction {
   @@index([date])
   @@index([type])
   @@index([importBatchId])
+  // Composite index for FIFO calculations (asset + date ordering)
+  @@index([assetId, date])
+  // Index for duplicate detection during import
+  @@index([gmailMessageId])
 }
 
 // Holding Model (calculated from transactions)
@@ -136,6 +140,8 @@ model Price {
 
   @@unique([assetId, date])
   @@index([date])
+  // Composite index for latest price queries (asset + date desc)
+  @@index([assetId, date(sort: Desc)])
 }
 
 // Price Cache for Quick Lookups

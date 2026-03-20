@@ -57,6 +57,5 @@ export interface TransactionFormData {
   transferType?: TransferType;
 }
 
-export type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+// Re-export ActionResult from centralized location
+export type { ActionResult } from "@/lib/action-utils";
