@@ -41,11 +41,6 @@ export function PortfolioSection({
       <header className="px-5 pb-4">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-3">
-            {/* Category indicator */}
-            <div
-              className="w-1 h-8 rounded-full"
-              style={{ backgroundColor: categoryColor }}
-            />
             <div>
               <h2 className="text-lg font-bold text-foreground tracking-tight">
                 {title}

@@ -40,12 +40,11 @@ export function HoldingCard({
     return (
       <article
         className={cn(
-          "bg-card rounded-xl shadow-sm p-5 pl-6 animate-slide-up border-0",
+          "bg-card rounded-xl shadow-sm p-5 animate-slide-up border-0",
           staggerClass
         )}
       >
-        <div className="accent-line pl-4">
-          <div className="flex justify-between items-center gap-3">
+        <div className="flex justify-between items-center gap-3">
             <div className="flex-1 min-w-0">
               <h3 className="text-[15px] font-semibold text-foreground truncate">
                 {holding.name}
@@ -60,7 +59,6 @@ export function HoldingCard({
               </p>
             </div>
           </div>
-        </div>
       </article>
     );
   }
@@ -69,22 +67,12 @@ export function HoldingCard({
     <Link href={`/portfolio/${holding.id}`} className="block group">
       <article
         className={cn(
-          "bg-card rounded-xl shadow-sm p-5 pl-6 card-hover animate-slide-up border-0",
+          "bg-card rounded-xl shadow-sm p-5 card-hover animate-slide-up border-0",
           staggerClass
         )}
       >
-        {/* Accent line with gradient */}
-        <div
-          className={cn(
-            "absolute left-0 top-0 bottom-0 w-[3px] rounded-l-lg transition-all duration-300",
-            isPositive
-              ? "bg-gradient-to-b from-[#00e676] to-[#00c853]"
-              : "bg-gradient-to-b from-[#ff5252] to-[#ff1744]"
-          )}
-        />
-
         {/* Header row */}
-        <div className="flex justify-between items-start gap-3 mb-4 pl-3">
+        <div className="flex justify-between items-start gap-3 mb-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="text-[15px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
@@ -123,7 +111,7 @@ export function HoldingCard({
         </div>
 
         {/* Data grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-4 mt-2 pl-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-4 mt-2">
           <div className="bg-muted p-3 rounded-md">
             <p className="label-sm mb-1 text-muted-foreground">Invested</p>
             <p className="text-sm font-mono font-medium text-foreground tabular-nums">
@@ -162,7 +150,7 @@ export function HoldingCard({
 
         {/* Price date footer */}
         {holding.priceDate && (
-          <div className="flex items-center justify-center gap-1.5 mt-3 pt-2 pl-3">
+          <div className="flex items-center justify-center gap-1.5 mt-3 pt-2">
             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
             <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
               Price as of {formatDate(holding.priceDate)}
