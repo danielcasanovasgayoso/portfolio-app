@@ -2,7 +2,7 @@ import { formatCurrency, formatPercent, getGainClass } from "@/lib/formatters";
 import type { Holding, CategoryTotal } from "@/types/portfolio";
 import { HoldingCard } from "./HoldingCard";
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Wallet, Percent } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Percent, PieChart } from "lucide-react";
 
 // Category color mapping for section headers
 const CATEGORY_COLORS: Record<string, string> = {
@@ -32,6 +32,10 @@ export function PortfolioSection({
   const gainClass = totals ? getGainClass(totals.gainLoss) : "positive";
   const isPositive = gainClass === "positive";
   const categoryColor = CATEGORY_COLORS[title] || "#00f5d4";
+  const allocationPercent =
+    totals && totalPortfolioValue > 0
+      ? (totals.marketValue / totalPortfolioValue) * 100
+      : 0;
 
   return (
     <section className="mt-8">
@@ -54,28 +58,13 @@ export function PortfolioSection({
             <p className="text-xl font-mono font-bold text-foreground tabular-nums">
               {totals ? formatCurrency(totals.marketValue) : "—"}
             </p>
-            {!isOther && totals && (
-              <div
-                className={cn(
-                  "inline-flex items-center gap-1 text-xs font-mono tabular-nums",
-                  isPositive ? "text-gain" : "text-loss"
-                )}
-              >
-                {isPositive ? (
-                  <TrendingUp className="w-3 h-3" />
-                ) : (
-                  <TrendingDown className="w-3 h-3" />
-                )}
-                {formatPercent(totals.gainLossPercent)}
-              </div>
-            )}
           </div>
         </div>
 
         {/* Category stats bar */}
         {!isOther && totals && (
           <div className="bg-card rounded-xl p-6 border-0 shadow-ambient">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               {/* Invested */}
               <div className="text-center">
                 <div className="flex items-center justify-center gap-1.5 mb-1 text-muted-foreground">
@@ -84,6 +73,17 @@ export function PortfolioSection({
                 </div>
                 <p className="text-sm font-mono font-semibold text-foreground tabular-nums">
                   {formatCurrency(totals.costBasis)}
+                </p>
+              </div>
+
+              {/* Allocation */}
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1.5 mb-1 text-muted-foreground">
+                  <PieChart className="w-3 h-3 text-muted-foreground" />
+                  <span className="label-sm">Weight</span>
+                </div>
+                <p className="text-sm font-mono font-semibold text-foreground tabular-nums">
+                  {allocationPercent.toFixed(1)}%
                 </p>
               </div>
 

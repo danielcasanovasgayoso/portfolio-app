@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PieChart, FileText, Settings, Activity } from "lucide-react";
+import { PieChart, FileText, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -30,14 +30,11 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border">
-      {/* Top accent line */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-
-      <div
-        className="flex justify-around items-center h-16"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
+    <nav
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50"
+      style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="flex items-center gap-1 bg-background/80 backdrop-blur-xl border border-border rounded-2xl px-2 py-2 shadow-lg shadow-black/10 dark:shadow-black/30">
         {navItems.map((item) => {
           const isActive =
             item.href === "/"
@@ -49,45 +46,18 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-1.5 px-6 py-2 min-w-[80px] transition-colors duration-200",
+                "relative flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200",
                 isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
-              {/* Active indicator glow */}
+              <item.icon className="h-[18px] w-[18px]" />
               {isActive && (
-                <div
-                  className="absolute -top-px left-1/2 -translate-x-1/2 w-12 h-[2px] bg-primary rounded-full"
-                  aria-hidden="true"
-                />
+                <span className="text-[11px] font-semibold tracking-wide">
+                  {item.shortLabel}
+                </span>
               )}
-
-              {/* Icon container */}
-              <div
-                className={cn(
-                  "relative p-2 rounded-lg transition-colors duration-200",
-                  isActive && "bg-primary/10"
-                )}
-              >
-                <item.icon
-                  className={cn(
-                    "h-5 w-5",
-                    isActive && "scale-110"
-                  )}
-                />
-
-              </div>
-
-              {/* Label */}
-              <span
-                className={cn(
-                  "text-[10px] font-mono uppercase tracking-widest",
-                  isActive ? "font-semibold" : "font-medium"
-                )}
-              >
-                {item.shortLabel}
-              </span>
             </Link>
           );
         })}

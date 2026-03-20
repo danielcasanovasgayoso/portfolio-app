@@ -51,9 +51,9 @@ export function TransactionRow({
     <article className="p-4 pl-5 relative bg-card rounded-2xl shadow-md border border-border overflow-hidden">
       <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary" />
 
-      <div className="flex justify-between items-start gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+      <div className="flex flex-col gap-2">
+        <div className="flex justify-between items-start gap-3">
+          <div className="flex items-center gap-2">
             <Badge
               variant="outline"
               className={cn("text-[11px] font-medium border", typeColor)}
@@ -65,30 +65,9 @@ export function TransactionRow({
               {formatDate(transaction.date)}
             </span>
           </div>
-          <h3 className="text-[15px] font-semibold text-foreground truncate">
-            {transaction.asset.name}
-          </h3>
-          <p className="text-[13px] text-muted-foreground">
-            {formatShares(Number(transaction.shares))} shares
-            {transaction.pricePerShare &&
-              ` @ ${formatCurrency(Number(transaction.pricePerShare), true)}`}
-          </p>
-        </div>
-
-        <div className="flex items-start gap-2">
-          <div className="text-right flex-shrink-0">
-            <p className="text-[17px] font-semibold text-foreground tabular-nums">
-              {formatCurrency(Number(transaction.totalAmount), true)}
-            </p>
-            {transaction.fees && Number(transaction.fees) > 0 && (
-              <p className="text-[12px] text-muted-foreground">
-                Fee: {formatCurrency(Number(transaction.fees), true)}
-              </p>
-            )}
-          </div>
 
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-lg hover:bg-muted transition-colors">
+            <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-lg hover:bg-muted transition-colors -mt-1 -mr-1">
               <MoreHorizontal className="h-4 w-4" />
               <span className="sr-only">Actions</span>
             </DropdownMenuTrigger>
@@ -106,6 +85,28 @@ export function TransactionRow({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
+
+        <div>
+          <h3 className="text-[15px] font-semibold text-foreground truncate">
+            {transaction.asset.name}
+          </h3>
+          <p className="text-[13px] text-muted-foreground">
+            {formatShares(Number(transaction.shares))} shares
+            {transaction.pricePerShare &&
+              ` @ ${formatCurrency(Number(transaction.pricePerShare), true)}`}
+          </p>
+        </div>
+
+        <div className="flex items-baseline justify-between">
+          <p className="text-[17px] font-semibold text-foreground tabular-nums">
+            {formatCurrency(Number(transaction.totalAmount), true)}
+          </p>
+          {transaction.fees && Number(transaction.fees) > 0 && (
+            <p className="text-[12px] text-muted-foreground">
+              Fee: {formatCurrency(Number(transaction.fees), true)}
+            </p>
+          )}
         </div>
       </div>
     </article>

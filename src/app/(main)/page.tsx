@@ -4,12 +4,10 @@ import {
   PortfolioSection,
 } from "@/components/portfolio";
 import { RefreshPricesButton } from "@/components/portfolio/RefreshPricesButton";
-import { CategoryAllocationChart } from "@/components/charts";
 import { getPortfolioData } from "@/services/portfolio.service";
 import { requireAuth } from "@/lib/auth";
 import {
   PortfolioSummarySkeleton,
-  AllocationChartSkeleton,
   PortfolioSectionSkeleton,
 } from "@/components/skeletons";
 
@@ -44,26 +42,12 @@ async function PortfolioContent({ userId }: { userId: string }) {
 
   return (
     <>
-      {/* Hero Section Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-8 mb-12">
-        <div className="lg:col-span-2">
-          <PortfolioSummaryCard
-            grand={data.totals.grand}
-            invested={data.totals.invested}
-          />
-        </div>
-        <div className="lg:col-span-1">
-          {data.totals.grand && (
-            <div className="h-full bg-card rounded-xl shadow-ambient p-6 flex flex-col justify-center">
-              <CategoryAllocationChart
-                funds={data.totals.funds?.marketValue ?? 0}
-                stocks={data.totals.stocks?.marketValue ?? 0}
-                pp={data.totals.pp?.marketValue ?? 0}
-                others={data.totals.others?.marketValue ?? 0}
-              />
-            </div>
-          )}
-        </div>
+      {/* Summary Card */}
+      <div className="px-4 md:px-8 mb-12">
+        <PortfolioSummaryCard
+          grand={data.totals.grand}
+          invested={data.totals.invested}
+        />
       </div>
 
       {/* Holdings by Category */}
@@ -100,13 +84,8 @@ async function PortfolioContent({ userId }: { userId: string }) {
 function PortfolioContentSkeleton() {
   return (
     <div className="space-y-6 pb-20">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-8">
-        <div className="lg:col-span-2">
-          <PortfolioSummarySkeleton />
-        </div>
-        <div className="lg:col-span-1">
-          <AllocationChartSkeleton />
-        </div>
+      <div className="px-4 md:px-8">
+        <PortfolioSummarySkeleton />
       </div>
       <PortfolioSectionSkeleton />
       <PortfolioSectionSkeleton />
