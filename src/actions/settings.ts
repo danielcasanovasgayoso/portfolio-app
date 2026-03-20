@@ -174,22 +174,30 @@ export async function resetDatabase(): Promise<{
   try {
     const userId = await getUserId();
 
-    // Delete all user's data (respecting foreign keys)
-    await db.transaction.deleteMany({ where: { userId } });
-    await db.holding.deleteMany({ where: { userId } });
-    await db.importBatch.deleteMany({ where: { userId } });
-
-    // Delete prices for user's assets, then assets
+    // Get user's assets before deleting (needed for price/cache cleanup)
     const userAssets = await db.asset.findMany({
       where: { userId },
-      select: { id: true },
+      select: { id: true, ticker: true },
     });
     const assetIds = userAssets.map((a) => a.id);
+    const tickers = userAssets.map((a) => a.ticker).filter(Boolean) as string[];
 
+    // Delete in order respecting foreign keys:
+    // 1. Transactions (reference assets and importBatches)
+    await db.transaction.deleteMany({ where: { userId } });
+    // 2. Holdings (reference assets)
+    await db.holding.deleteMany({ where: { userId } });
+    // 3. Prices and PriceCache (reference assets/tickers)
     if (assetIds.length > 0) {
       await db.price.deleteMany({ where: { assetId: { in: assetIds } } });
     }
+    if (tickers.length > 0) {
+      await db.priceCache.deleteMany({ where: { ticker: { in: tickers } } });
+    }
+    // 4. Assets
     await db.asset.deleteMany({ where: { userId } });
+    // 5. Import batches (now safe since transactions are deleted)
+    await db.importBatch.deleteMany({ where: { userId } });
 
     // Reset Gmail connection in settings
     await db.settings.update({
