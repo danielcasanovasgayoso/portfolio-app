@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -8,9 +9,10 @@ export type AuthUser = {
 
 /**
  * Gets the current authenticated user
- * Returns null if not authenticated
+ * Deduplicated per request via React.cache() — multiple calls in the same
+ * server render only hit Supabase once.
  */
-export async function getCurrentUser(): Promise<AuthUser | null> {
+export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -24,7 +26,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     id: user.id,
     email: user.email!,
   };
-}
+});
 
 /**
  * Requires authentication - redirects to login if not authenticated

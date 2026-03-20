@@ -1,5 +1,3 @@
-"use client";
-
 import { formatCurrency, formatPercent, getGainClass } from "@/lib/formatters";
 import type { Holding, CategoryTotal } from "@/types/portfolio";
 import { HoldingCard } from "./HoldingCard";

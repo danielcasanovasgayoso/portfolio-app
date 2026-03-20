@@ -1,9 +1,7 @@
-"use client";
-
 import { formatCurrency, formatPercent, getGainClass } from "@/lib/formatters";
 import type { CategoryTotal } from "@/types/portfolio";
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Wallet, Target, Percent } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Percent } from "lucide-react";
 
 interface PortfolioSummaryCardProps {
   grand: CategoryTotal | null;
