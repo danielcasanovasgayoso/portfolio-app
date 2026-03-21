@@ -187,6 +187,7 @@
     @apply bg-background text-foreground;
     font-size: var(--text-body-md);
     line-height: var(--text-body-md);
+    padding-top: env(safe-area-inset-top);
   }
 
   h1, .display-lg {
