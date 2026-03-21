@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,10 +11,10 @@ import { Check, Loader2, Trash2, Eye, EyeOff } from "lucide-react";
 interface ApiKeyFormProps {
   type: "primary";
   currentKey: string | null;
-  label: string;
 }
 
-export function ApiKeyForm({ type, currentKey, label }: ApiKeyFormProps) {
+export function ApiKeyForm({ type, currentKey }: ApiKeyFormProps) {
+  const t = useTranslations("settings");
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +34,7 @@ export function ApiKeyForm({ type, currentKey, label }: ApiKeyFormProps) {
     const result = await updateApiKey(type, apiKey.trim());
 
     if (result.success) {
-      setMessage({ type: "success", text: "API key saved successfully" });
+      setMessage({ type: "success", text: t("apiKeySaved") });
       setApiKey("");
     } else {
       setMessage({ type: "error", text: result.error || "Failed to save" });
@@ -50,7 +51,7 @@ export function ApiKeyForm({ type, currentKey, label }: ApiKeyFormProps) {
     const result = await removeApiKey(type);
 
     if (result.success) {
-      setMessage({ type: "success", text: "API key removed" });
+      setMessage({ type: "success", text: t("apiKeyRemoved") });
     } else {
       setMessage({ type: "error", text: result.error || "Failed to remove" });
     }
@@ -62,7 +63,7 @@ export function ApiKeyForm({ type, currentKey, label }: ApiKeyFormProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label htmlFor={`api-key-${type}`}>{label}</Label>
+        <Label htmlFor={`api-key-${type}`}>{t("apiKey")}</Label>
         {currentKey && (
           <Button
             variant="ghost"
@@ -106,7 +107,7 @@ export function ApiKeyForm({ type, currentKey, label }: ApiKeyFormProps) {
           type="password"
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
-          placeholder={currentKey ? "Enter new key to replace" : "Enter API key"}
+          placeholder={currentKey ? t("apiKeyReplace") : t("apiKeyEnter")}
           className="flex-1"
         />
         <Button type="submit" disabled={isLoading || !apiKey.trim()}>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,20 +23,13 @@ interface DeleteTransactionDialogProps {
   onSuccess?: () => void;
 }
 
-const typeLabels: Record<string, string> = {
-  BUY: "Buy",
-  SELL: "Sell",
-  DIVIDEND: "Dividend",
-  FEE: "Fee",
-  TRANSFER: "Transfer",
-};
-
 export function DeleteTransactionDialog({
   open,
   onOpenChange,
   transaction,
   onSuccess,
 }: DeleteTransactionDialogProps) {
+  const t = useTranslations("transactions");
   const [isPending, startTransition] = useTransition();
 
   if (!transaction) return null;
@@ -50,10 +44,18 @@ export function DeleteTransactionDialog({
     });
   };
 
+  const typeLabels: Record<string, string> = {
+    BUY: t("typeBuy"),
+    SELL: t("typeSell"),
+    DIVIDEND: t("typeDividend"),
+    FEE: t("typeFee"),
+    TRANSFER: t("typeTransfer"),
+  };
+
   const typeLabel = typeLabels[transaction.type] || transaction.type;
   const transferSuffix =
     transaction.type === "TRANSFER" && transaction.transferType
-      ? ` (${transaction.transferType === "IN" ? "In" : "Out"})`
+      ? ` (${transaction.transferType === "IN" ? t("transferIn").split(" ").pop() : t("transferOut").split(" ").pop()})`
       : "";
 
   return (
@@ -62,41 +64,40 @@ export function DeleteTransactionDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-destructive" />
-            Delete Transaction
+            {t("deleteTitle")}
           </DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this transaction? This action cannot
-            be undone.
+            {t("deleteConfirm")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4">
           <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-2">
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Asset</span>
+              <span className="text-sm text-muted-foreground">{t("asset")}</span>
               <span className="text-sm font-medium">{transaction.asset.name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Type</span>
+              <span className="text-sm text-muted-foreground">{t("type")}</span>
               <span className="text-sm font-medium">
                 {typeLabel}
                 {transferSuffix}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Date</span>
+              <span className="text-sm text-muted-foreground">{t("date")}</span>
               <span className="text-sm font-medium tabular-nums">
                 {formatDate(transaction.date)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Shares</span>
+              <span className="text-sm text-muted-foreground">{t("shares")}</span>
               <span className="text-sm font-medium tabular-nums">
                 {formatShares(Number(transaction.shares))}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Total</span>
+              <span className="text-sm text-muted-foreground">{t("total")}</span>
               <span className="text-sm font-medium tabular-nums">
                 {formatCurrency(Number(transaction.totalAmount))}
               </span>
@@ -111,7 +112,7 @@ export function DeleteTransactionDialog({
             onClick={() => onOpenChange(false)}
             disabled={isPending}
           >
-            Cancel
+            {t("cancel")}
           </Button>
           <Button
             type="button"
@@ -120,7 +121,7 @@ export function DeleteTransactionDialog({
             disabled={isPending}
           >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Delete
+            {t("delete")}
           </Button>
         </DialogFooter>
       </DialogContent>

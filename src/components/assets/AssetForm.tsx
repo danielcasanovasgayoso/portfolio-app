@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,12 +53,7 @@ interface AssetFormProps {
   } | null;
 }
 
-const categories = [
-  { value: "OTHERS", label: "Others" },
-  { value: "FUNDS", label: "Funds" },
-  { value: "STOCKS", label: "Stocks" },
-  { value: "PP", label: "Pension Plan" },
-] as const;
+const categoryKeys = ["OTHERS", "FUNDS", "STOCKS", "PP"] as const;
 
 export function AssetForm({
   open,
@@ -65,8 +61,17 @@ export function AssetForm({
   onSuccess,
   editAsset,
 }: AssetFormProps) {
+  const t = useTranslations("assets");
+  const tCommon = useTranslations("common");
   const [isPending, startTransition] = useTransition();
   const isEditing = !!editAsset;
+
+  const categoryLabels: Record<string, string> = {
+    OTHERS: t("categoryOthers"),
+    FUNDS: t("categoryFunds"),
+    STOCKS: t("categoryStocks"),
+    PP: t("categoryPP"),
+  };
 
   const form = useForm<AssetFormValues>({
     defaultValues: {
@@ -91,7 +96,7 @@ export function AssetForm({
   const onSubmit = (data: AssetFormValues) => {
     const value = parseFloat(data.value);
     if (isNaN(value) || value < 0) {
-      form.setError("value", { message: "Enter a valid positive number" });
+      form.setError("value", { message: t("invalidValue") });
       return;
     }
 
@@ -136,12 +141,10 @@ export function AssetForm({
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Edit Asset" : "Add Asset"}
+            {isEditing ? t("editAsset") : t("addAsset")}
           </DialogTitle>
           <DialogDescription>
-            {isEditing
-              ? "Update the asset details below."
-              : "Add a manual asset like cash, real estate, or other holdings."}
+            {isEditing ? t("editDescription") : t("addDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -150,13 +153,13 @@ export function AssetForm({
             <FormField
               control={form.control}
               name="name"
-              rules={{ required: "Name is required" }}
+              rules={{ required: t("nameRequired") }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t("name")}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="e.g. Emergency Fund, Apartment Madrid"
+                      placeholder={t("namePlaceholder")}
                       {...field}
                     />
                   </FormControl>
@@ -170,20 +173,19 @@ export function AssetForm({
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
+                  <FormLabel>{t("category")}</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger className="w-full">
                         <SelectValue>
-                          {categories.find((c) => c.value === field.value)
-                            ?.label || "Select category"}
+                          {categoryLabels[field.value] || t("selectCategory")}
                         </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
+                      {categoryKeys.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {categoryLabels[cat]}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -196,10 +198,10 @@ export function AssetForm({
             <FormField
               control={form.control}
               name="value"
-              rules={{ required: "Value is required" }}
+              rules={{ required: t("valueRequired") }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Value</FormLabel>
+                  <FormLabel>{t("value")}</FormLabel>
                   <FormControl>
                     <Input
                       type="text"
@@ -227,7 +229,7 @@ export function AssetForm({
                   onClick={handleDelete}
                   disabled={isPending}
                 >
-                  Delete
+                  {tCommon("delete")}
                 </Button>
               )}
               <Button
@@ -235,11 +237,11 @@ export function AssetForm({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Cancel
+                {tCommon("cancel")}
               </Button>
               <Button type="submit" disabled={isPending}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEditing ? "Save Changes" : "Add Asset"}
+                {isEditing ? t("saveChanges") : t("addAsset")}
               </Button>
             </DialogFooter>
           </form>

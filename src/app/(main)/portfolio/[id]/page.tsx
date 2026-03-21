@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getHoldingById, getAssetTransactions } from "@/services/portfolio.service";
@@ -27,6 +28,7 @@ export default async function AssetDetailPage({
   const user = await requireAuth();
   const { id } = await params;
   const holding = await getHoldingById(user.id, id);
+  const t = await getTranslations("assetDetail");
 
   if (!holding) {
     notFound();
@@ -56,7 +58,7 @@ export default async function AssetDetailPage({
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            aria-label="Back to portfolio"
+            aria-label={t("backToPortfolio")}
             className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -77,7 +79,7 @@ export default async function AssetDetailPage({
         <Card className="bg-gradient-to-br from-indigo-900 to-indigo-600 text-white border-0">
           <CardContent className="p-6">
             <p className="text-sm font-medium uppercase tracking-wide opacity-85 mb-2">
-              Market Value
+              {t("marketValue")}
             </p>
             <p className="text-4xl font-bold tracking-tight mb-4">
               {formatCurrency(holding.marketValue)}
@@ -106,7 +108,7 @@ export default async function AssetDetailPage({
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Shares
+                {t("shares")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -119,7 +121,7 @@ export default async function AssetDetailPage({
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Cost Basis
+                {t("costBasis")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -133,7 +135,7 @@ export default async function AssetDetailPage({
         {chartData.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Price History</CardTitle>
+              <CardTitle>{t("priceHistory")}</CardTitle>
             </CardHeader>
             <CardContent>
               <PriceChart data={chartData} avgPrice={holding.avgPrice} />
@@ -143,17 +145,17 @@ export default async function AssetDetailPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Price Information</CardTitle>
+            <CardTitle>{t("priceInformation")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center py-2 border-b border-border">
-              <span className="text-muted-foreground">Average Price</span>
+              <span className="text-muted-foreground">{t("averagePrice")}</span>
               <span className="font-semibold">
                 {formatCurrency(holding.avgPrice)}
               </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
-              <span className="text-muted-foreground">Current Price</span>
+              <span className="text-muted-foreground">{t("currentPrice")}</span>
               <span className="font-semibold">
                 {holding.currentPrice
                   ? formatCurrency(holding.currentPrice)
@@ -162,14 +164,14 @@ export default async function AssetDetailPage({
             </div>
             {holding.priceDate && (
               <div className="flex justify-between items-center py-2 border-b border-border">
-                <span className="text-muted-foreground">Price Date</span>
+                <span className="text-muted-foreground">{t("priceDate")}</span>
                 <span className="font-semibold">
                   {formatDate(holding.priceDate)}
                 </span>
               </div>
             )}
             <div className="flex justify-between items-center py-2">
-              <span className="text-muted-foreground">Ticker</span>
+              <span className="text-muted-foreground">{t("ticker")}</span>
               <span className="font-mono text-sm">
                 {holding.ticker || "—"}
               </span>
@@ -179,13 +181,13 @@ export default async function AssetDetailPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Performance</CardTitle>
+            <CardTitle>{t("performance")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">
-                  Unrealized Gain/Loss
+                  {t("unrealizedGainLoss")}
                 </p>
                 <p
                   className={cn(
@@ -201,7 +203,7 @@ export default async function AssetDetailPage({
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">
-                  Total Return
+                  {t("totalReturn")}
                 </p>
                 <p
                   className={cn(
@@ -221,7 +223,7 @@ export default async function AssetDetailPage({
         {transactions.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Transaction History</CardTitle>
+              <CardTitle>{t("transactionHistory")}</CardTitle>
             </CardHeader>
             <CardContent>
               <TransactionTimeline transactions={transactions} />

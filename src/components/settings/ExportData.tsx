@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { exportPortfolioData } from "@/actions/settings";
 import { Download, Loader2, Check } from "lucide-react";
 
 export function ExportData() {
+  const t = useTranslations("settings");
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,12 +56,12 @@ export function ExportData() {
         ) : (
           <Download className="h-4 w-4" />
         )}
-        Export Portfolio Data
+        {t("exportButton")}
       </Button>
 
       {success && (
         <p className="text-sm text-green-600">
-          Export downloaded successfully
+          {t("exportSuccess")}
         </p>
       )}
 
@@ -68,7 +70,7 @@ export function ExportData() {
       )}
 
       <p className="text-xs text-muted-foreground">
-        Downloads a JSON file with all your assets, transactions, and holdings.
+        {t("exportHelp")}
       </p>
     </div>
   );

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import {
   PortfolioSummaryCard,
   PortfolioSection,
@@ -14,6 +15,7 @@ import {
 
 export default async function PortfolioPage() {
   const user = await requireAuth();
+  const t = await getTranslations("portfolio");
 
   return (
     <div className="min-h-screen bg-background">
@@ -21,8 +23,8 @@ export default async function PortfolioPage() {
         {/* Header renders instantly — no data dependency */}
         <div className="flex justify-between items-start px-8 mb-12">
           <div className="flex flex-col max-w-[60%]">
-             <h1 className="text-[1.75rem] font-bold tracking-tight">Portfolio</h1>
-             <p className="body-md text-muted-foreground mt-2">Monitor and curate your assets with precision.</p>
+             <h1 className="text-[1.75rem] font-bold tracking-tight">{t("title")}</h1>
+             <p className="body-md text-muted-foreground mt-2">{t("subtitle")}</p>
           </div>
           <div className="mt-2">
             <RefreshPricesButton />
@@ -40,6 +42,7 @@ export default async function PortfolioPage() {
 
 async function PortfolioContent({ userId }: { userId: string }) {
   const data = await getPortfolioData(userId);
+  const t = await getTranslations("portfolio");
 
   const isEmpty =
     data.holdings.funds.length === 0 &&
@@ -63,25 +66,25 @@ async function PortfolioContent({ userId }: { userId: string }) {
 
       {/* Holdings by Category */}
       <PortfolioSection
-        title="Funds"
+        title={t("funds")}
         holdings={data.holdings.funds}
         totals={data.totals.funds}
         totalPortfolioValue={data.totals.grand?.marketValue ?? 0}
       />
       <PortfolioSection
-        title="Stocks & ETFs"
+        title={t("stocksEtfs")}
         holdings={data.holdings.stocks}
         totals={data.totals.stocks}
         totalPortfolioValue={data.totals.grand?.marketValue ?? 0}
       />
       <PortfolioSection
-        title="PP"
+        title={t("pp")}
         holdings={data.holdings.pp}
         totals={data.totals.pp}
         totalPortfolioValue={data.totals.grand?.marketValue ?? 0}
       />
       <PortfolioSection
-        title="Others"
+        title={t("others")}
         holdings={data.holdings.others}
         totals={data.totals.others}
         totalPortfolioValue={data.totals.grand?.marketValue ?? 0}

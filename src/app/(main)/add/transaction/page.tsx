@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
@@ -37,20 +38,12 @@ import {
 import { createTransaction, getAssets } from "@/actions/transactions";
 import type { Asset } from "@prisma/client";
 
-const transactionTypes = [
-  { value: "BUY", label: "Buy" },
-  { value: "SELL", label: "Sell" },
-  { value: "DIVIDEND", label: "Dividend" },
-  { value: "FEE", label: "Fee" },
-  { value: "TRANSFER", label: "Transfer" },
-] as const;
-
-const transferTypes = [
-  { value: "IN", label: "Transfer In" },
-  { value: "OUT", label: "Transfer Out" },
-] as const;
+const transactionTypeKeys = ["BUY", "SELL", "DIVIDEND", "FEE", "TRANSFER"] as const;
+const transferTypeKeys = ["IN", "OUT"] as const;
 
 export default function AddTransactionPage() {
+  const t = useTranslations("transactions");
+  const tAdd = useTranslations("add");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [assets, setAssets] = useState<
@@ -92,19 +85,32 @@ export default function AddTransactionPage() {
     });
   };
 
+  const typeLabels: Record<string, string> = {
+    BUY: t("typeBuy"),
+    SELL: t("typeSell"),
+    DIVIDEND: t("typeDividend"),
+    FEE: t("typeFee"),
+    TRANSFER: t("typeTransfer"),
+  };
+
+  const transferLabels: Record<string, string> = {
+    IN: t("transferIn"),
+    OUT: t("transferOut"),
+  };
+
   return (
     <div className="min-h-screen pb-20">
       <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            aria-label="Go back"
+            aria-label={tAdd("goBack")}
             className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="text-lg font-bold tracking-tight text-foreground">
-            Add Transaction
+            {t("addTransaction")}
           </h1>
         </div>
       </header>
@@ -128,10 +134,10 @@ export default function AddTransactionPage() {
                 name="assetId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Asset</FormLabel>
+                    <FormLabel>{t("asset")}</FormLabel>
                     {assets.length === 0 ? (
                       <p className="text-sm text-muted-foreground py-2">
-                        No assets available. Add an asset first.
+                        {t("noAssets")}
                       </p>
                     ) : (
                       <Select
@@ -140,9 +146,9 @@ export default function AddTransactionPage() {
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select an asset">
+                            <SelectValue placeholder={t("selectAsset")}>
                               {assets.find((a) => a.id === field.value)?.name ||
-                                "Select an asset"}
+                                t("selectAsset")}
                             </SelectValue>
                           </SelectTrigger>
                         </FormControl>
@@ -167,7 +173,7 @@ export default function AddTransactionPage() {
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Type</FormLabel>
+                      <FormLabel>{t("type")}</FormLabel>
                       <Select
                         value={field.value}
                         onValueChange={field.onChange}
@@ -175,16 +181,14 @@ export default function AddTransactionPage() {
                         <FormControl>
                           <SelectTrigger className="w-full">
                             <SelectValue>
-                              {transactionTypes.find(
-                                (t) => t.value === field.value
-                              )?.label || "Select type"}
+                              {typeLabels[field.value] || t("selectType")}
                             </SelectValue>
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {transactionTypes.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
+                          {transactionTypeKeys.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {typeLabels[type]}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -200,7 +204,7 @@ export default function AddTransactionPage() {
                     name="transferType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Direction</FormLabel>
+                        <FormLabel>{t("direction")}</FormLabel>
                         <Select
                           value={field.value || ""}
                           onValueChange={field.onChange}
@@ -208,16 +212,16 @@ export default function AddTransactionPage() {
                           <FormControl>
                             <SelectTrigger className="w-full">
                               <SelectValue>
-                                {transferTypes.find(
-                                  (t) => t.value === field.value
-                                )?.label || "Select direction"}
+                                {field.value
+                                  ? transferLabels[field.value]
+                                  : t("selectDirection")}
                               </SelectValue>
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {transferTypes.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
+                            {transferTypeKeys.map((type) => (
+                              <SelectItem key={type} value={type}>
+                                {transferLabels[type]}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -235,7 +239,7 @@ export default function AddTransactionPage() {
                 name="date"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel>{t("date")}</FormLabel>
                     <Popover>
                       <FormControl>
                         <PopoverTrigger
@@ -247,7 +251,7 @@ export default function AddTransactionPage() {
                           {field.value ? (
                             format(field.value, "dd/MM/yyyy")
                           ) : (
-                            <span>Pick a date</span>
+                            <span>{t("pickDate")}</span>
                           )}
                           <CalendarIcon className="h-4 w-4 opacity-50" />
                         </PopoverTrigger>
@@ -273,7 +277,7 @@ export default function AddTransactionPage() {
                   name="shares"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Shares</FormLabel>
+                      <FormLabel>{t("shares")}</FormLabel>
                       <FormControl>
                         <Input
                           type="text"
@@ -292,7 +296,7 @@ export default function AddTransactionPage() {
                   name="pricePerShare"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Price per Share</FormLabel>
+                      <FormLabel>{t("pricePerShare")}</FormLabel>
                       <FormControl>
                         <Input
                           type="text"
@@ -314,7 +318,7 @@ export default function AddTransactionPage() {
                   name="totalAmount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Total Amount</FormLabel>
+                      <FormLabel>{t("totalAmount")}</FormLabel>
                       <FormControl>
                         <Input
                           type="text"
@@ -333,7 +337,7 @@ export default function AddTransactionPage() {
                   name="fees"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Fees</FormLabel>
+                      <FormLabel>{t("fees")}</FormLabel>
                       <FormControl>
                         <Input
                           type="text"
@@ -362,7 +366,7 @@ export default function AddTransactionPage() {
                 {isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Add Transaction
+                {t("addTransaction")}
               </Button>
             </form>
           </Form>

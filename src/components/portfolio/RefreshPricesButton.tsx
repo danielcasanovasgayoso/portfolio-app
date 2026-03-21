@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Check, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -9,6 +10,7 @@ import { cn } from "@/lib/utils";
 type Status = "idle" | "syncing" | "success" | "error";
 
 export function RefreshPricesButton() {
+  const t = useTranslations("portfolio");
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
 
@@ -54,7 +56,7 @@ export function RefreshPricesButton() {
           className={cn("h-3.5 w-3.5", status === "syncing" && "animate-spin")}
         />
         <span className="hidden sm:inline">
-          {status === "syncing" ? "Syncing" : "Refresh"}
+          {status === "syncing" ? t("syncing") : t("refresh")}
         </span>
       </Button>
 
@@ -62,7 +64,7 @@ export function RefreshPricesButton() {
         <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-gain-muted">
           <Check className="h-3 w-3 text-gain" />
           <span className="text-[10px] font-mono text-gain uppercase tracking-wider">
-            Synced
+            {t("synced")}
           </span>
         </div>
       )}
@@ -71,7 +73,7 @@ export function RefreshPricesButton() {
         <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-loss-muted">
           <AlertCircle className="h-3 w-3 text-loss" />
           <span className="text-[10px] font-mono text-loss uppercase tracking-wider">
-            Error
+            {t("error")}
           </span>
         </div>
       )}

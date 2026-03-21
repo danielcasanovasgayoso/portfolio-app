@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Plus,
   Mail,
@@ -16,6 +17,7 @@ import { importPortfolioData } from "@/actions/settings";
 import { AssetForm } from "@/components/assets/AssetForm";
 
 export default function AddPage() {
+  const t = useTranslations("add");
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -34,7 +36,7 @@ export default function AddPage() {
     if (!file) return;
 
     if (!file.name.endsWith(".json")) {
-      setImportResult({ success: false, message: "Please select a JSON file" });
+      setImportResult({ success: false, message: t("selectJsonFile") });
       setTimeout(() => setImportResult(null), 5000);
       return;
     }
@@ -50,7 +52,7 @@ export default function AddPage() {
         const { assetsImported, transactionsImported } = response.data;
         setImportResult({
           success: true,
-          message: `Imported ${assetsImported} assets and ${transactionsImported} transactions`,
+          message: t("importSuccess", { assets: assetsImported, transactions: transactionsImported }),
         });
       } else {
         setImportResult({
@@ -74,41 +76,45 @@ export default function AddPage() {
 
   const sections = [
     {
-      title: "Add Items",
+      title: t("addItems"),
       items: [
         {
           icon: Plus,
-          label: "Add Transaction",
-          description: "Manually add a new transaction",
+          label: t("addTransaction"),
+          description: t("addTransactionDesc"),
           onClick: () => router.push("/add/transaction"),
+          key: "addTransaction",
         },
         {
           icon: Landmark,
-          label: "Add Asset",
-          description: "Add cash, real estate, or other assets",
+          label: t("addAsset"),
+          description: t("addAssetDesc"),
           onClick: () => setAssetFormOpen(true),
+          key: "addAsset",
         },
       ],
     },
     {
-      title: "Add from My Investor",
+      title: t("addFromMyInvestor"),
       items: [
         {
           icon: Mail,
-          label: "Import from Gmail",
-          description: "Import transactions from MyInvestor emails",
+          label: t("importFromGmail"),
+          description: t("importFromGmailDesc"),
           onClick: () => router.push("/import"),
+          key: "importGmail",
         },
       ],
     },
     {
-      title: "Add from Backup",
+      title: t("addFromBackup"),
       items: [
         {
           icon: Upload,
-          label: "Import from JSON",
-          description: "Restore portfolio from a JSON backup file",
+          label: t("importFromJson"),
+          description: t("importFromJsonDesc"),
           onClick: handleImportClick,
+          key: "importJson",
         },
       ],
     },
@@ -120,13 +126,13 @@ export default function AddPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            aria-label="Go back"
+            aria-label={t("goBack")}
             className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="text-lg font-bold tracking-tight text-foreground">
-            Add
+            {t("title")}
           </h1>
         </div>
       </header>
@@ -172,13 +178,13 @@ export default function AddPage() {
             </h2>
             {section.items.map((item) => (
               <button
-                key={item.label}
+                key={item.key}
                 onClick={item.onClick}
-                disabled={isImporting && item.label === "Import from JSON"}
+                disabled={isImporting && item.key === "importJson"}
                 className="w-full flex items-center gap-4 p-4 rounded-2xl border border-border bg-card hover:bg-muted/50 active:scale-[0.98] transition-all text-left"
               >
                 <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/10 text-primary flex-shrink-0">
-                  {isImporting && item.label === "Import from JSON" ? (
+                  {isImporting && item.key === "importJson" ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
                     <item.icon className="h-5 w-5" />

@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { testApiKey } from "@/lib/eodhd";
 import { revalidatePath } from "next/cache";
 import { getUserId } from "@/lib/auth";
+import { setUserLocale } from "@/i18n/locale";
+import type { Locale } from "@/i18n/config";
 
 export interface SettingsData {
   eodhdApiKey: string | null;
@@ -124,6 +126,22 @@ export async function updateTheme(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to update theme",
+    };
+  }
+}
+
+export async function updateLocale(
+  locale: Locale
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await setUserLocale(locale);
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update locale:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to update locale",
     };
   }
 }

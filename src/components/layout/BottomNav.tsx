@@ -2,31 +2,33 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { PieChart, FileText, Settings, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   {
     href: "/",
-    label: "Portfolio",
-    shortLabel: "HOME",
+    labelKey: "portfolio" as const,
+    shortLabelKey: "home" as const,
     icon: PieChart,
   },
   {
     href: "/transactions",
-    label: "Transactions",
-    shortLabel: "TRANSACTIONS",
+    labelKey: "transactions" as const,
+    shortLabelKey: "transactionsShort" as const,
     icon: FileText,
   },
   {
     href: "/settings",
-    label: "Settings",
-    shortLabel: "CONFIG",
+    labelKey: "settings" as const,
+    shortLabelKey: "settingsShort" as const,
     icon: Settings,
   },
 ];
 
 export function BottomNav() {
+  const t = useTranslations("nav");
   const pathname = usePathname();
   const isAddActive = pathname === "/add";
 
@@ -56,7 +58,7 @@ export function BottomNav() {
               <item.icon className="h-[18px] w-[18px]" />
               {isActive && (
                 <span className="text-[11px] font-semibold tracking-wide">
-                  {item.shortLabel}
+                  {t(item.shortLabelKey)}
                 </span>
               )}
             </Link>
@@ -72,7 +74,7 @@ export function BottomNav() {
             ? "bg-primary text-primary-foreground"
             : "bg-primary text-primary-foreground hover:bg-primary/90"
         )}
-        aria-label="Add transactions"
+        aria-label={t("addTransactions")}
       >
         <Plus className="h-5 w-5" />
       </Link>

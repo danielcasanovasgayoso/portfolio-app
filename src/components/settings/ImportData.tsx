@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { importPortfolioData } from "@/actions/settings";
 import { Upload, Loader2, Check, AlertCircle } from "lucide-react";
 
 export function ImportData() {
+  const t = useTranslations("settings");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<{
     success: boolean;
@@ -19,7 +21,7 @@ export function ImportData() {
 
     // Validate file type
     if (!file.name.endsWith(".json")) {
-      setResult({ success: false, message: "Please select a JSON file" });
+      setResult({ success: false, message: t("selectJsonFile") });
       return;
     }
 
@@ -34,7 +36,12 @@ export function ImportData() {
         const { assetsImported, transactionsImported, assetsSkipped, transactionsSkipped } = response.data;
         setResult({
           success: true,
-          message: `Imported ${assetsImported} assets and ${transactionsImported} transactions. Skipped: ${assetsSkipped} assets, ${transactionsSkipped} transactions.`,
+          message: t("importSuccess", {
+            assets: assetsImported,
+            transactions: transactionsImported,
+            assetsSkipped,
+            transactionsSkipped,
+          }),
         });
       } else {
         setResult({
@@ -83,7 +90,7 @@ export function ImportData() {
         ) : (
           <Upload className="h-4 w-4" />
         )}
-        Import Portfolio Data
+        {t("importButton")}
       </Button>
 
       {result && (
@@ -94,8 +101,7 @@ export function ImportData() {
       )}
 
       <p className="text-xs text-muted-foreground">
-        Import a previously exported JSON file to restore your portfolio data.
-        Existing assets with the same ISIN will be skipped.
+        {t("importHelp")}
       </p>
     </div>
   );

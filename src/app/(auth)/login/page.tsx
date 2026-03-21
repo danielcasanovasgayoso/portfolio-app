@@ -1,14 +1,17 @@
 import { LoginForm } from "@/components/auth/LoginForm";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const t = await getTranslations("auth");
+
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-xl font-semibold">Welcome back</h2>
+        <h2 className="text-xl font-semibold">{t("welcomeBack")}</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Sign in to your account
+          {t("signInToAccount")}
         </p>
       </div>
 
@@ -20,7 +23,7 @@ export default function LoginPage() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-card px-2 text-muted-foreground">
-            Or continue with
+            {t("orContinueWith")}
           </span>
         </div>
       </div>
@@ -28,12 +31,12 @@ export default function LoginPage() {
       <GoogleButton />
 
       <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
+        {t("noAccount")}{" "}
         <Link
           href="/register"
           className="font-medium text-primary hover:underline"
         >
-          Sign up
+          {t("signUp")}
         </Link>
       </p>
     </div>

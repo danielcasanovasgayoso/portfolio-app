@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { updateTheme } from "@/actions/settings";
 import { Sun, Moon, Monitor, Loader2 } from "lucide-react";
@@ -12,15 +13,16 @@ interface ThemeToggleProps {
 
 type Theme = "light" | "dark" | "system";
 
-const themes: { value: Theme; icon: typeof Sun; label: string }[] = [
-  { value: "light", icon: Sun, label: "Light" },
-  { value: "dark", icon: Moon, label: "Dark" },
-  { value: "system", icon: Monitor, label: "System" },
-];
-
 export function ThemeToggle({ currentTheme }: ThemeToggleProps) {
+  const t = useTranslations("settings");
   const [theme, setTheme] = useState<Theme>(currentTheme as Theme);
   const [isLoading, setIsLoading] = useState(false);
+
+  const themes: { value: Theme; icon: typeof Sun; labelKey: "themeLight" | "themeDark" | "themeSystem" }[] = [
+    { value: "light", icon: Sun, labelKey: "themeLight" },
+    { value: "dark", icon: Moon, labelKey: "themeDark" },
+    { value: "system", icon: Monitor, labelKey: "themeSystem" },
+  ];
 
   // Apply theme to document
   useEffect(() => {
@@ -61,7 +63,7 @@ export function ThemeToggle({ currentTheme }: ThemeToggleProps) {
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
-        {themes.map(({ value, icon: Icon, label }) => (
+        {themes.map(({ value, icon: Icon, labelKey }) => (
           <Button
             key={value}
             variant={theme === value ? "default" : "outline"}
@@ -78,14 +80,14 @@ export function ThemeToggle({ currentTheme }: ThemeToggleProps) {
             ) : (
               <Icon className="h-4 w-4" />
             )}
-            <span className="hidden sm:inline">{label}</span>
+            <span className="hidden sm:inline">{t(labelKey)}</span>
           </Button>
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
         {theme === "system"
-          ? "Following your device's theme settings"
-          : `Using ${theme} mode`}
+          ? t("themeFollowing")
+          : t("themeUsing", { theme: t(theme === "light" ? "themeLight" : "themeDark").toLowerCase() })}
       </p>
     </div>
   );

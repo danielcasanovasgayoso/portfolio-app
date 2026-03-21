@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Pagination,
   PaginationContent,
@@ -27,6 +28,7 @@ export function TransactionsContent({
   transactions,
   assets,
 }: TransactionsContentProps) {
+  const t = useTranslations("transactions");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -60,7 +62,7 @@ export function TransactionsContent({
       {/* Header */}
       <div>
         <p className="text-sm text-muted-foreground">
-          {transactions.total} transaction{transactions.total !== 1 ? "s" : ""}
+          {t("count", { count: transactions.total })}
         </p>
       </div>
 

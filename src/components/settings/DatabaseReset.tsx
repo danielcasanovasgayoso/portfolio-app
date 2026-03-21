@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,16 +18,16 @@ import { resetDatabase } from "@/actions/settings";
 import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-const CONFIRMATION_TEXT = "DELETE ALL DATA";
-
 export function DatabaseReset() {
+  const t = useTranslations("settings");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isConfirmed = confirmText === CONFIRMATION_TEXT;
+  const confirmationText = t("resetConfirmText");
+  const isConfirmed = confirmText === confirmationText;
 
   const handleReset = async () => {
     if (!isConfirmed) return;
@@ -54,7 +55,7 @@ export function DatabaseReset() {
         render={
           <Button variant="destructive" className="gap-2">
             <Trash2 className="h-4 w-4" />
-            Reset Database
+            {t("resetDatabase")}
           </Button>
         }
       />
@@ -62,31 +63,34 @@ export function DatabaseReset() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <AlertTriangle className="h-5 w-5" />
-            Reset Database
+            {t("resetDatabase")}
           </DialogTitle>
           <DialogDescription>
-            This action cannot be undone. This will permanently delete:
+            {t("resetWarning")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2 py-4">
           <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-            <li>All transactions</li>
-            <li>All holdings</li>
-            <li>All assets</li>
-            <li>All price history</li>
-            <li>Gmail import connection</li>
+            <li>{t("resetItems.transactions")}</li>
+            <li>{t("resetItems.holdings")}</li>
+            <li>{t("resetItems.assets")}</li>
+            <li>{t("resetItems.prices")}</li>
+            <li>{t("resetItems.gmail")}</li>
           </ul>
 
           <div className="mt-4 space-y-2">
             <Label htmlFor="confirm" className="text-sm">
-              Type <code className="font-mono bg-muted px-1">{CONFIRMATION_TEXT}</code> to confirm
+              {t.rich("resetConfirmLabel", {
+                text: confirmationText,
+                code: (chunks) => <code className="font-mono bg-muted px-1">{chunks}</code>,
+              })}
             </Label>
             <Input
               id="confirm"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              placeholder="Type confirmation text"
+              placeholder={t("resetConfirmPlaceholder")}
               className="font-mono"
             />
           </div>
@@ -98,7 +102,7 @@ export function DatabaseReset() {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
+            {t("cancel", { ns: "common" })}
           </Button>
           <Button
             variant="destructive"
@@ -106,7 +110,7 @@ export function DatabaseReset() {
             disabled={!isConfirmed || isLoading}
           >
             {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Delete Everything
+            {t("deleteEverything")}
           </Button>
         </DialogFooter>
       </DialogContent>

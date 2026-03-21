@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { AlertTriangle, ArrowLeft, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,8 @@ export function ImportStepPreview({
   onBack,
   onCancel,
 }: ImportStepPreviewProps) {
+  const t = useTranslations("import");
+  const tCommon = useTranslations("common");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     new Set(items.filter((i) => !i.isDuplicate).map((i) => i.id))
   );
@@ -77,30 +80,30 @@ export function ImportStepPreview({
       {/* Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>Import Preview</CardTitle>
+          <CardTitle>{t("importPreview")}</CardTitle>
           <CardDescription>
-            Review the transactions before importing
+            {t("reviewTransactions")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-lg border p-3">
               <div className="text-2xl font-bold">{summary.totalEmails}</div>
-              <div className="text-sm text-muted-foreground">Emails fetched</div>
+              <div className="text-sm text-muted-foreground">{t("emailsFetched")}</div>
             </div>
             <div className="rounded-lg border p-3">
               <div className="text-2xl font-bold text-green-600">
                 {summary.validTransactions}
               </div>
               <div className="text-sm text-muted-foreground">
-                New transactions
+                {t("newTransactions")}
               </div>
             </div>
             <div className="rounded-lg border p-3">
               <div className="text-2xl font-bold text-yellow-600">
                 {summary.duplicateTransactions}
               </div>
-              <div className="text-sm text-muted-foreground">Duplicates</div>
+              <div className="text-sm text-muted-foreground">{t("duplicates")}</div>
             </div>
           </div>
 
@@ -109,7 +112,7 @@ export function ImportStepPreview({
               <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
                 <AlertTriangle className="h-4 w-4" />
                 <span className="font-medium">
-                  {summary.errors.length} email(s) could not be parsed
+                  {t("parseErrors", { count: summary.errors.length })}
                 </span>
               </div>
               <ul className="mt-2 space-y-1 text-sm text-yellow-700 dark:text-yellow-300">
@@ -129,15 +132,15 @@ export function ImportStepPreview({
       {/* Transaction list */}
       <Card>
         <CardHeader>
-          <CardTitle>Transactions to Import</CardTitle>
+          <CardTitle>{t("transactionsToImport")}</CardTitle>
           <CardDescription>
-            {selectedIds.size} of {validItems.length} selected
+            {t("selectedOf", { selected: selectedIds.size, total: validItems.length })}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {items.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
-              No transactions found in the fetched emails.
+              {t("noTransactionsFound")}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -151,12 +154,12 @@ export function ImportStepPreview({
                         aria-label="Select all"
                       />
                     </TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Asset</TableHead>
-                    <TableHead className="text-right">Shares</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t("columnDate")}</TableHead>
+                    <TableHead>{t("columnType")}</TableHead>
+                    <TableHead>{t("columnAsset")}</TableHead>
+                    <TableHead className="text-right">{t("columnShares")}</TableHead>
+                    <TableHead className="text-right">{t("columnAmount")}</TableHead>
+                    <TableHead>{t("columnStatus")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -202,11 +205,11 @@ export function ImportStepPreview({
                       <TableCell>
                         {item.isDuplicate ? (
                           <Badge variant="outline" className="text-yellow-600">
-                            Duplicate
+                            {t("statusDuplicate")}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-green-600">
-                            New
+                            {t("statusNew")}
                           </Badge>
                         )}
                       </TableCell>
@@ -224,11 +227,11 @@ export function ImportStepPreview({
         <div className="flex gap-2">
           <Button variant="outline" onClick={onBack}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            {t("back")}
           </Button>
           <Button variant="ghost" onClick={handleCancel}>
             <X className="mr-2 h-4 w-4" />
-            Cancel
+            {tCommon("cancel")}
           </Button>
         </div>
         <Button
@@ -236,7 +239,7 @@ export function ImportStepPreview({
           disabled={selectedIds.size === 0}
         >
           <Check className="mr-2 h-4 w-4" />
-          Import {selectedIds.size} Transaction{selectedIds.size !== 1 ? "s" : ""}
+          {t("importCount", { count: selectedIds.size })}
         </Button>
       </div>
     </div>

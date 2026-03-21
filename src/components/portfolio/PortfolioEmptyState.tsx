@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Plus, TrendingUp, BarChart3, Layers } from "lucide-react";
 
 export function PortfolioEmptyState() {
+  const t = useTranslations("portfolio");
+
   return (
     <div className="px-4 md:px-8">
       <div className="relative overflow-hidden rounded-xl border border-border/50 bg-card p-8 sm:p-12 text-center">
@@ -48,10 +51,10 @@ export function PortfolioEmptyState() {
           </div>
 
           <h2 className="text-xl sm:text-2xl font-semibold tracking-tight mb-2">
-            Start building your portfolio
+            {t("emptyTitle")}
           </h2>
           <p className="text-muted-foreground text-sm sm:text-base max-w-sm mb-8">
-            Add your first asset to begin tracking performance, gains, and allocation across all your investments.
+            {t("emptyDescription")}
           </p>
 
           <Link
@@ -59,7 +62,7 @@ export function PortfolioEmptyState() {
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
           >
             <Plus className="w-4 h-4" />
-            Add your first asset
+            {t("addFirstAsset")}
           </Link>
 
         </div>
@@ -67,4 +70,3 @@ export function PortfolioEmptyState() {
     </div>
   );
 }
-

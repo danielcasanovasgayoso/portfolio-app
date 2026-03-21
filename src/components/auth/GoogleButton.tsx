@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -10,6 +11,7 @@ interface GoogleButtonProps {
 }
 
 export function GoogleButton({ mode = "signin" }: GoogleButtonProps) {
+  const t = useTranslations("auth");
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleClick() {
@@ -59,7 +61,7 @@ export function GoogleButton({ mode = "signin" }: GoogleButtonProps) {
           />
         </svg>
       )}
-      {mode === "signin" ? "Sign in with Google" : "Sign up with Google"}
+      {mode === "signin" ? t("signInWithGoogle") : t("signUpWithGoogle")}
     </Button>
   );
 }

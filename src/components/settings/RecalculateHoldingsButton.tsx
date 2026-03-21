@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { RefreshCw, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { recalculateAllAssetHoldings } from "@/actions/holdings";
 
 export function RecalculateHoldingsButton() {
+  const t = useTranslations("settings");
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<{
     type: "success" | "error";
@@ -21,12 +23,12 @@ export function RecalculateHoldingsButton() {
         if (errors.length > 0) {
           setResult({
             type: "error",
-            message: `Recalculated ${recalculated} holdings with ${errors.length} errors`,
+            message: t("recalculateErrors", { recalculated, errors: errors.length }),
           });
         } else {
           setResult({
             type: "success",
-            message: `Successfully recalculated ${recalculated} holdings`,
+            message: t("recalculateSuccess", { count: recalculated }),
           });
         }
       } else {
@@ -50,7 +52,7 @@ export function RecalculateHoldingsButton() {
         ) : (
           <RefreshCw className="mr-2 h-4 w-4" />
         )}
-        Recalculate Holdings
+        {t("recalculate")}
       </Button>
       {result && (
         <div

@@ -1,14 +1,18 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { GmailConnectCard, ImportWizard } from "@/components/import";
 import { checkGmailConnection } from "@/actions/import";
 import { requireAuth } from "@/lib/auth";
 
-export const metadata = {
-  title: "Import Transactions | Portfolio Tracker",
-  description: "Import transactions from Gmail",
-};
+export async function generateMetadata() {
+  const t = await getTranslations("meta");
+  return {
+    title: t("importTitle"),
+    description: t("importDescription"),
+  };
+}
 
 export default async function ImportPage({
   searchParams,
@@ -17,6 +21,7 @@ export default async function ImportPage({
 }) {
   await requireAuth();
   const { error, success } = await searchParams;
+  const t = await getTranslations("import");
 
   return (
     <div className="min-h-screen pb-20">
@@ -24,13 +29,13 @@ export default async function ImportPage({
         <div className="flex items-center gap-3">
           <Link
             href="/add"
-            aria-label="Go back"
+            aria-label={t("goBack")}
             className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <h1 className="text-lg font-bold tracking-tight text-foreground">
-            Import from Gmail
+            {t("title")}
           </h1>
         </div>
       </header>

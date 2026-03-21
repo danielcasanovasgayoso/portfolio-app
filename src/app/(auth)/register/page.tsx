@@ -1,14 +1,17 @@
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  const t = await getTranslations("auth");
+
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-xl font-semibold">Create an account</h2>
+        <h2 className="text-xl font-semibold">{t("createAccount")}</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Start tracking your portfolio
+          {t("startTracking")}
         </p>
       </div>
 
@@ -20,7 +23,7 @@ export default function RegisterPage() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-card px-2 text-muted-foreground">
-            Or continue with
+            {t("orContinueWith")}
           </span>
         </div>
       </div>
@@ -28,12 +31,12 @@ export default function RegisterPage() {
       <GoogleButton mode="signup" />
 
       <p className="text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
+        {t("haveAccount")}{" "}
         <Link
           href="/login"
           className="font-medium text-primary hover:underline"
         >
-          Sign in
+          {t("signIn")}
         </Link>
       </p>
     </div>

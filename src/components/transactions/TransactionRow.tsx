@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { formatCurrency, formatShares, formatDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -27,24 +28,26 @@ const typeColors: Record<string, string> = {
   TRANSFER: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
 };
 
-const typeLabels: Record<string, string> = {
-  BUY: "Buy",
-  SELL: "Sell",
-  DIVIDEND: "Dividend",
-  FEE: "Fee",
-  TRANSFER: "Transfer",
-};
-
 export function TransactionRow({
   transaction,
   onEdit,
   onDelete,
 }: TransactionRowProps) {
+  const t = useTranslations("transactions");
+
+  const typeLabels: Record<string, string> = {
+    BUY: t("typeBuy"),
+    SELL: t("typeSell"),
+    DIVIDEND: t("typeDividend"),
+    FEE: t("typeFee"),
+    TRANSFER: t("typeTransfer"),
+  };
+
   const typeColor = typeColors[transaction.type] || typeColors.BUY;
   const typeLabel = typeLabels[transaction.type] || transaction.type;
   const transferSuffix =
     transaction.type === "TRANSFER" && transaction.transferType
-      ? ` (${transaction.transferType === "IN" ? "In" : "Out"})`
+      ? ` (${transaction.transferType === "IN" ? t("transferIn").split(" ").pop() : t("transferOut").split(" ").pop()})`
       : "";
 
   return (
@@ -69,19 +72,19 @@ export function TransactionRow({
           <DropdownMenu>
             <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-lg hover:bg-muted transition-colors -mt-1 -mr-1">
               <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Actions</span>
+              <span className="sr-only">{t("actions")}</span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onEdit(transaction)}>
                 <Pencil className="h-4 w-4 mr-2" />
-                Edit
+                {t("edit")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => onDelete(transaction)}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                {t("delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -92,7 +95,7 @@ export function TransactionRow({
             {transaction.asset.name}
           </h3>
           <p className="text-[13px] text-muted-foreground">
-            {formatShares(Number(transaction.shares))} shares
+            {formatShares(Number(transaction.shares))} {t("shares")}
             {transaction.pricePerShare &&
               ` @ ${formatCurrency(Number(transaction.pricePerShare))}`}
           </p>
@@ -104,7 +107,7 @@ export function TransactionRow({
           </p>
           {transaction.fees && Number(transaction.fees) > 0 && (
             <p className="text-[12px] text-muted-foreground">
-              Fee: {formatCurrency(Number(transaction.fees))}
+              {t("feeAmount", { amount: formatCurrency(Number(transaction.fees)) })}
             </p>
           )}
         </div>

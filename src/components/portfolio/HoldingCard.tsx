@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   formatCurrency,
   formatPercent,
@@ -25,6 +26,7 @@ export function HoldingCard({
   totalPortfolioValue,
   isOther = false,
 }: HoldingCardProps) {
+  const t = useTranslations("portfolio");
   const [editOpen, setEditOpen] = useState(false);
 
   const portfolioPercent =
@@ -52,7 +54,7 @@ export function HoldingCard({
                   <Pencil className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                 </div>
                 <p className="text-[12px] font-mono text-muted-foreground mt-1">
-                  MANUAL · {portfolioPercent}%
+                  {t("manual")} · {portfolioPercent}%
                 </p>
               </div>
               <div className="text-right flex-shrink-0">
@@ -84,7 +86,7 @@ export function HoldingCard({
                 {holding.name}
               </h3>
               <p className="text-[12px] font-mono text-muted-foreground mt-1">
-                AVAIL · {portfolioPercent}%
+                {t("avail")} · {portfolioPercent}%
               </p>
             </div>
             <div className="text-right flex-shrink-0">
@@ -110,7 +112,7 @@ export function HoldingCard({
               <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             </div>
             <div className="flex items-center gap-2 text-[12px] font-mono text-muted-foreground">
-              <span>{formatShares(holding.shares)} shares</span>
+              <span>{formatShares(holding.shares)} {t("shares")}</span>
               <span className="text-border">·</span>
               <span>{portfolioPercent}%</span>
             </div>
@@ -142,21 +144,21 @@ export function HoldingCard({
         {/* Data grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-4 mt-2">
           <div className="bg-muted p-3 rounded-md">
-            <p className="label-sm mb-1 text-muted-foreground">Invested</p>
+            <p className="label-sm mb-1 text-muted-foreground">{t("invested")}</p>
             <p className="text-sm font-mono font-medium text-foreground tabular-nums">
               {formatCurrency(holding.costBasis)}
             </p>
           </div>
 
           <div className="bg-muted p-3 rounded-md">
-            <p className="label-sm mb-1 text-muted-foreground">Avg Price</p>
+            <p className="label-sm mb-1 text-muted-foreground">{t("avgPrice")}</p>
             <p className="text-sm font-mono font-medium text-foreground tabular-nums">
               {formatCurrency(holding.avgPrice)}
             </p>
           </div>
 
           <div className="bg-muted p-3 rounded-md">
-            <p className="label-sm mb-1 text-muted-foreground">Current</p>
+            <p className="label-sm mb-1 text-muted-foreground">{t("current")}</p>
             <p className="text-sm font-mono font-medium text-foreground tabular-nums">
               {holding.currentPrice
                 ? formatCurrency(holding.currentPrice)
@@ -165,7 +167,7 @@ export function HoldingCard({
           </div>
 
           <div className="bg-muted p-3 rounded-md">
-            <p className="label-sm mb-1 text-muted-foreground">Return</p>
+            <p className="label-sm mb-1 text-muted-foreground">{t("return")}</p>
             <p
               className={cn(
                 "text-sm font-mono font-semibold tabular-nums",
@@ -181,7 +183,7 @@ export function HoldingCard({
         {holding.priceDate && (
           <div className="flex items-center justify-center mt-3 pt-2">
             <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
-              Price as of {formatDate(holding.priceDate)}
+              {t("priceAsOf", { date: formatDate(holding.priceDate) })}
             </p>
           </div>
         )}

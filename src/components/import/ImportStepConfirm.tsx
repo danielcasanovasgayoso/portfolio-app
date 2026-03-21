@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Check, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ export function ImportStepConfirm({
   result,
   onReset,
 }: ImportStepConfirmProps) {
+  const t = useTranslations("import");
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,10 +61,10 @@ export function ImportStepConfirm({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-green-600">
             <Check className="h-5 w-5" />
-            Import Complete
+            {t("importComplete")}
           </CardTitle>
           <CardDescription>
-            Your transactions have been imported successfully
+            {t("importSuccessDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -72,7 +74,7 @@ export function ImportStepConfirm({
                 {result.importedCount}
               </div>
               <div className="text-sm text-muted-foreground">
-                Transactions imported
+                {t("transactionsImported")}
               </div>
             </div>
             <div className="rounded-lg border p-3">
@@ -80,7 +82,7 @@ export function ImportStepConfirm({
                 {result.skippedCount}
               </div>
               <div className="text-sm text-muted-foreground">
-                Transactions skipped
+                {t("transactionsSkipped")}
               </div>
             </div>
           </div>
@@ -88,7 +90,7 @@ export function ImportStepConfirm({
           {result.errors.length > 0 && (
             <div className="rounded-md bg-yellow-50 p-4 dark:bg-yellow-900/20">
               <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
-                Some errors occurred:
+                {t("someErrors")}
               </h4>
               <ul className="mt-2 list-disc pl-5 text-sm text-yellow-700 dark:text-yellow-300">
                 {result.errors.map((err, idx) => (
@@ -101,13 +103,13 @@ export function ImportStepConfirm({
           <div className="flex gap-2">
             <Button onClick={onReset}>
               <RefreshCw className="mr-2 h-4 w-4" />
-              Import More
+              {t("importMore")}
             </Button>
             <a
               href="/transactions"
               className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
             >
-              View Transactions
+              {t("viewTransactions")}
             </a>
           </div>
         </CardContent>
@@ -118,44 +120,32 @@ export function ImportStepConfirm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Confirm Import</CardTitle>
+        <CardTitle>{t("confirmImport")}</CardTitle>
         <CardDescription>
-          You are about to import {selectedItems.length} transaction
-          {selectedItems.length !== 1 ? "s" : ""}
+          {t("aboutToImport", { count: selectedItems.length })}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded-lg border p-4">
-          <h4 className="font-medium">Summary</h4>
+          <h4 className="font-medium">{t("summary")}</h4>
           <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
             <li>
-              {selectedItems.filter((i) => i.transaction.type === "BUY").length}{" "}
-              BUY transaction(s)
+              {t("buyCount", { count: selectedItems.filter((i) => i.transaction.type === "BUY").length })}
             </li>
             <li>
-              {selectedItems.filter((i) => i.transaction.type === "SELL").length}{" "}
-              SELL transaction(s)
+              {t("sellCount", { count: selectedItems.filter((i) => i.transaction.type === "SELL").length })}
             </li>
             <li>
-              {
-                selectedItems.filter((i) => i.transaction.type === "DIVIDEND")
-                  .length
-              }{" "}
-              DIVIDEND transaction(s)
+              {t("dividendCount", { count: selectedItems.filter((i) => i.transaction.type === "DIVIDEND").length })}
             </li>
             <li>
-              {
-                selectedItems.filter((i) => i.transaction.type === "TRANSFER")
-                  .length
-              }{" "}
-              TRANSFER transaction(s)
+              {t("transferCount", { count: selectedItems.filter((i) => i.transaction.type === "TRANSFER").length })}
             </li>
           </ul>
         </div>
 
         <p className="text-sm text-muted-foreground">
-          This will create new transactions in your portfolio. Any assets that
-          don&apos;t exist will be created automatically.
+          {t("autoCreateAssets")}
         </p>
 
         {error && (
@@ -167,18 +157,18 @@ export function ImportStepConfirm({
         <div className="flex justify-between">
           <Button variant="outline" onClick={onBack} disabled={isImporting}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            {t("back")}
           </Button>
           <Button onClick={handleImport} disabled={isImporting}>
             {isImporting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Importing...
+                {t("importing")}
               </>
             ) : (
               <>
                 <Check className="mr-2 h-4 w-4" />
-                Confirm Import
+                {t("confirmImport")}
               </>
             )}
           </Button>

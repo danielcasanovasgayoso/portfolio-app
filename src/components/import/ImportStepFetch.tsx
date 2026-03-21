@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { format, subMonths } from "date-fns";
 import { Calendar as CalendarIcon, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ interface ImportStepFetchProps {
 }
 
 export function ImportStepFetch({ canFetch, onComplete }: ImportStepFetchProps) {
+  const t = useTranslations("import");
   const [afterDate, setAfterDate] = useState<Date | undefined>(
     subMonths(new Date(), 3)
   );
@@ -73,29 +75,28 @@ export function ImportStepFetch({ canFetch, onComplete }: ImportStepFetchProps) 
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Download className="h-5 w-5" />
-          Fetch Emails
+          {t("fetchEmails")}
         </CardTitle>
         <CardDescription>
-          Fetch transaction emails from your Gmail account. Only emails from
-          notificaciones@myinvestor.es will be processed.
+          {t("fetchEmailsDesc")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {!canFetch ? (
           <div className="rounded-md bg-yellow-50 p-4 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
-            Please connect your Gmail account first to fetch emails.
+            {t("connectFirst")}
           </div>
         ) : (
           <>
             <div className="space-y-2">
-              <Label>Import emails after date (optional)</Label>
+              <Label>{t("afterDateLabel")}</Label>
               <Popover>
                 <PopoverTrigger className="flex h-10 w-full items-center justify-start rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {afterDate ? (
                     format(afterDate, "PPP")
                   ) : (
-                    <span className="text-muted-foreground">All time</span>
+                    <span className="text-muted-foreground">{t("allTime")}</span>
                   )}
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -113,15 +114,14 @@ export function ImportStepFetch({ canFetch, onComplete }: ImportStepFetchProps) 
                         className="w-full"
                         onClick={() => setAfterDate(undefined)}
                       >
-                        Clear date
+                        {t("clearDate")}
                       </Button>
                     </div>
                   )}
                 </PopoverContent>
               </Popover>
               <p className="text-xs text-muted-foreground">
-                Leave empty to import all available emails, or select a date to
-                only import emails after that date.
+                {t("afterDateHelp")}
               </p>
             </div>
 
@@ -139,12 +139,12 @@ export function ImportStepFetch({ canFetch, onComplete }: ImportStepFetchProps) 
               {isFetching ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Fetching emails...
+                  {t("fetchingEmails")}
                 </>
               ) : (
                 <>
                   <Download className="mr-2 h-4 w-4" />
-                  Fetch Emails
+                  {t("fetchEmails")}
                 </>
               )}
             </Button>

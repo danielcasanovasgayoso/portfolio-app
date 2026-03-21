@@ -1,10 +1,12 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import {
   ArrowLeft,
   Calculator,
   Database,
   Download,
+  Globe,
   Key,
   Palette,
 } from "lucide-react";
@@ -20,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RecalculateHoldingsButton } from "@/components/settings/RecalculateHoldingsButton";
 import { ApiKeyForm } from "@/components/settings/ApiKeyForm";
 import { ThemeToggle } from "@/components/settings/ThemeToggle";
+import { LanguageSwitcher } from "@/components/settings/LanguageSwitcher";
 import { DatabaseReset } from "@/components/settings/DatabaseReset";
 import { ExportData } from "@/components/settings/ExportData";
 import { LogoutButton } from "@/components/auth/LogoutButton";
@@ -28,6 +31,8 @@ import { requireAuth } from "@/lib/auth";
 
 export default async function SettingsPage() {
   const user = await requireAuth();
+  const t = await getTranslations("settings");
+  const tAuth = await getTranslations("auth");
 
   return (
     <div className="min-h-screen pb-20">
@@ -36,13 +41,13 @@ export default async function SettingsPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              aria-label="Back to portfolio"
+              aria-label={t("backToPortfolio")}
               className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <h1 className="text-lg font-bold tracking-tight text-foreground">
-              Settings
+              {t("title")}
             </h1>
           </div>
         </div>
@@ -61,7 +66,7 @@ export default async function SettingsPage() {
                 </div>
                 <div className="min-w-0">
                   <CardTitle className="text-base truncate">{user.email}</CardTitle>
-                  <CardDescription>Signed in</CardDescription>
+                  <CardDescription>{tAuth("signedIn")}</CardDescription>
                 </div>
               </div>
               <div className="shrink-0">
@@ -82,6 +87,7 @@ export default async function SettingsPage() {
 
 async function SettingsContent() {
   const settings = await getSettings();
+  const t = await getTranslations("settings");
 
   return (
     <>
@@ -92,9 +98,9 @@ async function SettingsContent() {
               <Key className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle>API Configuration</CardTitle>
+              <CardTitle>{t("apiConfig")}</CardTitle>
               <CardDescription>
-                Configure your EODHD API key for price updates
+                {t("apiConfigDesc")}
               </CardDescription>
             </div>
           </div>
@@ -103,10 +109,9 @@ async function SettingsContent() {
           <ApiKeyForm
             type="primary"
             currentKey={settings.eodhdApiKey}
-            label="API Key"
           />
           <p className="text-xs text-muted-foreground">
-            Get your API key from{" "}
+            {t("apiKeyGetFrom")}{" "}
             <a
               href="https://eodhd.com"
               target="_blank"
@@ -126,9 +131,9 @@ async function SettingsContent() {
               <Palette className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle>Appearance</CardTitle>
+              <CardTitle>{t("appearance")}</CardTitle>
               <CardDescription>
-                Customize the look and feel of the app
+                {t("appearanceDesc")}
               </CardDescription>
             </div>
           </div>
@@ -142,12 +147,31 @@ async function SettingsContent() {
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Globe className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle>{t("language")}</CardTitle>
+              <CardDescription>
+                {t("languageDesc")}
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <LanguageSwitcher />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <Calculator className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle>Holdings Maintenance</CardTitle>
+              <CardTitle>{t("holdingsMaintenance")}</CardTitle>
               <CardDescription>
-                Recalculate holdings from transaction history
+                {t("holdingsMaintenanceDesc")}
               </CardDescription>
             </div>
           </div>
@@ -155,8 +179,7 @@ async function SettingsContent() {
         <CardContent>
           <RecalculateHoldingsButton />
           <p className="text-sm text-muted-foreground mt-2">
-            Use this if your portfolio totals seem incorrect after importing
-            transactions.
+            {t("recalculateHelp")}
           </p>
         </CardContent>
       </Card>
@@ -168,9 +191,9 @@ async function SettingsContent() {
               <Download className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle>Export Data</CardTitle>
+              <CardTitle>{t("exportData")}</CardTitle>
               <CardDescription>
-                Download a full backup of your portfolio
+                {t("exportDataDesc")}
               </CardDescription>
             </div>
           </div>
@@ -189,9 +212,9 @@ async function SettingsContent() {
               <Database className="h-5 w-5 text-destructive" />
             </div>
             <div>
-              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+              <CardTitle className="text-destructive">{t("dangerZone")}</CardTitle>
               <CardDescription>
-                Irreversible actions for your portfolio data
+                {t("dangerZoneDesc")}
               </CardDescription>
             </div>
           </div>
@@ -199,8 +222,7 @@ async function SettingsContent() {
         <CardContent>
           <DatabaseReset />
           <p className="text-sm text-muted-foreground mt-2">
-            This will permanently delete all your portfolio data. API keys and
-            theme settings will be preserved.
+            {t("resetHelp")}
           </p>
         </CardContent>
       </Card>

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { formatCurrency, formatPercent, getGainClass } from "@/lib/formatters";
 import type { CategoryTotal } from "@/types/portfolio";
 import { cn } from "@/lib/utils";
@@ -12,13 +13,14 @@ export function PortfolioSummaryCard({
   grand,
   invested,
 }: PortfolioSummaryCardProps) {
+  const t = useTranslations("portfolio");
   const displayTotals = invested || grand;
 
   if (!grand) {
     return (
       <article className="dark bg-hero-gradient rounded-xl border-0 shadow-ambient p-8 h-full flex flex-col justify-center">
         <div className="flex items-center gap-2 mb-4">
-          <span className="label-sm">Net Worth</span>
+          <span className="label-sm">{t("netWorth")}</span>
         </div>
         <p className="text-4xl font-mono font-bold tracking-tight text-muted-foreground">
           —
@@ -34,7 +36,7 @@ export function PortfolioSummaryCard({
     <article className="dark bg-hero-gradient rounded-xl border-0 shadow-ambient p-6 sm:p-8 h-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-3 sm:mb-6">
-        <span className="label-sm">Total Net Worth</span>
+        <span className="label-sm">{t("totalNetWorth")}</span>
       </div>
 
       {/* Main Value */}
@@ -50,7 +52,7 @@ export function PortfolioSummaryCard({
         <div className="space-y-1 sm:space-y-2">
           <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
             <Wallet className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            <span className="label-sm text-muted-foreground">Invested</span>
+            <span className="label-sm text-muted-foreground">{t("invested")}</span>
           </div>
           <p className="text-sm sm:text-lg md:text-xl font-mono font-semibold text-foreground tabular-nums">
             {formatCurrency(displayTotals?.costBasis ?? 0)}
@@ -65,7 +67,7 @@ export function PortfolioSummaryCard({
             ) : (
               <TrendingDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-loss" />
             )}
-            <span className="label-sm text-muted-foreground">Gain/Loss</span>
+            <span className="label-sm text-muted-foreground">{t("gainLoss")}</span>
           </div>
           <p
             className={cn(
@@ -82,7 +84,7 @@ export function PortfolioSummaryCard({
         <div className="space-y-1 sm:space-y-2">
           <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
             <Percent className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            <span className="label-sm text-muted-foreground">Return</span>
+            <span className="label-sm text-muted-foreground">{t("return")}</span>
           </div>
           <p
             className={cn(

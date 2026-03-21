@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogOut, Loader2 } from "lucide-react";
@@ -17,6 +18,7 @@ export function LogoutButton({
   size = "sm",
   showText = true,
 }: LogoutButtonProps) {
+  const t = useTranslations("auth");
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -46,7 +48,7 @@ export function LogoutButton({
       ) : (
         <LogOut className="size-4" />
       )}
-      {showText && (isLoading ? "Signing out..." : "Sign out")}
+      {showText && (isLoading ? t("signingOut") : t("signOut"))}
     </Button>
   );
 }

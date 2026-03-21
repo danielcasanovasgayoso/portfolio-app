@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { formatCurrency, formatShares, formatDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import {
@@ -49,13 +50,6 @@ function getTransactionIcon(type: string, transferType?: string | null) {
   }
 }
 
-function getTransactionLabel(type: string, transferType?: string | null) {
-  if (type === "TRANSFER") {
-    return transferType === "IN" ? "Transfer In" : "Transfer Out";
-  }
-  return type.charAt(0) + type.slice(1).toLowerCase();
-}
-
 function getTransactionColor(type: string, transferType?: string | null) {
   switch (type) {
     case "BUY":
@@ -76,13 +70,22 @@ function getTransactionColor(type: string, transferType?: string | null) {
 export function TransactionTimeline({
   transactions,
 }: TransactionTimelineProps) {
+  const t = useTranslations("assetDetail");
+
   if (transactions.length === 0) {
     return (
       <p className="text-sm text-muted-foreground text-center py-4">
-        No transactions yet
+        {t("noTransactions")}
       </p>
     );
   }
+
+  const getTransactionLabel = (type: string, transferType?: string | null) => {
+    if (type === "TRANSFER") {
+      return transferType === "IN" ? t("transferIn") : t("transferOut");
+    }
+    return type.charAt(0) + type.slice(1).toLowerCase();
+  };
 
   return (
     <div className="space-y-4">
@@ -112,7 +115,7 @@ export function TransactionTimeline({
             <div className="mt-1 text-sm text-muted-foreground">
               {txn.type !== "DIVIDEND" && txn.type !== "FEE" && (
                 <span>
-                  {formatShares(txn.shares)} shares
+                  {formatShares(txn.shares)} {t("shares").toLowerCase()}
                   {txn.pricePerShare && (
                     <> @ {formatCurrency(txn.pricePerShare)}</>
                   )}
@@ -130,7 +133,7 @@ export function TransactionTimeline({
               </span>
               {txn.fees > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  Fees: {formatCurrency(txn.fees)}
+                  {t("fees", { amount: formatCurrency(txn.fees) })}
                 </span>
               )}
             </div>

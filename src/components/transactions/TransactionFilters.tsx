@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,18 +28,21 @@ interface TransactionFiltersProps {
   assets: Pick<Asset, "id" | "name" | "isin" | "ticker" | "category">[];
 }
 
-const transactionTypes: { value: TransactionType; label: string }[] = [
-  { value: "BUY", label: "Buy" },
-  { value: "SELL", label: "Sell" },
-  { value: "DIVIDEND", label: "Dividend" },
-  { value: "FEE", label: "Fee" },
-  { value: "TRANSFER", label: "Transfer" },
-];
+const transactionTypeValues: TransactionType[] = ["BUY", "SELL", "DIVIDEND", "FEE", "TRANSFER"];
 
 export function TransactionFilters({ assets }: TransactionFiltersProps) {
+  const t = useTranslations("transactions");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const typeLabels: Record<string, string> = {
+    BUY: t("typeBuy"),
+    SELL: t("typeSell"),
+    DIVIDEND: t("typeDividend"),
+    FEE: t("typeFee"),
+    TRANSFER: t("typeTransfer"),
+  };
 
   const currentTypes = searchParams.get("types")?.split(",").filter(Boolean) || [];
   const currentAssetId = searchParams.get("assetId") || "";
@@ -119,18 +123,18 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
     <div className="space-y-4">
       {/* Type filters */}
       <div className="flex flex-wrap gap-2">
-        {transactionTypes.map((type) => (
+        {transactionTypeValues.map((type) => (
           <button
-            key={type.value}
-            onClick={() => toggleType(type.value)}
+            key={type}
+            onClick={() => toggleType(type)}
             className={cn(
               "px-3 py-1.5 text-sm font-medium rounded-full border transition-colors",
-              currentTypes.includes(type.value)
+              currentTypes.includes(type)
                 ? "bg-primary text-primary-foreground border-primary"
                 : "bg-card text-foreground border-border hover:bg-accent"
             )}
           >
-            {type.label}
+            {typeLabels[type]}
           </button>
         ))}
       </div>
@@ -140,12 +144,12 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
         {/* Asset Select */}
         <Select value={currentAssetId} onValueChange={handleAssetChange}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="All assets">
-              {selectedAsset ? selectedAsset.name : "All assets"}
+            <SelectValue placeholder={t("allAssets")}>
+              {selectedAsset ? selectedAsset.name : t("allAssets")}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All assets</SelectItem>
+            <SelectItem value="">{t("allAssets")}</SelectItem>
             {assets.map((asset) => (
               <SelectItem key={asset.id} value={asset.id}>
                 {asset.name}
@@ -163,7 +167,7 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "From date"}
+            {dateFrom ? format(dateFrom, "dd/MM/yyyy") : t("fromDate")}
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
@@ -183,7 +187,7 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {dateTo ? format(dateTo, "dd/MM/yyyy") : "To date"}
+            {dateTo ? format(dateTo, "dd/MM/yyyy") : t("toDate")}
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
@@ -203,7 +207,7 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
             className="h-8"
           >
             <X className="h-4 w-4 mr-1" />
-            Clear filters
+            {t("clearFilters")}
           </Button>
         )}
       </div>
@@ -218,7 +222,7 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
               className="cursor-pointer"
               onClick={() => toggleType(type as TransactionType)}
             >
-              {transactionTypes.find((t) => t.value === type)?.label || type}
+              {typeLabels[type] || type}
               <X className="h-3 w-3 ml-1" />
             </Badge>
           ))}
@@ -238,7 +242,7 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
               className="cursor-pointer"
               onClick={() => handleDateFromChange(undefined)}
             >
-              From: {format(dateFrom, "dd/MM/yyyy")}
+              {t("fromDate")}: {format(dateFrom, "dd/MM/yyyy")}
               <X className="h-3 w-3 ml-1" />
             </Badge>
           )}
@@ -248,7 +252,7 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
               className="cursor-pointer"
               onClick={() => handleDateToChange(undefined)}
             >
-              To: {format(dateTo, "dd/MM/yyyy")}
+              {t("toDate")}: {format(dateTo, "dd/MM/yyyy")}
               <X className="h-3 w-3 ml-1" />
             </Badge>
           )}

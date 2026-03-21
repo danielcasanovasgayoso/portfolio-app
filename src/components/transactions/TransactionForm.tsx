@@ -2,6 +2,7 @@
 
 import { useEffect, useTransition } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslations } from "next-intl";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { CalendarIcon, Loader2 } from "lucide-react";
@@ -53,18 +54,8 @@ interface TransactionFormProps {
   onSuccess?: () => void;
 }
 
-const transactionTypes = [
-  { value: "BUY", label: "Buy" },
-  { value: "SELL", label: "Sell" },
-  { value: "DIVIDEND", label: "Dividend" },
-  { value: "FEE", label: "Fee" },
-  { value: "TRANSFER", label: "Transfer" },
-] as const;
-
-const transferTypes = [
-  { value: "IN", label: "Transfer In" },
-  { value: "OUT", label: "Transfer Out" },
-] as const;
+const transactionTypeKeys = ["BUY", "SELL", "DIVIDEND", "FEE", "TRANSFER"] as const;
+const transferTypeKeys = ["IN", "OUT"] as const;
 
 export function TransactionForm({
   open,
@@ -73,6 +64,7 @@ export function TransactionForm({
   assets,
   onSuccess,
 }: TransactionFormProps) {
+  const t = useTranslations("transactions");
   const [isPending, startTransition] = useTransition();
   const isEditing = !!transaction;
 
@@ -136,17 +128,28 @@ export function TransactionForm({
     });
   };
 
+  const typeLabels: Record<string, string> = {
+    BUY: t("typeBuy"),
+    SELL: t("typeSell"),
+    DIVIDEND: t("typeDividend"),
+    FEE: t("typeFee"),
+    TRANSFER: t("typeTransfer"),
+  };
+
+  const transferLabels: Record<string, string> = {
+    IN: t("transferIn"),
+    OUT: t("transferOut"),
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Edit Transaction" : "Add Transaction"}
+            {isEditing ? t("editTransaction") : t("addTransaction")}
           </DialogTitle>
           <DialogDescription>
-            {isEditing
-              ? "Update the transaction details below."
-              : "Enter the details for the new transaction."}
+            {isEditing ? t("editDescription") : t("addDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -158,18 +161,18 @@ export function TransactionForm({
               name="assetId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Asset</FormLabel>
+                  <FormLabel>{t("asset")}</FormLabel>
                   {assets.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-2">
-                      No assets available.
+                      {t("noAssetsShort")}
                     </p>
                   ) : (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select an asset">
+                          <SelectValue placeholder={t("selectAsset")}>
                             {assets.find((a) => a.id === field.value)?.name ||
-                              "Select an asset"}
+                              t("selectAsset")}
                           </SelectValue>
                         </SelectTrigger>
                       </FormControl>
@@ -194,21 +197,19 @@ export function TransactionForm({
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Type</FormLabel>
+                    <FormLabel>{t("type")}</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue>
-                            {transactionTypes.find(
-                              (t) => t.value === field.value
-                            )?.label || "Select type"}
+                            {typeLabels[field.value] || t("selectType")}
                           </SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {transactionTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
+                        {transactionTypeKeys.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {typeLabels[type]}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -224,7 +225,7 @@ export function TransactionForm({
                   name="transferType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Direction</FormLabel>
+                      <FormLabel>{t("direction")}</FormLabel>
                       <Select
                         value={field.value || ""}
                         onValueChange={field.onChange}
@@ -232,16 +233,16 @@ export function TransactionForm({
                         <FormControl>
                           <SelectTrigger className="w-full">
                             <SelectValue>
-                              {transferTypes.find(
-                                (t) => t.value === field.value
-                              )?.label || "Select direction"}
+                              {field.value
+                                ? transferLabels[field.value]
+                                : t("selectDirection")}
                             </SelectValue>
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {transferTypes.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
+                          {transferTypeKeys.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {transferLabels[type]}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -259,7 +260,7 @@ export function TransactionForm({
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Date</FormLabel>
+                  <FormLabel>{t("date")}</FormLabel>
                   <Popover>
                     <FormControl>
                       <PopoverTrigger
@@ -271,7 +272,7 @@ export function TransactionForm({
                         {field.value ? (
                           format(field.value, "dd/MM/yyyy")
                         ) : (
-                          <span>Pick a date</span>
+                          <span>{t("pickDate")}</span>
                         )}
                         <CalendarIcon className="h-4 w-4 opacity-50" />
                       </PopoverTrigger>
@@ -297,7 +298,7 @@ export function TransactionForm({
                 name="shares"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Shares</FormLabel>
+                    <FormLabel>{t("shares")}</FormLabel>
                     <FormControl>
                       <Input
                         type="text"
@@ -316,7 +317,7 @@ export function TransactionForm({
                 name="pricePerShare"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price per Share</FormLabel>
+                    <FormLabel>{t("pricePerShare")}</FormLabel>
                     <FormControl>
                       <Input
                         type="text"
@@ -338,7 +339,7 @@ export function TransactionForm({
                 name="totalAmount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Total Amount</FormLabel>
+                    <FormLabel>{t("totalAmount")}</FormLabel>
                     <FormControl>
                       <Input
                         type="text"
@@ -357,7 +358,7 @@ export function TransactionForm({
                 name="fees"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fees</FormLabel>
+                    <FormLabel>{t("fees")}</FormLabel>
                     <FormControl>
                       <Input
                         type="text"
@@ -384,11 +385,11 @@ export function TransactionForm({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Cancel
+                {t("cancel")}
               </Button>
               <Button type="submit" disabled={isPending}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEditing ? "Save Changes" : "Add Transaction"}
+                {isEditing ? t("saveChanges") : t("addTransaction")}
               </Button>
             </DialogFooter>
           </form>
