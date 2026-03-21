@@ -48,7 +48,7 @@ export function LogoutButton({
       ) : (
         <LogOut className="size-4" />
       )}
-      {showText && (isLoading ? t("signingOut") : t("signOut"))}
+      {showText && <span className="ml-1">{isLoading ? t("signingOut") : t("signOut")}</span>}
     </Button>
   );
 }

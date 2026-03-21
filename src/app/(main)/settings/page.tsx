@@ -57,21 +57,19 @@ export default async function SettingsPage() {
         {/* User info card — renders instantly, no data dependency */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between gap-2 overflow-hidden">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-lg font-semibold text-primary">
-                    {user.email.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <CardTitle className="text-base truncate">{user.email}</CardTitle>
-                  <CardDescription>{tAuth("signedIn")}</CardDescription>
-                </div>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="text-lg font-semibold text-primary">
+                  {user.email.charAt(0).toUpperCase()}
+                </span>
               </div>
-              <div className="shrink-0">
-                <LogoutButton />
+              <div className="min-w-0">
+                <CardTitle className="text-base truncate">{user.email}</CardTitle>
+                <CardDescription>{tAuth("signedIn")}</CardDescription>
               </div>
+            </div>
+            <div className="mt-3">
+              <LogoutButton />
             </div>
           </CardHeader>
         </Card>
