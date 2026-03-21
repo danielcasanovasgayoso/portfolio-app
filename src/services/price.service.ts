@@ -11,6 +11,7 @@ import { Decimal } from "@prisma/client/runtime/client";
 import { updateHoldingMarketValue } from "./holdings.service";
 import { getSettings } from "./settings.service";
 import { MARKET_HOURS, PRICE_CACHE } from "@/lib/constants";
+import { revalidatePath } from "next/cache";
 
 interface PriceUpdateResult {
   ticker: string;
@@ -484,9 +485,6 @@ export async function backfillHistoricalPrices(
   }
 }
 
-// Keep track of failed backfill attempts in memory to avoid API spam
-const failedBackfills = new Set<string>();
-
 /**
  * Get price history for an asset
  */
@@ -506,27 +504,11 @@ export async function getPriceHistory(
     if (options.to) where.date.lte = options.to;
   }
 
-  let prices = await db.price.findMany({
+  const prices = await db.price.findMany({
     where,
     orderBy: { date: "asc" },
     take: options?.limit,
   });
-
-  // Fire-and-forget backfill — don't block the page render
-  if (prices.length < 10 && !failedBackfills.has(assetId)) {
-    db.asset.findUnique({ where: { id: assetId } }).then((asset) => {
-      if (asset && asset.ticker) {
-        console.log(`[PriceService] Lazy backfilling historical prices for ${asset.ticker}`);
-        backfillHistoricalPrices(asset.userId, asset.id, asset.ticker)
-          .then((result) => {
-            if (!result.success) failedBackfills.add(assetId);
-          })
-          .catch(() => failedBackfills.add(assetId));
-      } else {
-        failedBackfills.add(assetId);
-      }
-    }).catch(() => failedBackfills.add(assetId));
-  }
 
   return prices.map((p) => ({
     date: p.date,
@@ -641,4 +623,36 @@ export async function resolveAllMissingTickers(userId: string): Promise<{
   }
 
   return { resolved, failed, results };
+}
+
+/**
+ * Full async refresh: latest prices + historical backfill for all assets.
+ * Intended to run in the background via next/server `after()`.
+ */
+export async function refreshAllData(userId: string): Promise<void> {
+  // Phase 1: Fetch latest prices (real-time for stocks, EOD for funds)
+  await refreshAllPrices(userId, { resolveIsins: true });
+
+  // Revalidate portfolio pages so updated market values are served
+  revalidatePath("/");
+  revalidatePath("/portfolio", "layout");
+
+  // Phase 2: Backfill historical prices for all assets with tickers
+  const holdings = await db.holding.findMany({
+    where: { userId, shares: { gt: 0 } },
+    include: { asset: true },
+  });
+
+  for (const holding of holdings) {
+    if (!holding.asset.ticker) continue;
+
+    try {
+      await backfillHistoricalPrices(userId, holding.assetId, holding.asset.ticker);
+    } catch (error) {
+      console.error(
+        `[PriceService] Historical backfill failed for ${holding.asset.ticker}:`,
+        error
+      );
+    }
+  }
 }

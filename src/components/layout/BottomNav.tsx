@@ -15,7 +15,7 @@ const navItems = [
   {
     href: "/transactions",
     label: "Transactions",
-    shortLabel: "ORDERS",
+    shortLabel: "TRANSACTIONS",
     icon: FileText,
   },
   {

@@ -1,14 +1,18 @@
 import { BottomNav } from "@/components/layout/BottomNav";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { getSettings } from "@/actions/settings";
 
-export default function MainLayout({
+export default async function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const settings = await getSettings();
+
   return (
-    <>
+    <ThemeProvider theme={settings.theme}>
       {children}
       <BottomNav />
-    </>
+    </ThemeProvider>
   );
 }

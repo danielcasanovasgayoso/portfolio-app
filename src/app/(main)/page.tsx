@@ -20,7 +20,7 @@ export default async function PortfolioPage() {
         {/* Header renders instantly — no data dependency */}
         <div className="flex justify-between items-start px-8 mb-12">
           <div className="flex flex-col max-w-[60%]">
-             <h1 className="display-lg tracking-tight">Portfolio</h1>
+             <h1 className="text-[1.75rem] font-bold tracking-tight">Portfolio</h1>
              <p className="body-md text-muted-foreground mt-2">Monitor and curate your assets with precision.</p>
           </div>
           <div className="mt-2">
