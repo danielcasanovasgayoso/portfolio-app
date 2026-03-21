@@ -15,6 +15,7 @@ export interface Holding {
   marketValue: number;
   gainLoss: number;
   gainLossPercent: number;
+  manualPricing?: boolean;
 }
 
 export interface CategoryTotal {

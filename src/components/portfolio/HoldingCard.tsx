@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import {
   formatCurrency,
@@ -8,7 +11,8 @@ import {
 } from "@/lib/formatters";
 import type { Holding } from "@/types/portfolio";
 import { cn } from "@/lib/utils";
-import { ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
+import { ChevronRight, TrendingUp, TrendingDown, Pencil } from "lucide-react";
+import { AssetForm } from "@/components/assets/AssetForm";
 
 interface HoldingCardProps {
   holding: Holding;
@@ -21,6 +25,8 @@ export function HoldingCard({
   totalPortfolioValue,
   isOther = false,
 }: HoldingCardProps) {
+  const [editOpen, setEditOpen] = useState(false);
+
   const portfolioPercent =
     totalPortfolioValue > 0
       ? ((holding.marketValue / totalPortfolioValue) * 100).toFixed(1)
@@ -30,6 +36,46 @@ export function HoldingCard({
   const isPositive = gainClass === "positive";
 
   if (isOther) {
+    if (holding.manualPricing) {
+      return (
+        <>
+          <article
+            className="bg-card rounded-xl shadow-sm p-5 border-0 cursor-pointer transition-transform duration-150 active:scale-[0.98]"
+            onClick={() => setEditOpen(true)}
+          >
+            <div className="flex justify-between items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-[15px] font-semibold text-foreground truncate">
+                    {holding.name}
+                  </h3>
+                  <Pencil className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                </div>
+                <p className="text-[12px] font-mono text-muted-foreground mt-1">
+                  MANUAL · {portfolioPercent}%
+                </p>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className="text-lg font-mono font-semibold text-foreground tabular-nums">
+                  {formatCurrency(holding.marketValue)}
+                </p>
+              </div>
+            </div>
+          </article>
+          <AssetForm
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            editAsset={{
+              assetId: holding.assetId!,
+              name: holding.name,
+              category: holding.category,
+              value: holding.marketValue,
+            }}
+          />
+        </>
+      );
+    }
+
     return (
       <article className="bg-card rounded-xl shadow-sm p-5 border-0">
         <div className="flex justify-between items-center gap-3">

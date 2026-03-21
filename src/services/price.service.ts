@@ -245,9 +245,9 @@ export async function refreshAllPrices(
     holdings.push(...refreshedHoldings);
   }
 
-  // Filter to assets with tickers
+  // Filter to assets with tickers, excluding manual assets
   const assetsWithTickers = holdings
-    .filter((h) => h.asset.ticker)
+    .filter((h) => h.asset.ticker && !h.asset.manualPricing)
     .map((h) => ({
       assetId: h.assetId,
       ticker: h.asset.ticker!,
@@ -644,7 +644,7 @@ export async function refreshAllData(userId: string): Promise<void> {
   });
 
   for (const holding of holdings) {
-    if (!holding.asset.ticker) continue;
+    if (!holding.asset.ticker || holding.asset.manualPricing) continue;
 
     try {
       await backfillHistoricalPrices(userId, holding.assetId, holding.asset.ticker);

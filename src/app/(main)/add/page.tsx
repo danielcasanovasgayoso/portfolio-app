@@ -10,13 +10,16 @@ import {
   Loader2,
   Check,
   AlertCircle,
+  Landmark,
 } from "lucide-react";
 import { importPortfolioData } from "@/actions/settings";
+import { AssetForm } from "@/components/assets/AssetForm";
 
 export default function AddPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [assetFormOpen, setAssetFormOpen] = useState(false);
   const [importResult, setImportResult] = useState<{
     success: boolean;
     message: string;
@@ -69,24 +72,45 @@ export default function AddPage() {
     }
   };
 
-  const options = [
+  const sections = [
     {
-      icon: Plus,
-      label: "Add Transaction",
-      description: "Manually add a new transaction",
-      onClick: () => router.push("/transactions?openForm=true"),
+      title: "Add Items",
+      items: [
+        {
+          icon: Plus,
+          label: "Add Transaction",
+          description: "Manually add a new transaction",
+          onClick: () => router.push("/transactions?openForm=true"),
+        },
+        {
+          icon: Landmark,
+          label: "Add Asset",
+          description: "Add cash, real estate, or other assets",
+          onClick: () => setAssetFormOpen(true),
+        },
+      ],
     },
     {
-      icon: Mail,
-      label: "Import from Gmail",
-      description: "Import transactions from MyInvestor emails",
-      onClick: () => router.push("/import"),
+      title: "Add from My Investor",
+      items: [
+        {
+          icon: Mail,
+          label: "Import from Gmail",
+          description: "Import transactions from MyInvestor emails",
+          onClick: () => router.push("/import"),
+        },
+      ],
     },
     {
-      icon: Upload,
-      label: "Import from JSON",
-      description: "Import portfolio data from a JSON file",
-      onClick: handleImportClick,
+      title: "Add from Backup",
+      items: [
+        {
+          icon: Upload,
+          label: "Import from JSON",
+          description: "Restore portfolio from a JSON backup file",
+          onClick: handleImportClick,
+        },
+      ],
     },
   ];
 
@@ -107,7 +131,7 @@ export default function AddPage() {
         </div>
       </header>
 
-      <main className="p-4 space-y-3">
+      <main className="p-4 space-y-6">
         {/* Hidden file input for JSON import */}
         <input
           type="file"
@@ -135,27 +159,40 @@ export default function AddPage() {
           </div>
         )}
 
-        {options.map((option) => (
-          <button
-            key={option.label}
-            onClick={option.onClick}
-            disabled={isImporting && option.label === "Import from JSON"}
-            className="w-full flex items-center gap-4 p-4 rounded-2xl border border-border bg-card hover:bg-muted/50 active:scale-[0.98] transition-all text-left"
-          >
-            <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/10 text-primary flex-shrink-0">
-              {isImporting && option.label === "Import from JSON" ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <option.icon className="h-5 w-5" />
-              )}
-            </div>
-            <div>
-              <p className="font-medium text-foreground">{option.label}</p>
-              <p className="text-sm text-muted-foreground">
-                {option.description}
-              </p>
-            </div>
-          </button>
+        <AssetForm
+          open={assetFormOpen}
+          onOpenChange={setAssetFormOpen}
+          onSuccess={() => router.push("/")}
+        />
+
+        {sections.map((section) => (
+          <div key={section.title} className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">
+              {section.title}
+            </h2>
+            {section.items.map((item) => (
+              <button
+                key={item.label}
+                onClick={item.onClick}
+                disabled={isImporting && item.label === "Import from JSON"}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-border bg-card hover:bg-muted/50 active:scale-[0.98] transition-all text-left"
+              >
+                <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/10 text-primary flex-shrink-0">
+                  {isImporting && item.label === "Import from JSON" ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <item.icon className="h-5 w-5" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">{item.label}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
         ))}
       </main>
     </div>

@@ -3,11 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Download,
-  Loader2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -20,7 +15,6 @@ import {
   TransactionFilters,
   TransactionForm,
 } from "@/components/transactions";
-import { exportPortfolioData } from "@/actions/settings";
 import type { SerializedTransaction, PaginatedResult } from "@/types/transaction";
 import type { Asset } from "@prisma/client";
 
@@ -36,7 +30,6 @@ export function TransactionsContent({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
 
   // Open form when navigated with ?openForm=true
   useEffect(() => {
@@ -62,47 +55,13 @@ export function TransactionsContent({
     router.push(`/transactions?${params.toString()}`);
   };
 
-  const handleExport = async () => {
-    setIsExporting(true);
-    const result = await exportPortfolioData();
-
-    if (result.success && result.data) {
-      const blob = new Blob([result.data], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `portfolio-export-${new Date().toISOString().split("T")[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    setIsExporting(false);
-  };
-
   return (
     <div className="space-y-6">
-      {/* Header with actions menu */}
-      <div className="flex justify-between items-center">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            {transactions.total} transaction{transactions.total !== 1 ? "s" : ""}
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={isExporting}
-        >
-          {isExporting ? (
-            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4 mr-1" />
-          )}
-          Export
-        </Button>
+      {/* Header */}
+      <div>
+        <p className="text-sm text-muted-foreground">
+          {transactions.total} transaction{transactions.total !== 1 ? "s" : ""}
+        </p>
       </div>
 
       {/* Filters */}

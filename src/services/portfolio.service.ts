@@ -31,13 +31,15 @@ export async function getPortfolioData(userId: string): Promise<PortfolioSummary
     const costBasis = Number(h.costBasis);
     const avgPrice = Number(h.avgPrice);
 
-    // Calculate market value (use cost basis if no price available)
-    const marketValue = currentPrice ? shares * currentPrice : costBasis;
+    // For manual assets, use costBasis directly; otherwise use price
+    const isManual = h.asset.manualPricing;
+    const marketValue = isManual ? costBasis : (currentPrice ? shares * currentPrice : costBasis);
     const gainLoss = marketValue - costBasis;
     const gainLossPercent = costBasis > 0 ? gainLoss / costBasis : 0;
 
     return {
       id: h.id,
+      assetId: h.assetId,
       name: h.asset.name,
       isin: h.asset.isin,
       ticker: h.asset.ticker ?? null,
@@ -45,11 +47,12 @@ export async function getPortfolioData(userId: string): Promise<PortfolioSummary
       shares,
       costBasis,
       avgPrice,
-      currentPrice,
+      currentPrice: isManual ? costBasis : currentPrice,
       priceDate: latestPrice?.date?.toISOString().split("T")[0] || null,
       marketValue,
       gainLoss,
       gainLossPercent,
+      manualPricing: isManual,
     };
   });
 

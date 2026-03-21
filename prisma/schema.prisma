@@ -65,6 +65,7 @@ model Asset {
   category  AssetCategory @default(OTHERS)
   currency  String        @default("EUR")
   isActive  Boolean       @default(true)
+  manualPricing Boolean   @default(false)
 
   transactions Transaction[]
   prices       Price[]

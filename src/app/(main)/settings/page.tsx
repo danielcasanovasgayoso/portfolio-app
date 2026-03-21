@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Calculator,
   Database,
+  Download,
   Key,
   Palette,
 } from "lucide-react";
@@ -20,6 +21,7 @@ import { RecalculateHoldingsButton } from "@/components/settings/RecalculateHold
 import { ApiKeyForm } from "@/components/settings/ApiKeyForm";
 import { ThemeToggle } from "@/components/settings/ThemeToggle";
 import { DatabaseReset } from "@/components/settings/DatabaseReset";
+import { ExportData } from "@/components/settings/ExportData";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { getSettings } from "@/actions/settings";
 import { requireAuth } from "@/lib/auth";
@@ -154,6 +156,25 @@ async function SettingsContent() {
             Use this if your portfolio totals seem incorrect after importing
             transactions.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Download className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle>Export Data</CardTitle>
+              <CardDescription>
+                Download a full backup of your portfolio
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ExportData />
         </CardContent>
       </Card>
 
