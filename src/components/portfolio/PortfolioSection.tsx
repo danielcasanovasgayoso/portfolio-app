@@ -64,7 +64,7 @@ export function PortfolioSection({
         {/* Category stats bar */}
         {!isOther && totals && (
           <div className="bg-card rounded-xl p-6 border-0 shadow-ambient">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {/* Invested */}
               <div className="text-center">
                 <div className="flex items-center justify-center gap-1.5 mb-1 text-muted-foreground">
