@@ -149,14 +149,14 @@ export default async function AssetDetailPage({
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">Average Price</span>
               <span className="font-semibold">
-                {formatCurrency(holding.avgPrice, true)}
+                {formatCurrency(holding.avgPrice)}
               </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">Current Price</span>
               <span className="font-semibold">
                 {holding.currentPrice
-                  ? formatCurrency(holding.currentPrice, true)
+                  ? formatCurrency(holding.currentPrice)
                   : "—"}
               </span>
             </div>

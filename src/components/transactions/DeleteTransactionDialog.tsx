@@ -98,7 +98,7 @@ export function DeleteTransactionDialog({
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Total</span>
               <span className="text-sm font-medium tabular-nums">
-                {formatCurrency(Number(transaction.totalAmount), true)}
+                {formatCurrency(Number(transaction.totalAmount))}
               </span>
             </div>
           </div>

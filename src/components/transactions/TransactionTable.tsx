@@ -173,15 +173,15 @@ export function TransactionTable({
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {transaction.pricePerShare
-                      ? formatCurrency(Number(transaction.pricePerShare), true)
+                      ? formatCurrency(Number(transaction.pricePerShare))
                       : "—"}
                   </TableCell>
                   <TableCell className="text-right font-medium tabular-nums">
-                    {formatCurrency(Number(transaction.totalAmount), true)}
+                    {formatCurrency(Number(transaction.totalAmount))}
                   </TableCell>
                   <TableCell className="text-right tabular-nums text-muted-foreground">
                     {transaction.fees && Number(transaction.fees) > 0
-                      ? formatCurrency(Number(transaction.fees), true)
+                      ? formatCurrency(Number(transaction.fees))
                       : "—"}
                   </TableCell>
                   <TableCell>

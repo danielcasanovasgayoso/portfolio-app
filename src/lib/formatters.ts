@@ -3,13 +3,6 @@
 const currencyFormatter = new Intl.NumberFormat("es-ES", {
   style: "currency",
   currency: "EUR",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-});
-
-const currencyDecimalFormatter = new Intl.NumberFormat("es-ES", {
-  style: "currency",
-  currency: "EUR",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -30,14 +23,9 @@ const dateFormatter = new Intl.DateTimeFormat("es-ES", {
   year: "numeric",
 });
 
-export function formatCurrency(
-  value: number | null | undefined,
-  decimal = false
-): string {
+export function formatCurrency(value: number | null | undefined): string {
   if (value == null) return "—";
-  return decimal
-    ? currencyDecimalFormatter.format(value)
-    : currencyFormatter.format(value);
+  return currencyFormatter.format(value);
 }
 
 export function formatPercent(value: number | null | undefined): string {

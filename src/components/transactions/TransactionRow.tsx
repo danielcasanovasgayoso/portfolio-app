@@ -94,17 +94,17 @@ export function TransactionRow({
           <p className="text-[13px] text-muted-foreground">
             {formatShares(Number(transaction.shares))} shares
             {transaction.pricePerShare &&
-              ` @ ${formatCurrency(Number(transaction.pricePerShare), true)}`}
+              ` @ ${formatCurrency(Number(transaction.pricePerShare))}`}
           </p>
         </div>
 
         <div className="flex items-baseline justify-between">
           <p className="text-[17px] font-semibold text-foreground tabular-nums">
-            {formatCurrency(Number(transaction.totalAmount), true)}
+            {formatCurrency(Number(transaction.totalAmount))}
           </p>
           {transaction.fees && Number(transaction.fees) > 0 && (
             <p className="text-[12px] text-muted-foreground">
-              Fee: {formatCurrency(Number(transaction.fees), true)}
+              Fee: {formatCurrency(Number(transaction.fees))}
             </p>
           )}
         </div>

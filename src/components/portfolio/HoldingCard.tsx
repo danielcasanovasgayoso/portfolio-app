@@ -151,7 +151,7 @@ export function HoldingCard({
           <div className="bg-muted p-3 rounded-md">
             <p className="label-sm mb-1 text-muted-foreground">Avg Price</p>
             <p className="text-sm font-mono font-medium text-foreground tabular-nums">
-              {formatCurrency(holding.avgPrice, true)}
+              {formatCurrency(holding.avgPrice)}
             </p>
           </div>
 
@@ -159,7 +159,7 @@ export function HoldingCard({
             <p className="label-sm mb-1 text-muted-foreground">Current</p>
             <p className="text-sm font-mono font-medium text-foreground tabular-nums">
               {holding.currentPrice
-                ? formatCurrency(holding.currentPrice, true)
+                ? formatCurrency(holding.currentPrice)
                 : "—"}
             </p>
           </div>

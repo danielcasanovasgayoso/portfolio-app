@@ -114,7 +114,7 @@ export function TransactionTimeline({
                 <span>
                   {formatShares(txn.shares)} shares
                   {txn.pricePerShare && (
-                    <> @ {formatCurrency(txn.pricePerShare, true)}</>
+                    <> @ {formatCurrency(txn.pricePerShare)}</>
                   )}
                 </span>
               )}
