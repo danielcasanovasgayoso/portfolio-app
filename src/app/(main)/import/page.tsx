@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { GmailConnectCard, ImportWizard } from "@/components/import";
 import { checkGmailConnection } from "@/actions/import";
 import { requireAuth } from "@/lib/auth";
@@ -17,27 +19,35 @@ export default async function ImportPage({
   const { error, success } = await searchParams;
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Import Transactions</h1>
-        <p className="text-muted-foreground">
-          Import transactions from MyInvestor notification emails
-        </p>
-      </div>
-
-      {/* Status messages */}
-      {error && (
-        <div className="mb-4 rounded-md bg-destructive/10 p-4 text-destructive">
-          {error}
+    <div className="min-h-screen pb-20">
+      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/add"
+            aria-label="Go back"
+            className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <h1 className="text-lg font-bold tracking-tight text-foreground">
+            Import from Gmail
+          </h1>
         </div>
-      )}
-      {success && (
-        <div className="mb-4 rounded-md bg-green-50 p-4 text-green-800 dark:bg-green-900/20 dark:text-green-200">
-          {success}
-        </div>
-      )}
+      </header>
 
-      <div className="space-y-6">
+      <main className="p-4 space-y-6">
+        {/* Status messages */}
+        {error && (
+          <div className="rounded-md bg-destructive/10 p-4 text-destructive">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="rounded-md bg-green-50 p-4 text-green-800 dark:bg-green-900/20 dark:text-green-200">
+            {success}
+          </div>
+        )}
+
         <Suspense
           fallback={
             <div className="h-48 animate-pulse rounded-lg bg-muted" />
@@ -45,7 +55,7 @@ export default async function ImportPage({
         >
           <ImportContent />
         </Suspense>
-      </div>
+      </main>
     </div>
   );
 }

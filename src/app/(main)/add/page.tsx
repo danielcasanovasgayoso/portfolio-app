@@ -80,7 +80,7 @@ export default function AddPage() {
           icon: Plus,
           label: "Add Transaction",
           description: "Manually add a new transaction",
-          onClick: () => router.push("/transactions?openForm=true"),
+          onClick: () => router.push("/add/transaction"),
         },
         {
           icon: Landmark,

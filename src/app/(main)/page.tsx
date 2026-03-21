@@ -3,6 +3,7 @@ import {
   PortfolioSummaryCard,
   PortfolioSection,
 } from "@/components/portfolio";
+import { PortfolioEmptyState } from "@/components/portfolio/PortfolioEmptyState";
 import { RefreshPricesButton } from "@/components/portfolio/RefreshPricesButton";
 import { getPortfolioData } from "@/services/portfolio.service";
 import { requireAuth } from "@/lib/auth";
@@ -39,6 +40,16 @@ export default async function PortfolioPage() {
 
 async function PortfolioContent({ userId }: { userId: string }) {
   const data = await getPortfolioData(userId);
+
+  const isEmpty =
+    data.holdings.funds.length === 0 &&
+    data.holdings.stocks.length === 0 &&
+    data.holdings.pp.length === 0 &&
+    data.holdings.others.length === 0;
+
+  if (isEmpty) {
+    return <PortfolioEmptyState />;
+  }
 
   return (
     <>
