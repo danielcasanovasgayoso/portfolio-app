@@ -100,7 +100,7 @@ export default function AddTransactionPage() {
 
   return (
     <div className="min-h-screen pb-20">
-      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3">
+      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 pt-[env(safe-area-inset-top)]">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}

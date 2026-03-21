@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     title: "Portfolio",
   },
   icons: {
-    icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],
+    icon: [{ url: "/icons/icon-192x192.png", type: "image/png", sizes: "192x192" }],
     apple: [
       { url: "/icons/icon-152x152.png", sizes: "152x152" },
       { url: "/icons/icon-192x192.png", sizes: "192x192" },
