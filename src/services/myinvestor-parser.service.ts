@@ -301,19 +301,7 @@ function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
     console.log(`[PARSER-TRANSFER] No Fecha Operación found, using email date: ${email.date.toISOString()}`);
   }
 
-  // Helper function to extract fund name for a given ISIN
-  // Uses MyInvestor fund lookup, then email text, then fallback
-  const extractFundName = (isin: string, fallbackPrefix: string): string => {
-    // First try the MyInvestor fund lookup
-    const lookupName = determineFundName(isin);
-    if (lookupName && lookupName !== isin) {
-      return lookupName;
-    }
-    // Fall back to extracting from email text
-    const fundNamePattern = new RegExp(`([A-Z][A-Z0-9\\s\\-\\.]+?)\\s*C[oó]digo ISIN[:\\s]*${isin}`, "i");
-    const match = text.match(fundNamePattern);
-    return match ? match[1].trim() : `${fallbackPrefix} ${isin}`;
-  };
+  const extractFundName = (isin: string): string => determineFundName(isin);
 
   // MyInvestor sends TWO separate emails per transfer:
   // - REEMB.POR TRASPASO = redemption email (OUT from source fund)
@@ -336,7 +324,7 @@ function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
     type: "TRANSFER",
     transferType,
     isin,
-    name: extractFundName(isin, isRedemption ? "Transfer from" : "Transfer to"),
+    name: extractFundName(isin),
     shares,
     pricePerShare,
     totalAmount: amount,
@@ -394,8 +382,7 @@ function parsePensionContributionEmail(email: GmailEmail): ParsedTransaction[] {
   const isin = extractIsinFromHtml(email.body);
 
   if (amount > 0) {
-    // Use fund lookup for better name if available
-    const finalName = isin ? determineFundName(isin, name) : name;
+    const finalName = isin ? determineFundName(isin) : name;
 
     transactions.push({
       date,
@@ -431,8 +418,7 @@ function parseDividendEmail(email: GmailEmail): ParsedTransaction[] {
   if (amountMatch) {
     const amount = parseSpanishNumber(amountMatch[1]);
     const isin = extractIsinFromHtml(email.body);
-    // Use fund lookup for better name if available
-    const name = isin ? determineFundName(isin, "Interest Settlement") : "Interest Settlement";
+    const name = isin ? determineFundName(isin) : "Interest Settlement";
 
     transactions.push({
       date: email.date,
@@ -514,9 +500,8 @@ export function parseMyInvestorEmail(email: GmailEmail): ParsedEmail {
         const isin = extractIsinFromHtml(email.body);
         const fees = extractFeesFromHtml(email.body);
         const reference = extractReferenceFromHtml(email.body);
-        // Use fund lookup for better name if available, fallback to subject name
         const name = isin
-          ? determineFundName(isin, subjectData.name || "Unknown Asset")
+          ? determineFundName(isin)
           : subjectData.name || "Unknown Asset";
 
         console.log(`[PARSER] Subject parse result - Name: ${subjectData.name}, Shares: ${subjectData.shares}, Price: ${subjectData.pricePerShare}`);

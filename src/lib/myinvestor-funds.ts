@@ -226,9 +226,9 @@ const MYINVESTOR_FUNDS: Array<{
   { isin: "LU0868753731", name: "Morgan Stanley Investment Funds - Global Insight Fund A", fundType: "Fondo", category: "FUNDS", currency: "USD" },
 
   // Amundi Index Funds
-  { isin: "FR0000447823", name: "Amundi MSCI World UCITS ETF", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "FR0000989626", name: "Amundi Funds Index Solutions", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "FR0013346079", name: "Amundi Funds", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
+  { isin: "FR0000447823", name: "AXA Trésor Court Terme", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
+  { isin: "FR0000989626", name: "Groupama Trésorerie IC", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
+  { isin: "FR0013346079", name: "Groupama Ultra Short Term", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
 
   // European Funds
   { isin: "LU0235308482", name: "Alken European Opportunities R", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
@@ -327,23 +327,14 @@ export function determineAssetCategory(isin: string, name?: string): AssetCatego
 }
 
 /**
- * Gets fund name from all available sources
+ * Gets fund name by ISIN from hardcoded data only.
+ * Returns the ISIN itself if not found in the static map.
  */
-export function determineFundName(isin: string, fallbackName?: string): string {
-  // Try static lookup first
+export function determineFundName(isin: string): string {
   const staticFund = STATIC_FUND_MAP.get(isin);
   if (staticFund) {
     return staticFund.name;
   }
 
-  // Try dynamic cache if available
-  if (fundCache) {
-    const cachedFund = fundCache.get(isin);
-    if (cachedFund) {
-      return cachedFund.name;
-    }
-  }
-
-  // Return fallback or ISIN
-  return fallbackName || isin;
+  return isin;
 }
