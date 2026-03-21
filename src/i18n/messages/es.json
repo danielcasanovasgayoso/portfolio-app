@@ -220,7 +220,8 @@
     "resetConfirmPlaceholder": "Escribe el texto de confirmación",
     "resetConfirmText": "ELIMINAR TODOS LOS DATOS",
     "deleteEverything": "Eliminar Todo",
-    "resetHelp": "Esto eliminará permanentemente todos los datos de tu cartera. Las claves API y la configuración de tema se conservarán."
+    "resetHelp": "Esto eliminará permanentemente todos los datos de tu cartera. Las claves API y la configuración de tema se conservarán.",
+    "cancel": "Cancelar"
   },
   "import": {
     "title": "Importar desde Gmail",

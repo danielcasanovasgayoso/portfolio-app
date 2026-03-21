@@ -220,7 +220,8 @@
     "resetConfirmPlaceholder": "Type confirmation text",
     "resetConfirmText": "DELETE ALL DATA",
     "deleteEverything": "Delete Everything",
-    "resetHelp": "This will permanently delete all your portfolio data. API keys and theme settings will be preserved."
+    "resetHelp": "This will permanently delete all your portfolio data. API keys and theme settings will be preserved.",
+    "cancel": "Cancel"
   },
   "import": {
     "title": "Import from Gmail",

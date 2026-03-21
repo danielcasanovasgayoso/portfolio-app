@@ -102,7 +102,7 @@ export function DatabaseReset() {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            {t("cancel", { ns: "common" })}
+            {t("cancel")}
           </Button>
           <Button
             variant="destructive"
