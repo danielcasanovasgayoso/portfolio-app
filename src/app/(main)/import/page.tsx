@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 import { getTranslations } from "next-intl/server";
 import { GmailConnectCard, ImportWizard } from "@/components/import";
 import { checkGmailConnection } from "@/actions/import";
@@ -27,13 +26,7 @@ export default async function ImportPage({
     <div className="min-h-screen pb-20">
       <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3">
         <div className="flex items-center gap-3">
-          <Link
-            href="/add"
-            aria-label={t("goBack")}
-            className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+          <BackButton label={t("goBack")} />
           <h1 className="text-lg font-bold tracking-tight text-foreground">
             {t("title")}
           </h1>

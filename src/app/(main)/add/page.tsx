@@ -7,12 +7,12 @@ import {
   Plus,
   Mail,
   Upload,
-  ArrowLeft,
   Loader2,
   Check,
   AlertCircle,
   Landmark,
 } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 import { importPortfolioData } from "@/actions/settings";
 import { AssetForm } from "@/components/assets/AssetForm";
 
@@ -124,13 +124,7 @@ export default function AddPage() {
     <div className="min-h-screen pb-20">
       <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            aria-label={t("goBack")}
-            className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+          <BackButton label={t("goBack")} />
           <h1 className="text-lg font-bold tracking-tight text-foreground">
             {t("title")}
           </h1>
