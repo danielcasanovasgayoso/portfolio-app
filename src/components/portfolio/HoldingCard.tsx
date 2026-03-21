@@ -53,7 +53,7 @@ export function HoldingCard({
 
   return (
     <Link href={`/portfolio/${holding.id}`} className="block group">
-      <article className="bg-card rounded-xl shadow-sm p-5 border-0">
+      <article className="bg-card rounded-xl shadow-sm p-5 border-0 transition-transform duration-150 active:scale-[0.98]">
         {/* Header row */}
         <div className="flex justify-between items-start gap-3 mb-4">
           <div className="flex-1 min-w-0">
@@ -61,7 +61,7 @@ export function HoldingCard({
               <h3 className="text-[15px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                 {holding.name}
               </h3>
-              <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             </div>
             <div className="flex items-center gap-2 text-[12px] font-mono text-muted-foreground">
               <span>{formatShares(holding.shares)} shares</span>
