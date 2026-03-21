@@ -173,6 +173,22 @@ export function clearFundCache(): void {
   fundCache = null;
 }
 
+// DGSFP registry code → ISIN mapping for pension plans
+// Código DGSFP: "N" + 4 digits, assigned by Dirección General de Seguros y Fondos de Pensiones
+const DGSFP_TO_ISIN: Record<string, string> = {
+  N5396: "ES0165265002", // MyInvestor Indexado Global Stock PP
+  N5394: "ES0175105008", // MyInvestor Indexado S&P500 PP
+  N5459: "ES0125336004", // MyInvestor Cartera Permanente PP
+  N5572: "ES0171664004", // MyInvestor Value PP
+};
+
+/**
+ * Resolves a DGSFP registry code (e.g. "N5396") to an ISIN
+ */
+export function resolveIsinFromDgsfp(code: string): string | null {
+  return DGSFP_TO_ISIN[code.toUpperCase()] ?? null;
+}
+
 // Embedded fund data from MyInvestor CSV
 // This is extracted from the CSV file to enable category lookup without file I/O
 const MYINVESTOR_FUNDS: Array<{
@@ -200,7 +216,8 @@ const MYINVESTOR_FUNDS: Array<{
   { isin: "IE000QAZP7L2", name: "iShares Emerging Markets Index Fund (IE) Acc EUR", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
   { isin: "IE00BFMXXD54", name: "iShares Global Aggregate Bond Index Fund", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
 
-  // Gold & Precious Metals Funds
+  // Gold & Precious Metals ETCs/Funds
+  { isin: "IE00B579F325", name: "Invesco Physical Gold ETC (SGLD)", fundType: "ETC", category: "STOCKS", currency: "EUR" },
   { isin: "LU0273159177", name: "DWS Invest Gold and Precious Metals Equities LC", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
   { isin: "LU0171305526", name: "BlackRock Global Funds - World Gold Fund A2 EUR Acc", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
   { isin: "LU1223083087", name: "Schroder International Selection Fund Global Gold A Acc EUR Hedged", fundType: "Fondo", category: "FUNDS", currency: "EUR" },

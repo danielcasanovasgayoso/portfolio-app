@@ -2,7 +2,7 @@ import * as cheerio from "cheerio";
 import { SKIP_PATTERNS } from "@/lib/gmail";
 import type { GmailEmail, ParsedEmail, ParsedTransaction, EmailType } from "@/types/import";
 import type { TransactionType, TransferType } from "@prisma/client";
-import { determineFundName } from "@/lib/myinvestor-funds";
+import { determineFundName, resolveIsinFromDgsfp } from "@/lib/myinvestor-funds";
 
 /**
  * Subject line regex patterns
@@ -379,7 +379,35 @@ function parsePensionContributionEmail(email: GmailEmail): ParsedTransaction[] {
     }
   }
 
-  const isin = extractIsinFromHtml(email.body);
+  let isin = extractIsinFromHtml(email.body);
+
+  // Pension plan emails use DGSFP registry codes (e.g. "Código DGS: N5396") instead of ISINs
+  if (!isin) {
+    const dgsfpMatch = bodyText.match(/[Cc][oó]digo\s*DGS(?:FP)?[^:]*:\s*(N\d{4})/);
+    if (dgsfpMatch) {
+      isin = resolveIsinFromDgsfp(dgsfpMatch[1]);
+    }
+  }
+
+  // Extract shares (participaciones) and price from body
+  let shares = amount; // fallback: shares = amount (1:1)
+  let pricePerShare = 1;
+  const sharesMatch = bodyText.match(/[Nn][uú]mero\s*de\s*participaciones\s*([\d.,]+)/);
+  const priceMatch = bodyText.match(/[Pp]recio\s*bruto\s*([\d.,]+)/);
+  if (sharesMatch) {
+    shares = parseSpanishNumber(sharesMatch[1]);
+  }
+  if (priceMatch) {
+    pricePerShare = parseSpanishNumber(priceMatch[1]);
+  }
+
+  // Extract date from body if not found in subject
+  if (!subjectMatch) {
+    const dateMatch = bodyText.match(/[Ff]echa\s*de\s*operaci[oó]n\s*(\d{2}\/\d{2}\/\d{4})/);
+    if (dateMatch) {
+      date = parseSpanishDate(dateMatch[1]);
+    }
+  }
 
   if (amount > 0) {
     const finalName = isin ? determineFundName(isin) : name;
@@ -389,8 +417,8 @@ function parsePensionContributionEmail(email: GmailEmail): ParsedTransaction[] {
       type: "BUY",
       isin: isin || "UNKNOWN_PP",
       name: finalName,
-      shares: amount, // For PP, shares = amount (1:1)
-      pricePerShare: 1,
+      shares,
+      pricePerShare,
       totalAmount: amount,
       fees: 0,
       currency,
