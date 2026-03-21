@@ -19,7 +19,7 @@ export default async function PortfolioPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="pt-6 pb-24 max-w-5xl mx-auto">
+      <main className="pt-[max(1.5rem,env(safe-area-inset-top))] pb-24 max-w-5xl mx-auto">
         {/* Header renders instantly — no data dependency */}
         <div className="flex justify-between items-start px-8 mb-12">
           <div className="flex flex-col max-w-[60%]">
