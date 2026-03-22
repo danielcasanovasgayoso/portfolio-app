@@ -2,18 +2,14 @@
 
 A personal investment portfolio tracker built with Next.js. Track holdings, transactions, and performance across funds, stocks, and pension plans with real-time pricing and automated email import.
 
-<p align="center">
-  <img src="docs/screenshots/portfolio.png" width="200" alt="Portfolio overview" />
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/asset-detail.png" width="200" alt="Asset detail with price chart" />
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/transactions.png" width="200" alt="Transaction list with filters" />
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/settings.png" width="200" alt="Settings page" />
-</p>
-<p align="center">
-  <em>Portfolio overview &nbsp;·&nbsp; Asset detail &nbsp;·&nbsp; Transactions &nbsp;·&nbsp; Settings</em>
-</p>
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/portfolio.png" width="240" alt="Portfolio overview" /><br /><em>Portfolio</em></td>
+    <td align="center"><img src="docs/screenshots/asset-detail.png" width="240" alt="Asset detail with price chart" /><br /><em>Asset Detail</em></td>
+    <td align="center"><img src="docs/screenshots/transactions.png" width="240" alt="Transaction list with filters" /><br /><em>Transactions</em></td>
+    <td align="center"><img src="docs/screenshots/settings.png" width="240" alt="Settings page" /><br /><em>Settings</em></td>
+  </tr>
+</table>
 
 ## Features
 
