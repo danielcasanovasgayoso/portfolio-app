@@ -1,13 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
-interface ThemeProviderProps {
-  theme: string;
-  children: React.ReactNode;
+function subscribe(cb: () => void) {
+  window.addEventListener("storage", cb);
+  return () => window.removeEventListener("storage", cb);
 }
 
-export function ThemeProvider({ theme, children }: ThemeProviderProps) {
+function getThemeSnapshot() {
+  return localStorage.getItem("theme") || "system";
+}
+
+function getServerSnapshot() {
+  return "system";
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const theme = useSyncExternalStore(subscribe, getThemeSnapshot, getServerSnapshot);
+
   useEffect(() => {
     const root = document.documentElement;
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -22,7 +32,6 @@ export function ThemeProvider({ theme, children }: ThemeProviderProps) {
 
       root.classList.remove("light", "dark");
       root.classList.add(effectiveTheme);
-      localStorage.setItem("theme", theme);
     };
 
     applyTheme();

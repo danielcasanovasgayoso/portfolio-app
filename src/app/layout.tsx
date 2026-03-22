@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -70,6 +71,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="font-sans antialiased bg-background text-foreground safe-bottom">
+        <ServiceWorkerRegistrar />
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

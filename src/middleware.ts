@@ -15,6 +15,6 @@ export const config = {
      * - public assets (images, icons, etc.)
      * - api routes (handled separately)
      */
-    "/((?!_next/static|_next/image|favicon.ico|icons|images|manifest.json|api).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icons|images|manifest.json|api|sw\\.js|offline\\.html).*)",
   ],
 };

@@ -55,6 +55,7 @@ export function ThemeToggle({ currentTheme }: ThemeToggleProps) {
 
     setIsLoading(true);
     setTheme(newTheme);
+    localStorage.setItem("theme", newTheme);
 
     await updateTheme(newTheme);
     setIsLoading(false);
