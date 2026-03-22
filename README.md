@@ -1,27 +1,44 @@
-# Portfolio
+# Portfolio Tracker
 
 A personal investment portfolio tracker built with Next.js. Track holdings, transactions, and performance across funds, stocks, and pension plans with real-time pricing and automated email import.
 
+<p align="center">
+  <img src="docs/screenshots/portfolio.png" width="200" alt="Portfolio overview" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/asset-detail.png" width="200" alt="Asset detail with price chart" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/transactions.png" width="200" alt="Transaction list with filters" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/settings.png" width="200" alt="Settings page" />
+</p>
+<p align="center">
+  <em>Portfolio overview &nbsp;·&nbsp; Asset detail &nbsp;·&nbsp; Transactions &nbsp;·&nbsp; Settings</em>
+</p>
+
 ## Features
 
-- **Portfolio dashboard** — Overview of all holdings with market value, cost basis, and unrealized gains
+- **Portfolio dashboard** — Total net worth, category breakdown (Funds, Stocks, Pension Plans), per-asset gain/loss and weight
+- **Asset detail view** — Market value, shares, cost basis, and interactive price history chart with 1W/1M/3M/6M/1Y/ALL timeframes
+- **Transaction management** — Full CRUD with filtering by type (Buy, Sell, Dividend, Fee, Transfer), asset, and date range
 - **FIFO cost accounting** — Automatic cost basis calculation using first-in, first-out method
-- **Real-time prices** — Fetches market data from EODHD API with smart caching (shorter TTL during trading hours)
-- **Gmail import** — Automatically parse and import MyInvestor fund transaction emails via OAuth
+- **Real-time prices** — EODHD API integration with smart caching (shorter TTL during trading hours)
+- **Gmail import** — Automatically parse and import MyInvestor transaction emails via OAuth
 - **Multi-currency** — EUR-based with configurable default currency
 - **i18n** — English and Spanish
-- **Mobile-first** — PWA-ready with bottom navigation and safe area support
+- **Mobile-first PWA** — Bottom navigation, safe area support, offline-ready with service worker
 - **Dark mode** — System, light, and dark themes
 
 ## Tech Stack
 
-- **Framework:** Next.js 16 (App Router, React Server Components)
-- **Language:** TypeScript (strict)
-- **Database:** PostgreSQL (Supabase) with Prisma ORM
-- **Auth:** Supabase Auth
-- **Styling:** Tailwind CSS 4 + shadcn/ui
-- **Charts:** Recharts
-- **Deployment:** Vercel
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 16 (App Router, Server Components) |
+| Language | TypeScript (strict) |
+| Database | PostgreSQL (Supabase) + Prisma ORM |
+| Auth | Supabase Auth |
+| Styling | Tailwind CSS 4 + shadcn/ui |
+| Charts | Recharts |
+| Deployment | Vercel |
 
 ## Getting Started
 
@@ -72,8 +89,6 @@ npm run dev               # Start dev server at http://localhost:3000
 | `npm run db:seed` | Seed database with reference data |
 
 ## Architecture
-
-The app follows a server-centric architecture using Next.js App Router:
 
 ```
 src/
