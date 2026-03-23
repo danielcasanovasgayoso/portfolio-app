@@ -177,7 +177,7 @@ export default async function AssetDetailPage({
               )}
               <div className="flex justify-between items-center py-2">
                 <span className="text-muted-foreground">{t("ticker")}</span>
-                <span className="font-mono text-sm">
+                <span className="font-semibold">
                   {holding.ticker || "—"}
                 </span>
               </div>
