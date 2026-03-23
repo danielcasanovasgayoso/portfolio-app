@@ -22,18 +22,10 @@ export async function fetchMyInvestorEmails(
     query += ` after:${dateStr}`;
   }
 
-  console.log("[GMAIL-FETCH] Starting email fetch");
-  console.log("[GMAIL-FETCH] Query:", query);
-  console.log("[GMAIL-FETCH] Max results:", maxResults);
-
   const emails: GmailEmail[] = [];
   let pageToken: string | undefined;
-  let pageCount = 0;
 
   do {
-    pageCount++;
-    console.log(`[GMAIL-FETCH] Fetching page ${pageCount}...`);
-
     const response = await gmail.users.messages.list({
       userId: "me",
       q: query,
@@ -42,37 +34,19 @@ export async function fetchMyInvestorEmails(
     });
 
     const messages = response.data.messages || [];
-    console.log(`[GMAIL-FETCH] Page ${pageCount}: Found ${messages.length} messages`);
 
     // Fetch full email details for each message
     for (const message of messages) {
-      if (emails.length >= maxResults) {
-        console.log(`[GMAIL-FETCH] Reached max results limit (${maxResults}), stopping`);
-        break;
-      }
+      if (emails.length >= maxResults) break;
 
       const fullEmail = await fetchEmailDetails(gmail, message.id!);
       if (fullEmail) {
-        // Log summary of each email
-        const subjectPreview = fullEmail.subject.substring(0, 80);
-        const dateStr = fullEmail.date.toISOString().split("T")[0];
-        console.log(`[GMAIL-FETCH] Email: ${dateStr} | ${subjectPreview}...`);
         emails.push(fullEmail);
       }
     }
 
     pageToken = response.data.nextPageToken || undefined;
-    console.log(`[GMAIL-FETCH] Page ${pageCount} complete. Total emails so far: ${emails.length}, hasNextPage: ${!!pageToken}`);
   } while (pageToken && emails.length < maxResults);
-
-  console.log(`[GMAIL-FETCH] Fetch complete. Total emails fetched: ${emails.length}`);
-
-  // Log all fetched emails with TRASPASO in subject for easy debugging
-  const transferEmails = emails.filter(e => e.subject.toUpperCase().includes("TRASPASO"));
-  console.log(`[GMAIL-FETCH] Transfer emails found: ${transferEmails.length}`);
-  transferEmails.forEach((e, i) => {
-    console.log(`[GMAIL-FETCH] Transfer #${i + 1}: ${e.date.toISOString().split("T")[0]} | ${e.subject.substring(0, 100)}`);
-  });
 
   return emails;
 }

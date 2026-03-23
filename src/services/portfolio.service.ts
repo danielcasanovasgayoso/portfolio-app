@@ -1,60 +1,70 @@
 import { db } from "@/lib/db";
 import type { PortfolioSummary, Holding, CategoryTotal } from "@/types/portfolio";
+import type { Prisma } from "@prisma/client";
+
+/** Prisma return type for a holding with asset + latest price */
+type DbHoldingWithAsset = Prisma.HoldingGetPayload<{
+  include: { asset: { include: { prices: true } } };
+}>;
+
+/** Shared include clause for holding queries */
+const holdingInclude = {
+  asset: {
+    include: {
+      prices: {
+        orderBy: { date: "desc" as const },
+        take: 1,
+      },
+    },
+  },
+} as const;
+
+/**
+ * Maps a Prisma holding row to the Holding DTO
+ */
+function mapDbHoldingToDto(h: DbHoldingWithAsset): Holding {
+  const latestPrice = h.asset.prices[0];
+  const currentPrice = latestPrice?.close ? Number(latestPrice.close) : null;
+  const shares = Number(h.shares);
+  const costBasis = Number(h.costBasis);
+  const avgPrice = Number(h.avgPrice);
+  const isManual = h.asset.manualPricing;
+  const marketValue = isManual ? costBasis : (currentPrice ? shares * currentPrice : costBasis);
+  const gainLoss = marketValue - costBasis;
+  const gainLossPercent = costBasis > 0 ? gainLoss / costBasis : 0;
+
+  return {
+    id: h.id,
+    assetId: h.assetId,
+    name: h.asset.name,
+    isin: h.asset.isin,
+    ticker: h.asset.ticker ?? null,
+    category: h.asset.category,
+    shares,
+    costBasis,
+    avgPrice,
+    currentPrice: isManual ? costBasis : currentPrice,
+    priceDate: latestPrice?.date?.toISOString().split("T")[0] || null,
+    marketValue,
+    gainLoss,
+    gainLossPercent,
+    manualPricing: isManual,
+  };
+}
 
 /**
  * Fetches all holdings for a user and formats them for the portfolio view
  */
 export async function getPortfolioData(userId: string): Promise<PortfolioSummary> {
-  // Get all holdings with their associated asset data for this user
   const dbHoldings = await db.holding.findMany({
     where: {
       userId,
       shares: { gt: 0 },
     },
-    include: {
-      asset: {
-        include: {
-          prices: {
-            orderBy: { date: "desc" },
-            take: 1,
-          },
-        },
-      },
-    },
+    include: holdingInclude,
   });
 
-  // Transform database holdings to the Holding type
-  const holdings: Holding[] = dbHoldings.map((h) => {
-    const latestPrice = h.asset.prices[0];
-    const currentPrice = latestPrice?.close ? Number(latestPrice.close) : null;
-    const shares = Number(h.shares);
-    const costBasis = Number(h.costBasis);
-    const avgPrice = Number(h.avgPrice);
-
-    // For manual assets, use costBasis directly; otherwise use price
-    const isManual = h.asset.manualPricing;
-    const marketValue = isManual ? costBasis : (currentPrice ? shares * currentPrice : costBasis);
-    const gainLoss = marketValue - costBasis;
-    const gainLossPercent = costBasis > 0 ? gainLoss / costBasis : 0;
-
-    return {
-      id: h.id,
-      assetId: h.assetId,
-      name: h.asset.name,
-      isin: h.asset.isin,
-      ticker: h.asset.ticker ?? null,
-      category: h.asset.category,
-      shares,
-      costBasis,
-      avgPrice,
-      currentPrice: isManual ? costBasis : currentPrice,
-      priceDate: latestPrice?.date?.toISOString().split("T")[0] || null,
-      marketValue,
-      gainLoss,
-      gainLossPercent,
-      manualPricing: isManual,
-    };
-  });
+  const holdings: Holding[] = dbHoldings.map(mapDbHoldingToDto);
 
   // Sort by market value descending
   const sortByValue = (a: Holding, b: Holding) => b.marketValue - a.marketValue;
@@ -103,100 +113,17 @@ function calculateCategoryTotal(holdings: Holding[]): CategoryTotal | null {
 }
 
 /**
- * Gets a single holding by asset ID for a user
- */
-export async function getHoldingByAssetId(userId: string, assetId: string): Promise<Holding | null> {
-  const dbHolding = await db.holding.findFirst({
-    where: { userId, assetId },
-    include: {
-      asset: {
-        include: {
-          prices: {
-            orderBy: { date: "desc" },
-            take: 1,
-          },
-        },
-      },
-    },
-  });
-
-  if (!dbHolding) return null;
-
-  const latestPrice = dbHolding.asset.prices[0];
-  const currentPrice = latestPrice?.close ? Number(latestPrice.close) : null;
-  const shares = Number(dbHolding.shares);
-  const costBasis = Number(dbHolding.costBasis);
-  const avgPrice = Number(dbHolding.avgPrice);
-  const isManual = dbHolding.asset.manualPricing;
-  const marketValue = isManual ? costBasis : (currentPrice ? shares * currentPrice : costBasis);
-  const gainLoss = marketValue - costBasis;
-  const gainLossPercent = costBasis > 0 ? gainLoss / costBasis : 0;
-
-  return {
-    id: dbHolding.id,
-    name: dbHolding.asset.name,
-    isin: dbHolding.asset.isin,
-    ticker: dbHolding.asset.ticker ?? null,
-    category: dbHolding.asset.category,
-    shares,
-    costBasis,
-    avgPrice,
-    currentPrice: isManual ? costBasis : currentPrice,
-    priceDate: latestPrice?.date?.toISOString().split("T")[0] || null,
-    marketValue,
-    gainLoss,
-    gainLossPercent,
-    manualPricing: isManual,
-  };
-}
-
-/**
  * Gets a single holding by holding ID for a user
  */
 export async function getHoldingById(userId: string, holdingId: string): Promise<Holding | null> {
   const dbHolding = await db.holding.findFirst({
     where: { id: holdingId, userId },
-    include: {
-      asset: {
-        include: {
-          prices: {
-            orderBy: { date: "desc" },
-            take: 1,
-          },
-        },
-      },
-    },
+    include: holdingInclude,
   });
 
   if (!dbHolding) return null;
 
-  const latestPrice = dbHolding.asset.prices[0];
-  const currentPrice = latestPrice?.close ? Number(latestPrice.close) : null;
-  const shares = Number(dbHolding.shares);
-  const costBasis = Number(dbHolding.costBasis);
-  const avgPrice = Number(dbHolding.avgPrice);
-  const isManual = dbHolding.asset.manualPricing;
-  const marketValue = isManual ? costBasis : (currentPrice ? shares * currentPrice : costBasis);
-  const gainLoss = marketValue - costBasis;
-  const gainLossPercent = costBasis > 0 ? gainLoss / costBasis : 0;
-
-  return {
-    id: dbHolding.id,
-    assetId: dbHolding.assetId,
-    name: dbHolding.asset.name,
-    isin: dbHolding.asset.isin,
-    ticker: dbHolding.asset.ticker ?? null,
-    category: dbHolding.asset.category,
-    shares,
-    costBasis,
-    avgPrice,
-    currentPrice: isManual ? costBasis : currentPrice,
-    priceDate: latestPrice?.date?.toISOString().split("T")[0] || null,
-    marketValue,
-    gainLoss,
-    gainLossPercent,
-    manualPricing: isManual,
-  };
+  return mapDbHoldingToDto(dbHolding);
 }
 
 /**

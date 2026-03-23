@@ -1,6 +1,5 @@
 import { db } from "@/lib/db";
 import { PRICE_CACHE } from "@/lib/constants";
-import { ConfigurationError } from "@/lib/errors";
 
 /**
  * Application settings with defaults
@@ -97,31 +96,6 @@ export async function getSettings(userId: string): Promise<AppSettings> {
   });
 
   return settings;
-}
-
-/**
- * Get settings for price operations for a user
- * Throws if no API key is configured
- */
-export async function getPriceSettings(userId: string): Promise<{
-  apiKey: string;
-  cacheDurationMin: number;
-  updateEnabled: boolean;
-}> {
-  const settings = await getSettings(userId);
-
-  if (!settings.eodhdApiKey) {
-    throw new ConfigurationError(
-      "No EODHD API key configured",
-      "eodhdApiKey"
-    );
-  }
-
-  return {
-    apiKey: settings.eodhdApiKey,
-    cacheDurationMin: settings.priceCacheDurationMin,
-    updateEnabled: settings.priceUpdateEnabled,
-  };
 }
 
 /**

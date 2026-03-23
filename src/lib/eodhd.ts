@@ -310,8 +310,8 @@ export async function resolveIsinToSymbol(
         return data.data[0].symbol;
       }
     }
-  } catch (error) {
-    console.log(`ID mapping failed for ${isin}, trying search...`);
+  } catch {
+    // ID mapping failed, fall through to search API
   }
 
   // Fall back to search API

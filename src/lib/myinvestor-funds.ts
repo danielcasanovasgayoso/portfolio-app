@@ -110,7 +110,6 @@ function parseFundData(csvContent: string): Map<string, FundInfo> {
  */
 export function initializeFundCache(csvContent: string): void {
   fundCache = parseFundData(csvContent);
-  console.log(`[FUND-LOOKUP] Initialized cache with ${fundCache.size} funds`);
 }
 
 /**
@@ -119,7 +118,6 @@ export function initializeFundCache(csvContent: string): void {
  */
 export function getFundByIsin(isin: string): FundInfo | undefined {
   if (!fundCache) {
-    console.warn("[FUND-LOOKUP] Cache not initialized. Call initializeFundCache first.");
     return undefined;
   }
   return fundCache.get(isin);

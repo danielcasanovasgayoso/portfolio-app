@@ -6,11 +6,10 @@ import { db } from "@/lib/db";
  * Vercel Cron Job endpoint for updating prices
  * Schedule: 0 18 * * 1-5 (weekdays at 6PM CET)
  *
- * This endpoint is protected by CRON_SECRET to prevent unauthorized access.
- * Updates prices for ALL users.
+ * Protected by CRON_SECRET to prevent unauthorized access.
+ * Updates prices for ALL users with active holdings.
  */
 export async function GET(request: NextRequest) {
-  // Verify cron secret for security
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
@@ -21,17 +20,13 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  console.log("[CRON] Starting price update job for all users...");
-
   try {
-    // Get all users with holdings (active users)
     const usersWithHoldings = await db.holding.findMany({
       select: { userId: true },
       distinct: ["userId"],
     });
 
     const userIds = usersWithHoldings.map((h) => h.userId);
-    console.log(`[CRON] Found ${userIds.length} users with holdings`);
 
     const results: Array<{
       userId: string;
@@ -41,7 +36,6 @@ export async function GET(request: NextRequest) {
       errors: string[];
     }> = [];
 
-    // Update prices for each user
     for (const userId of userIds) {
       try {
         const result = await refreshAllPrices(userId);
@@ -52,9 +46,7 @@ export async function GET(request: NextRequest) {
           fromCache: result.fromCache,
           errors: result.errors,
         });
-        console.log(`[CRON] User ${userId}: updated=${result.updated}, cached=${result.fromCache}`);
       } catch (error) {
-        console.error(`[CRON] Failed for user ${userId}:`, error);
         results.push({
           userId,
           success: false,
@@ -69,13 +61,6 @@ export async function GET(request: NextRequest) {
     const totalCached = results.reduce((sum, r) => sum + r.fromCache, 0);
     const totalErrors = results.reduce((sum, r) => sum + r.errors.length, 0);
 
-    console.log("[CRON] Price update completed:", {
-      users: userIds.length,
-      totalUpdated,
-      totalCached,
-      totalErrors,
-    });
-
     return NextResponse.json({
       success: totalErrors === 0,
       users: userIds.length,
@@ -86,8 +71,6 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("[CRON] Price update failed:", error);
-
     return NextResponse.json(
       {
         success: false,
@@ -99,7 +82,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Allow POST as well for manual triggers (requires CRON_SECRET)
 export async function POST(request: NextRequest) {
   return GET(request);
 }

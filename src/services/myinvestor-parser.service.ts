@@ -28,22 +28,20 @@ const OPERATION_TYPE_MAP: Record<string, { type: TransactionType; transferType?:
 function classifyEmail(subject: string): EmailType {
   const upperSubject = subject.toUpperCase();
 
-  let emailType: EmailType;
-
   if (upperSubject.includes("TRANSFERENCIA SEPA")) {
-    emailType = "SEPA_TRANSFER";
+    return "SEPA_TRANSFER";
   } else if (upperSubject.includes("MODIFICACIÓN DE COMISIONES") || upperSubject.includes("MODIFICACION DE COMISIONES")) {
-    emailType = "COMMISSION_CHANGE";
+    return "COMMISSION_CHANGE";
   } else if (upperSubject.includes("ABONO") || upperSubject.includes("CARGO")) {
-    emailType = "ACCOUNT_CREDIT_DEBIT";
+    return "ACCOUNT_CREDIT_DEBIT";
   } else if (upperSubject.includes("LIQUIDACION CUENTA CORRIENTE") || upperSubject.includes("LIQUIDACIÓN CUENTA CORRIENTE")) {
-    emailType = "INTEREST_SETTLEMENT";
+    return "INTEREST_SETTLEMENT";
   } else if (upperSubject.includes("TRASPASO")) {
-    emailType = "FUND_TRANSFER";
+    return "FUND_TRANSFER";
   } else if (upperSubject.includes("REEMBOLSO")) {
-    emailType = "FUND_REDEMPTION";
+    return "FUND_REDEMPTION";
   } else if (upperSubject.includes("APORTACION A PLANES DE PENSIONES") || upperSubject.includes("APORTACIÓN A PLANES DE PENSIONES")) {
-    emailType = "PENSION_CONTRIBUTION";
+    return "PENSION_CONTRIBUTION";
   } else if (
     upperSubject.includes("CONFIRMACIÓN DE OPERACIÓN") ||
     upperSubject.includes("CONFIRMACION DE OPERACION") ||
@@ -51,13 +49,10 @@ function classifyEmail(subject: string): EmailType {
     upperSubject.includes("SUSCRIPCIÓN") ||
     upperSubject.includes("COMPRA")
   ) {
-    emailType = "FUND_SUBSCRIPTION";
+    return "FUND_SUBSCRIPTION";
   } else {
-    emailType = "UNKNOWN";
+    return "UNKNOWN";
   }
-
-  console.log(`[PARSER-CLASSIFY] Subject: "${subject.substring(0, 60)}..." => ${emailType}`);
-  return emailType;
 }
 
 /**
@@ -66,7 +61,6 @@ function classifyEmail(subject: string): EmailType {
 function shouldSkipEmail(subject: string): { skip: boolean; reason?: string } {
   for (const pattern of SKIP_PATTERNS) {
     if (subject.toUpperCase().includes(pattern.toUpperCase())) {
-      console.log(`[PARSER-SKIP] Subject "${subject.substring(0, 50)}..." matches skip pattern: "${pattern}"`);
       return { skip: true, reason: `Matches skip pattern: ${pattern}` };
     }
   }
@@ -134,10 +128,7 @@ function parseSubject(subject: string): Partial<ParsedTransaction> | null {
 function extractIsinFromHtml(html: string): string | null {
   const $ = cheerio.load(html);
 
-  // Look for ISIN in table cells or specific text patterns
   const isinRegex = /[A-Z]{2}[A-Z0-9]{9}[0-9]/g;
-
-  // Search in all text content
   const text = $("body").text() || $("*").text() || html;
   const matches = text.match(isinRegex);
 
@@ -155,7 +146,6 @@ function extractFeesFromHtml(html: string): number {
   const $ = cheerio.load(html);
   const text = ($("body").text() || $("*").text() || html).toLowerCase();
 
-  // Look for commission patterns
   const commissionPatterns = [
     /comisi[oó]n[:\s]*([\d.,]+)/i,
     /gastos[:\s]*([\d.,]+)/i,
@@ -179,7 +169,6 @@ function extractReferenceFromHtml(html: string): string | null {
   const $ = cheerio.load(html);
   const text = $("body").text() || $("*").text() || html;
 
-  // Look for reference patterns
   const refPatterns = [
     /referencia[:\s]*(\d+\/?\d*)/i,
     /n[úu]mero de operaci[oó]n[:\s]*(\d+)/i,
@@ -206,10 +195,6 @@ function extractReferenceFromHtml(html: string): string | null {
  * so we use the fund labels to determine direction, not the operation type.
  */
 function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
-  console.log(`[PARSER-TRANSFER] Processing transfer email: ${email.id}`);
-  console.log(`[PARSER-TRANSFER] Subject: ${email.subject}`);
-  console.log(`[PARSER-TRANSFER] Date: ${email.date.toISOString()}`);
-
   const $ = cheerio.load(email.body);
   const transactions: ParsedTransaction[] = [];
   const text = $("body").text() || $("*").text() || email.body;
@@ -219,13 +204,7 @@ function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
   const hasSuscr = text.includes("SUSCR.POR TRASPASO") || text.includes("SUSCRIPCION POR TRASPASO");
   const isTransferEmail = hasReemb || hasSuscr;
 
-  console.log(`[PARSER-TRANSFER] Has REEMB keyword: ${hasReemb}`);
-  console.log(`[PARSER-TRANSFER] Has SUSCR keyword: ${hasSuscr}`);
-  console.log(`[PARSER-TRANSFER] Is transfer email: ${isTransferEmail}`);
-
   if (!isTransferEmail) {
-    console.log(`[PARSER-TRANSFER] ❌ Not a valid transfer email - missing keywords. First 500 chars of body text:`);
-    console.log(text.substring(0, 500));
     return transactions;
   }
 
@@ -235,10 +214,7 @@ function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
   const isinMatches = text.match(/[A-Z]{2}[A-Z0-9]{9}[0-9]/g) || [];
   const uniqueIsins = [...new Set(isinMatches)];
 
-  console.log(`[PARSER-TRANSFER] ISINs found: ${uniqueIsins.join(", ") || "NONE"}`);
-
   if (uniqueIsins.length === 0) {
-    console.log(`[PARSER-TRANSFER] ❌ No ISINs found in email body`);
     return transactions;
   }
 
@@ -254,39 +230,25 @@ function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
     shares = parseSpanishNumber(detailSection[1]);
     pricePerShare = parseSpanishNumber(detailSection[2]);
     amount = parseSpanishNumber(detailSection[3]);
-    console.log(`[PARSER-TRANSFER] Detail section match - Shares: ${shares}, Price: ${pricePerShare}, Amount: ${amount}`);
   } else {
-    console.log(`[PARSER-TRANSFER] Detail section not matched, trying fallback extraction...`);
-
     // Fallback: try to extract individually
     const sharesMatch = text.match(/N[uú]mero de Participaciones[^\d]*([\d.,]+)/i);
     if (sharesMatch) {
       shares = parseSpanishNumber(sharesMatch[1]);
-      console.log(`[PARSER-TRANSFER] Fallback - Shares match: "${sharesMatch[1]}" => ${shares}`);
-    } else {
-      console.log(`[PARSER-TRANSFER] ❌ Shares not found`);
     }
 
     const navMatch = text.match(/Valor Liquidativo[^\d]*([\d.,]+)\s*EUR/i);
     if (navMatch) {
       pricePerShare = parseSpanishNumber(navMatch[1]);
-      console.log(`[PARSER-TRANSFER] Fallback - NAV match: "${navMatch[1]}" => ${pricePerShare}`);
-    } else {
-      console.log(`[PARSER-TRANSFER] ❌ NAV/Price not found`);
     }
 
-    // Look for Importe Neto (the final amount after fees)
     const amountNetoMatch = text.match(/Importe Neto[^\d]*([\d.,]+)\s*EUR/i);
     if (amountNetoMatch) {
       amount = parseSpanishNumber(amountNetoMatch[1]);
-      console.log(`[PARSER-TRANSFER] Fallback - Importe Neto match: "${amountNetoMatch[1]}" => ${amount}`);
     } else {
       const amountBrutoMatch = text.match(/Importe Bruto[^\d]*([\d.,]+)\s*EUR/i);
       if (amountBrutoMatch) {
         amount = parseSpanishNumber(amountBrutoMatch[1]);
-        console.log(`[PARSER-TRANSFER] Fallback - Importe Bruto match: "${amountBrutoMatch[1]}" => ${amount}`);
-      } else {
-        console.log(`[PARSER-TRANSFER] ❌ Amount not found`);
       }
     }
   }
@@ -296,9 +258,6 @@ function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
   const dateMatch = text.match(/Fecha Operaci[oó]n[\s\S]*?(\d{2}\/\d{2}\/\d{4})/i);
   if (dateMatch) {
     date = parseSpanishDate(dateMatch[1]);
-    console.log(`[PARSER-TRANSFER] Fecha Operación: "${dateMatch[1]}" => ${date.toISOString()}`);
-  } else {
-    console.log(`[PARSER-TRANSFER] No Fecha Operación found, using email date: ${email.date.toISOString()}`);
   }
 
   const extractFundName = (isin: string): string => determineFundName(isin);
@@ -307,17 +266,12 @@ function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
   // - REEMB.POR TRASPASO = redemption email (OUT from source fund)
   // - SUSCR.POR TRASPASO = subscription email (IN to destination fund)
   // Both emails contain both ISINs for reference, but each describes only ONE leg.
-  // Generate only ONE transaction per email based on the operation type.
   const isRedemption = hasReemb;
 
   // For REEMB: use first ISIN (Fondo Reembolsado = source)
   // For SUSCR: use second ISIN (Fondo Suscrito = destination)
   const isin = isRedemption ? uniqueIsins[0] : (uniqueIsins[1] || uniqueIsins[0]);
   const transferType: TransferType = isRedemption ? "OUT" : "IN";
-
-  console.log(`[PARSER-TRANSFER] Direction: ${isRedemption ? "REDEMPTION (OUT)" : "SUBSCRIPTION (IN)"}`);
-  console.log(`[PARSER-TRANSFER] Selected ISIN: ${isin}`);
-  console.log(`[PARSER-TRANSFER] Final values - Shares: ${shares}, Price: ${pricePerShare}, Amount: ${amount}`);
 
   const transaction: ParsedTransaction = {
     date,
@@ -334,7 +288,6 @@ function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
     emailType: "FUND_TRANSFER",
   };
 
-  console.log(`[PARSER-TRANSFER] ✅ Created transaction:`, JSON.stringify(transaction, null, 2));
   transactions.push(transaction);
 
   return transactions;
@@ -437,7 +390,6 @@ function parseDividendEmail(email: GmailEmail): ParsedTransaction[] {
   const $ = cheerio.load(email.body);
   const transactions: ParsedTransaction[] = [];
 
-  // Extract amount from HTML
   const text = $("body").text() || $("*").text() || email.body;
   const amountMatch = text.match(/importe[:\s]*([\d.,]+)/i) ||
                       text.match(/liquido[:\s]*([\d.,]+)/i) ||
@@ -470,18 +422,9 @@ function parseDividendEmail(email: GmailEmail): ParsedTransaction[] {
  * Main parser function - parses a single email
  */
 export function parseMyInvestorEmail(email: GmailEmail): ParsedEmail {
-  console.log(`\n[PARSER] ========================================`);
-  console.log(`[PARSER] Processing email: ${email.id}`);
-  console.log(`[PARSER] Date: ${email.date.toISOString()}`);
-  console.log(`[PARSER] Subject: ${email.subject}`);
-
   const emailType = classifyEmail(email.subject);
   const skipCheck = shouldSkipEmail(email.subject);
 
-  console.log(`[PARSER] Classification: ${emailType}`);
-  console.log(`[PARSER] Skip check: ${skipCheck.skip ? `YES (${skipCheck.reason})` : "NO"}`);
-
-  // Initialize result
   const result: ParsedEmail = {
     emailId: email.id,
     subject: email.subject,
@@ -504,23 +447,17 @@ export function parseMyInvestorEmail(email: GmailEmail): ParsedEmail {
   ) {
     result.shouldSkip = true;
     result.skipReason = result.skipReason || `Email type: ${emailType}`;
-    console.log(`[PARSER] ⏭️ SKIPPING email - Reason: ${result.skipReason}`);
     return result;
   }
 
   try {
-    // Parse based on email type
     if (emailType === "FUND_TRANSFER") {
-      console.log(`[PARSER] Parsing as FUND_TRANSFER...`);
       result.transactions = parseTransferEmail(email);
     } else if (emailType === "INTEREST_SETTLEMENT") {
-      console.log(`[PARSER] Parsing as INTEREST_SETTLEMENT...`);
       result.transactions = parseDividendEmail(email);
     } else if (emailType === "PENSION_CONTRIBUTION") {
-      console.log(`[PARSER] Parsing as PENSION_CONTRIBUTION...`);
       result.transactions = parsePensionContributionEmail(email);
     } else {
-      console.log(`[PARSER] Parsing as standard SUBSCRIPTION/REDEMPTION...`);
       // Standard fund subscription/redemption
       const subjectData = parseSubject(email.subject);
 
@@ -531,10 +468,6 @@ export function parseMyInvestorEmail(email: GmailEmail): ParsedEmail {
         const name = isin
           ? determineFundName(isin)
           : subjectData.name || "Unknown Asset";
-
-        console.log(`[PARSER] Subject parse result - Name: ${subjectData.name}, Shares: ${subjectData.shares}, Price: ${subjectData.pricePerShare}`);
-        console.log(`[PARSER] HTML parse result - ISIN: ${isin}, Fees: ${fees}, Reference: ${reference}`);
-        console.log(`[PARSER] Final name (after lookup): ${name}`);
 
         result.transactions.push({
           date: subjectData.date || email.date,
@@ -552,22 +485,12 @@ export function parseMyInvestorEmail(email: GmailEmail): ParsedEmail {
           emailType,
         });
       } else {
-        console.log(`[PARSER] ❌ Could not parse subject line`);
         result.parseErrors?.push("Could not parse subject line");
       }
     }
   } catch (error) {
-    console.log(`[PARSER] ❌ Parse error: ${error instanceof Error ? error.message : String(error)}`);
     result.parseErrors?.push(`Parse error: ${error instanceof Error ? error.message : String(error)}`);
   }
-
-  console.log(`[PARSER] Result: ${result.transactions.length} transactions, ${result.parseErrors?.length || 0} errors`);
-  if (result.transactions.length > 0) {
-    result.transactions.forEach((tx, i) => {
-      console.log(`[PARSER] Transaction ${i + 1}: ${tx.type}${tx.transferType ? ` (${tx.transferType})` : ""} | ${tx.isin} | ${tx.shares} shares @ ${tx.pricePerShare}`);
-    });
-  }
-  console.log(`[PARSER] ========================================\n`);
 
   return result;
 }

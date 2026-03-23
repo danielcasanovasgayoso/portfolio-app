@@ -566,20 +566,16 @@ export async function resolveAssetTicker(
     });
 
     if (ticker) {
-      // Update the asset with the resolved ticker
       await db.asset.update({
         where: { id: assetId },
         data: { ticker },
       });
 
-      console.log(`Resolved ISIN ${isin} to ticker ${ticker}`);
       return ticker;
     }
 
-    console.log(`Could not resolve ISIN ${isin} to a ticker`);
     return null;
-  } catch (error) {
-    console.error(`Error resolving ISIN ${isin}:`, error);
+  } catch {
     return null;
   }
 }
@@ -649,10 +645,7 @@ export async function refreshAllData(userId: string): Promise<void> {
     try {
       await backfillHistoricalPrices(userId, holding.assetId, holding.asset.ticker);
     } catch (error) {
-      console.error(
-        `[PriceService] Historical backfill failed for ${holding.asset.ticker}:`,
-        error
-      );
+      // Historical backfill is best-effort; continue with remaining assets
     }
   }
 }
