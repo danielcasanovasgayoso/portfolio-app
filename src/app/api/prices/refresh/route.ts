@@ -13,7 +13,7 @@ export async function POST() {
 
     after(async () => {
       try {
-        await refreshAllData(userId);
+        await refreshAllData(userId, { forceRefresh: true });
       } catch (error) {
         console.error("[API] Background price refresh failed:", error);
       }
