@@ -234,7 +234,7 @@ export default async function AssetDetailPage({
           </CardHeader>
           <CardContent>
             {transactions.length > 0 ? (
-              <TransactionTimeline transactions={transactions} />
+              <TransactionTimeline transactions={transactions} currentPrice={holding.currentPrice} />
             ) : (
               <p className="text-sm text-muted-foreground">{t("noTransactions")}</p>
             )}

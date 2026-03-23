@@ -87,7 +87,8 @@
     "fees": "Comisiones: {amount}",
     "sharesAt": "{shares} participaciones @ {price}",
     "transferIn": "Traspaso Entrada",
-    "transferOut": "Traspaso Salida"
+    "transferOut": "Traspaso Salida",
+    "unrealized": "No realizado"
   },
   "transactions": {
     "title": "Transacciones",

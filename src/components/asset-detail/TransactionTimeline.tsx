@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { formatCurrency, formatShares, formatDate } from "@/lib/formatters";
+import { formatCurrency, formatShares, formatDate, formatPercent } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import {
   ArrowDownCircle,
@@ -24,6 +24,7 @@ interface Transaction {
 
 interface TransactionTimelineProps {
   transactions: Transaction[];
+  currentPrice?: number | null;
 }
 
 function getTransactionIcon(type: string, transferType?: string | null) {
@@ -69,6 +70,7 @@ function getTransactionColor(type: string, transferType?: string | null) {
 
 export function TransactionTimeline({
   transactions,
+  currentPrice,
 }: TransactionTimelineProps) {
   const t = useTranslations("assetDetail");
 
@@ -137,6 +139,27 @@ export function TransactionTimeline({
                 </span>
               )}
             </div>
+            {currentPrice != null &&
+              txn.pricePerShare != null &&
+              (txn.type === "BUY" || (txn.type === "TRANSFER" && txn.transferType === "IN")) && (() => {
+                const gainLoss = (currentPrice - txn.pricePerShare) * txn.shares;
+                const gainLossPercent = (currentPrice - txn.pricePerShare) / txn.pricePerShare;
+                const isPositive = gainLoss >= 0;
+                return (
+                  <div className="mt-1 flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "text-xs font-medium",
+                        isPositive
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-red-600 dark:text-red-400"
+                      )}
+                    >
+                      {t("unrealized")}: {isPositive ? "+" : ""}{formatCurrency(gainLoss)} ({formatPercent(gainLossPercent)})
+                    </span>
+                  </div>
+                );
+              })()}
           </div>
         </div>
       ))}

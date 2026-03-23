@@ -87,7 +87,8 @@
     "fees": "Fees: {amount}",
     "sharesAt": "{shares} shares @ {price}",
     "transferIn": "Transfer In",
-    "transferOut": "Transfer Out"
+    "transferOut": "Transfer Out",
+    "unrealized": "Unrealized"
   },
   "transactions": {
     "title": "Transactions",
