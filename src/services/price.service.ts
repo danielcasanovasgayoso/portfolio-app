@@ -206,10 +206,11 @@ export async function refreshAssetPrice(
  * Uses caching to minimize API calls
  * @param userId - The user ID
  * @param resolveIsins - If true, attempt to resolve tickers for assets without them
+ * @param forceRefresh - If true, bypass cache and always fetch fresh prices from the API
  */
 export async function refreshAllPrices(
   userId: string,
-  options?: { resolveIsins?: boolean }
+  options?: { resolveIsins?: boolean; forceRefresh?: boolean }
 ): Promise<RefreshPricesResult> {
   const settings = await getSettings(userId);
 
@@ -265,14 +266,14 @@ export async function refreshAllPrices(
 
   const tickers = assetsWithTickers.map((a) => a.ticker);
 
-  // Check cache
+  // Check cache (skip if forceRefresh is requested)
   const cached = await getCachedPrices(tickers);
   const tickersToFetch: string[] = [];
   let fromCache = 0;
 
   for (const ticker of tickers) {
     const cachedPrice = cached.get(ticker);
-    if (cachedPrice?.isValid) {
+    if (!options?.forceRefresh && cachedPrice?.isValid) {
       fromCache++;
     } else {
       tickersToFetch.push(ticker);
@@ -286,7 +287,7 @@ export async function refreshAllPrices(
   // Use cached prices for valid entries
   for (const { assetId, ticker } of assetsWithTickers) {
     const cachedPrice = cached.get(ticker);
-    if (cachedPrice?.isValid) {
+    if (!options?.forceRefresh && cachedPrice?.isValid) {
       try {
         await updateHoldingMarketValue(assetId, cachedPrice.price);
         results.push({ ticker, success: true, price: Number(cachedPrice.price) });
@@ -625,9 +626,12 @@ export async function resolveAllMissingTickers(userId: string): Promise<{
  * Full async refresh: latest prices + historical backfill for all assets.
  * Intended to run in the background via next/server `after()`.
  */
-export async function refreshAllData(userId: string): Promise<void> {
+export async function refreshAllData(
+  userId: string,
+  options?: { forceRefresh?: boolean }
+): Promise<void> {
   // Phase 1: Fetch latest prices (real-time for stocks, EOD for funds)
-  await refreshAllPrices(userId, { resolveIsins: true });
+  await refreshAllPrices(userId, { resolveIsins: true, forceRefresh: options?.forceRefresh });
 
   // Revalidate portfolio pages so updated market values are served
   revalidatePath("/");
