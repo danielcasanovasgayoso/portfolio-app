@@ -38,12 +38,15 @@ import {
 import { createTransaction, getAssets } from "@/actions/transactions";
 import type { Asset } from "@prisma/client";
 
+const NEW_ASSET_ID = "__new__";
 const transactionTypeKeys = ["BUY", "SELL", "DIVIDEND", "FEE", "TRANSFER"] as const;
 const transferTypeKeys = ["IN", "OUT"] as const;
+const categoryKeys = ["OTHERS", "FUNDS", "STOCKS", "PP"] as const;
 
 export default function AddTransactionPage() {
   const t = useTranslations("transactions");
   const tAdd = useTranslations("add");
+  const tAssets = useTranslations("assets");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [assets, setAssets] = useState<
@@ -62,10 +65,14 @@ export default function AddTransactionPage() {
       totalAmount: "",
       fees: "",
       transferType: undefined,
+      newAssetName: "",
+      newAssetCategory: "OTHERS",
     },
   });
 
   const watchedType = form.watch("type");
+  const watchedAssetId = form.watch("assetId");
+  const isNewAsset = watchedAssetId === NEW_ASSET_ID;
 
   useEffect(() => {
     getAssets().then((data) => {
@@ -96,6 +103,13 @@ export default function AddTransactionPage() {
   const transferLabels: Record<string, string> = {
     IN: t("transferIn"),
     OUT: t("transferOut"),
+  };
+
+  const categoryLabels: Record<string, string> = {
+    OTHERS: tAssets("categoryOthers"),
+    FUNDS: tAssets("categoryFunds"),
+    STOCKS: tAssets("categoryStocks"),
+    PP: tAssets("categoryPP"),
   };
 
   return (
@@ -135,36 +149,86 @@ export default function AddTransactionPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t("asset")}</FormLabel>
-                    {assets.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-2">
-                        {t("noAssets")}
-                      </p>
-                    ) : (
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder={t("selectAsset")}>
-                              {assets.find((a) => a.id === field.value)?.name ||
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t("selectAsset")}>
+                            {field.value === NEW_ASSET_ID
+                              ? t("createNewAsset")
+                              : assets.find((a) => a.id === field.value)?.name ||
                                 t("selectAsset")}
-                            </SelectValue>
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {assets.map((asset) => (
-                            <SelectItem key={asset.id} value={asset.id}>
-                              {asset.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                          </SelectValue>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={NEW_ASSET_ID}>
+                          + {t("createNewAsset")}
+                        </SelectItem>
+                        {assets.map((asset) => (
+                          <SelectItem key={asset.id} value={asset.id}>
+                            {asset.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {/* New asset fields */}
+              {isNewAsset && (
+                <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-muted/50 border border-border">
+                  <FormField
+                    control={form.control}
+                    name="newAssetName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{tAssets("name")}</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={tAssets("namePlaceholder")}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="newAssetCategory"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{tAssets("category")}</FormLabel>
+                        <Select
+                          value={field.value || "OTHERS"}
+                          onValueChange={field.onChange}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue>
+                                {categoryLabels[field.value || "OTHERS"]}
+                              </SelectValue>
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {categoryKeys.map((cat) => (
+                              <SelectItem key={cat} value={cat}>
+                                {categoryLabels[cat]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
 
               {/* Type and Transfer Type */}
               <div className="grid grid-cols-2 gap-4">
@@ -360,7 +424,7 @@ export default function AddTransactionPage() {
 
               <Button
                 type="submit"
-                disabled={isPending || assets.length === 0}
+                disabled={isPending}
                 className="w-full"
               >
                 {isPending && (

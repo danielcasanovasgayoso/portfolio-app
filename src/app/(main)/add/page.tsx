@@ -10,18 +10,15 @@ import {
   Loader2,
   Check,
   AlertCircle,
-  Landmark,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { importPortfolioData } from "@/actions/settings";
-import { AssetForm } from "@/components/assets/AssetForm";
 
 export default function AddPage() {
   const t = useTranslations("add");
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
-  const [assetFormOpen, setAssetFormOpen] = useState(false);
   const [importResult, setImportResult] = useState<{
     success: boolean;
     message: string;
@@ -84,13 +81,6 @@ export default function AddPage() {
           description: t("addTransactionDesc"),
           onClick: () => router.push("/add/transaction"),
           key: "addTransaction",
-        },
-        {
-          icon: Landmark,
-          label: t("addAsset"),
-          description: t("addAssetDesc"),
-          onClick: () => setAssetFormOpen(true),
-          key: "addAsset",
         },
       ],
     },
@@ -158,12 +148,6 @@ export default function AddPage() {
             {importResult.message}
           </div>
         )}
-
-        <AssetForm
-          open={assetFormOpen}
-          onOpenChange={setAssetFormOpen}
-          onSuccess={() => router.push("/")}
-        />
 
         {sections.map((section) => (
           <div key={section.title} className="space-y-3">

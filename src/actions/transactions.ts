@@ -104,26 +104,44 @@ export async function getAssets() {
   });
 }
 
-// Create a new transaction
+// Create a new transaction (optionally creating a new asset first)
 export async function createTransaction(
   data: TransactionCreateInput
-): Promise<ActionResult<TransactionWithAsset>> {
+): Promise<ActionResult<SerializedTransaction>> {
   try {
     const userId = await getUserId();
     const validated = TransactionCreateSchema.parse(data);
 
-    // Verify asset belongs to user
-    const asset = await db.asset.findFirst({
-      where: { id: validated.assetId, userId },
-    });
-    if (!asset) {
-      return { success: false, error: "Asset not found" };
+    let assetId = validated.assetId;
+
+    if (assetId === "__new__" && validated.newAssetName) {
+      // Create a new asset first
+      const isin = `MANUAL-${crypto.randomUUID()}`;
+      const newAsset = await db.asset.create({
+        data: {
+          userId,
+          isin,
+          ticker: null,
+          name: validated.newAssetName.trim(),
+          category: validated.newAssetCategory || "OTHERS",
+          manualPricing: true,
+        },
+      });
+      assetId = newAsset.id;
+    } else {
+      // Verify asset belongs to user
+      const asset = await db.asset.findFirst({
+        where: { id: assetId, userId },
+      });
+      if (!asset) {
+        return { success: false, error: "Asset not found" };
+      }
     }
 
     const transaction = await db.transaction.create({
       data: {
         userId,
-        assetId: validated.assetId,
+        assetId,
         type: validated.type,
         date: validated.date,
         shares: new Decimal(validated.shares),
@@ -148,13 +166,13 @@ export async function createTransaction(
     });
 
     // Recalculate holdings for the affected asset
-    await recalculateHolding(userId, validated.assetId);
+    await recalculateHolding(userId, assetId);
 
     revalidatePath("/transactions");
     revalidatePath("/");
-    revalidatePath(`/portfolio/${validated.assetId}`);
+    revalidatePath(`/portfolio/${assetId}`);
 
-    return { success: true, data: transaction };
+    return { success: true, data: serializeTransaction(transaction) };
   } catch (error) {
     console.error("Failed to create transaction:", error);
     if (error instanceof Error) {
@@ -168,7 +186,7 @@ export async function createTransaction(
 export async function updateTransaction(
   id: string,
   data: Partial<TransactionCreateInput>
-): Promise<ActionResult<TransactionWithAsset>> {
+): Promise<ActionResult<SerializedTransaction>> {
   try {
     const userId = await getUserId();
     const validated = TransactionUpdateSchema.parse(data);
@@ -236,7 +254,7 @@ export async function updateTransaction(
     revalidatePath("/");
     revalidatePath(`/portfolio/${transaction.assetId}`);
 
-    return { success: true, data: transaction };
+    return { success: true, data: serializeTransaction(transaction) };
   } catch (error) {
     console.error("Failed to update transaction:", error);
     if (error instanceof Error) {

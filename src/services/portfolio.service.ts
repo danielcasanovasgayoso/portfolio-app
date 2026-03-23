@@ -127,7 +127,8 @@ export async function getHoldingByAssetId(userId: string, assetId: string): Prom
   const shares = Number(dbHolding.shares);
   const costBasis = Number(dbHolding.costBasis);
   const avgPrice = Number(dbHolding.avgPrice);
-  const marketValue = currentPrice ? shares * currentPrice : costBasis;
+  const isManual = dbHolding.asset.manualPricing;
+  const marketValue = isManual ? costBasis : (currentPrice ? shares * currentPrice : costBasis);
   const gainLoss = marketValue - costBasis;
   const gainLossPercent = costBasis > 0 ? gainLoss / costBasis : 0;
 
@@ -140,11 +141,12 @@ export async function getHoldingByAssetId(userId: string, assetId: string): Prom
     shares,
     costBasis,
     avgPrice,
-    currentPrice,
+    currentPrice: isManual ? costBasis : currentPrice,
     priceDate: latestPrice?.date?.toISOString().split("T")[0] || null,
     marketValue,
     gainLoss,
     gainLossPercent,
+    manualPricing: isManual,
   };
 }
 
@@ -173,7 +175,8 @@ export async function getHoldingById(userId: string, holdingId: string): Promise
   const shares = Number(dbHolding.shares);
   const costBasis = Number(dbHolding.costBasis);
   const avgPrice = Number(dbHolding.avgPrice);
-  const marketValue = currentPrice ? shares * currentPrice : costBasis;
+  const isManual = dbHolding.asset.manualPricing;
+  const marketValue = isManual ? costBasis : (currentPrice ? shares * currentPrice : costBasis);
   const gainLoss = marketValue - costBasis;
   const gainLossPercent = costBasis > 0 ? gainLoss / costBasis : 0;
 
@@ -187,11 +190,12 @@ export async function getHoldingById(userId: string, holdingId: string): Promise
     shares,
     costBasis,
     avgPrice,
-    currentPrice,
+    currentPrice: isManual ? costBasis : currentPrice,
     priceDate: latestPrice?.date?.toISOString().split("T")[0] || null,
     marketValue,
     gainLoss,
     gainLossPercent,
+    manualPricing: isManual,
   };
 }
 

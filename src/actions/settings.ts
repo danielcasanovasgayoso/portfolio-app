@@ -243,36 +243,20 @@ export async function exportPortfolioData(): Promise<{
     const userId = await getUserId();
 
     // Fetch all user's data
-    const [assets, transactions, holdings] = await Promise.all([
+    const [assets, transactions] = await Promise.all([
       db.asset.findMany({ where: { userId }, orderBy: { name: "asc" } }),
       db.transaction.findMany({
         where: { userId },
         orderBy: { date: "desc" },
         include: { asset: { select: { name: true, isin: true } } },
       }),
-      db.holding.findMany({
-        where: { userId },
-        include: { asset: { select: { name: true, isin: true } } },
-      }),
     ]);
-
-    // Fetch prices for user's assets
-    const assetIds = assets.map((a) => a.id);
-    const prices = assetIds.length > 0
-      ? await db.price.findMany({
-          where: { assetId: { in: assetIds } },
-          orderBy: [{ assetId: "asc" }, { date: "desc" }],
-          include: { asset: { select: { name: true, ticker: true } } },
-        })
-      : [];
 
     const exportData = {
       exportedAt: new Date().toISOString(),
       summary: {
         totalAssets: assets.length,
         totalTransactions: transactions.length,
-        totalHoldings: holdings.length,
-        totalPriceRecords: prices.length,
       },
       assets: assets.map((a) => ({
         isin: a.isin,
@@ -280,6 +264,7 @@ export async function exportPortfolioData(): Promise<{
         name: a.name,
         category: a.category,
         currency: a.currency,
+        manualPricing: a.manualPricing || undefined,
       })),
       transactions: transactions.map((t) => ({
         date: t.date.toISOString().split("T")[0],
@@ -291,14 +276,6 @@ export async function exportPortfolioData(): Promise<{
         pricePerShare: t.pricePerShare ? Number(t.pricePerShare) : null,
         totalAmount: Number(t.totalAmount),
         fees: t.fees ? Number(t.fees) : 0,
-      })),
-      holdings: holdings.map((h) => ({
-        asset: h.asset.name,
-        isin: h.asset.isin,
-        shares: Number(h.shares),
-        costBasis: Number(h.costBasis),
-        avgPrice: Number(h.avgPrice),
-        marketValue: h.marketValue ? Number(h.marketValue) : null,
       })),
     };
 
@@ -322,6 +299,7 @@ interface ImportAsset {
   name: string;
   category?: "FUNDS" | "STOCKS" | "PP" | "OTHERS";
   currency?: string;
+  manualPricing?: boolean;
 }
 
 interface ImportTransaction {
@@ -409,6 +387,7 @@ export async function importPortfolioData(jsonData: string): Promise<{
             name: asset.name,
             category: asset.category || "OTHERS",
             currency: asset.currency || "EUR",
+            manualPricing: asset.manualPricing || false,
           },
         });
         isinToAssetId.set(asset.isin, created.id);
