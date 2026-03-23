@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import {
   formatCurrency,
   formatPercent,
-  formatShares,
   formatDate,
   getGainClass,
 } from "@/lib/formatters";
@@ -63,30 +62,44 @@ export function HoldingCard({
 
   return (
     <Link href={`/portfolio/${holding.id}`} className="block group">
-      <article className="bg-card rounded-xl shadow-sm p-5 border-0 transition-transform duration-150 active:scale-[0.98]">
-        {/* Header row */}
-        <div className="flex justify-between items-start gap-3 mb-4">
+      <article className="bg-card rounded-xl shadow-sm p-4 border-0 transition-transform duration-150 active:scale-[0.98]">
+        <div className="flex justify-between items-start gap-3">
+          {/* Row 1: Name & Market Value */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2">
               <h3 className="text-[15px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                 {holding.name}
               </h3>
               <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             </div>
-            <div className="flex items-center gap-2 text-[12px] font-mono text-muted-foreground">
-              <span>{formatShares(holding.shares)} {t("shares")}</span>
-              <span className="text-border">·</span>
-              <span>{portfolioPercent}%</span>
-            </div>
           </div>
+          <p className="text-lg font-mono font-bold text-foreground tabular-nums flex-shrink-0">
+            {formatCurrency(holding.marketValue)}
+          </p>
+        </div>
 
-          <div className="text-right flex-shrink-0">
-            <p className="text-lg font-mono font-bold text-foreground tabular-nums mb-1">
-              {formatCurrency(holding.marketValue)}
-            </p>
-            <div
+        {/* Row 2: Current price & Gain/Loss */}
+        <div className="flex justify-between items-center mt-1">
+          <p className="text-[12px] font-mono text-muted-foreground">
+            {holding.currentPrice
+              ? formatCurrency(holding.currentPrice)
+              : "—"}
+            {" · "}
+            {portfolioPercent}%
+          </p>
+          <div className="flex items-center gap-1.5">
+            <span
               className={cn(
-                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[12px] font-mono font-medium tabular-nums",
+                "text-[12px] font-mono font-medium tabular-nums",
+                isPositive ? "text-gain" : "text-loss"
+              )}
+            >
+              {holding.gainLoss >= 0 ? "+" : ""}
+              {formatCurrency(holding.gainLoss)}
+            </span>
+            <span
+              className={cn(
+                "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-mono font-medium tabular-nums",
                 isPositive
                   ? "bg-gain-muted text-gain"
                   : "bg-loss-muted text-loss"
@@ -97,57 +110,16 @@ export function HoldingCard({
               ) : (
                 <TrendingDown className="w-3 h-3" />
               )}
-              {holding.gainLoss >= 0 ? "+" : ""}
-              {formatCurrency(holding.gainLoss)}
-            </div>
-          </div>
-        </div>
-
-        {/* Data grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-4 mt-2">
-          <div className="bg-muted p-3 rounded-md">
-            <p className="label-sm mb-1 text-muted-foreground">{t("invested")}</p>
-            <p className="text-sm font-mono font-medium text-foreground tabular-nums">
-              {formatCurrency(holding.costBasis)}
-            </p>
-          </div>
-
-          <div className="bg-muted p-3 rounded-md">
-            <p className="label-sm mb-1 text-muted-foreground">{t("avgPrice")}</p>
-            <p className="text-sm font-mono font-medium text-foreground tabular-nums">
-              {formatCurrency(holding.avgPrice)}
-            </p>
-          </div>
-
-          <div className="bg-muted p-3 rounded-md">
-            <p className="label-sm mb-1 text-muted-foreground">{t("current")}</p>
-            <p className="text-sm font-mono font-medium text-foreground tabular-nums">
-              {holding.currentPrice
-                ? formatCurrency(holding.currentPrice)
-                : "—"}
-            </p>
-          </div>
-
-          <div className="bg-muted p-3 rounded-md">
-            <p className="label-sm mb-1 text-muted-foreground">{t("return")}</p>
-            <p
-              className={cn(
-                "text-sm font-mono font-semibold tabular-nums",
-                isPositive ? "text-gain" : "text-loss"
-              )}
-            >
               {formatPercent(holding.gainLossPercent)}
-            </p>
+            </span>
           </div>
         </div>
 
-        {/* Price date footer */}
+        {/* Row 3: Last update date */}
         {holding.priceDate && (
-          <div className="flex items-center justify-center mt-3 pt-2">
-            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
-              {t("priceAsOf", { date: formatDate(holding.priceDate) })}
-            </p>
-          </div>
+          <p className="text-[10px] font-mono text-muted-foreground mt-2 text-center">
+            {t("priceAsOf", { date: formatDate(holding.priceDate) })}
+          </p>
         )}
       </article>
     </Link>
