@@ -38,7 +38,6 @@ export interface EODHDError {
 export interface EODHDIdMappingItem {
   symbol: string;
   isin?: string;
-  name?: string;
   exchange?: string;
   country?: string;
   type?: string;
@@ -61,6 +60,7 @@ export interface EODHDSearchItem {
   Country: string;
   Currency: string;
   ISIN?: string;
+  isPrimary?: boolean;
   previousClose?: number;
   previousCloseDate?: string;
 }
@@ -289,9 +289,41 @@ export async function testApiKey(apiKey: string): Promise<boolean> {
 }
 
 /**
- * Resolve ISIN to EODHD symbol
- * Uses ID mapping API first, falls back to search API
- * Returns symbol in format CODE.EXCHANGE (e.g., PHAU.XETRA)
+ * Search EODHD for an ISIN and return the primary result.
+ * Prefers the result with isPrimary === true; falls back to first result.
+ * Relies on Next.js Data Cache (revalidate: ISIN_CACHE_SECONDS) for deduplication —
+ * identical URLs are served from cache, so calling this multiple times for the
+ * same ISIN within a batch does not incur extra network requests.
+ */
+async function searchIsin(
+  isin: string,
+  apiKey?: string | null
+): Promise<EODHDSearchItem | null> {
+  try {
+    const key = getApiKey(apiKey);
+    const url = `${EODHD.BASE_URL}/search/${encodeURIComponent(isin)}?api_token=${key}&fmt=json`;
+    const response = await fetch(url, {
+      headers: { Accept: "application/json" },
+      next: { revalidate: EODHD.ISIN_CACHE_SECONDS },
+    });
+
+    if (!response.ok) return null;
+
+    const items: EODHDSearchItem[] = await response.json();
+    if (!items?.length) return null;
+
+    return items.find((i) => i.isPrimary) ?? items[0];
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve ISIN to EODHD symbol + asset name.
+ * Step 1: ID Mapping API — resolves the canonical symbol (never returns a name).
+ * Step 2: Search API — supplementary call to retrieve the asset Name.
+ * If ID Mapping fails, the Search API result is used for both symbol and name.
+ * Returns symbol in format CODE.EXCHANGE (e.g., PHAU.XETRA).
  */
 export async function resolveIsinToSymbol(
   isin: string,
@@ -299,7 +331,7 @@ export async function resolveIsinToSymbol(
     apiKey?: string | null;
   }
 ): Promise<ResolvedIsin | null> {
-  // Try ID mapping API first
+  // Step 1: ID Mapping API — gets symbol; name is not returned by this endpoint
   try {
     const key = getApiKey(options?.apiKey);
     const idMappingUrl = `${EODHD.BASE_URL}/id-mapping?filter[isin]=${encodeURIComponent(isin)}&api_token=${key}&fmt=json`;
@@ -311,36 +343,22 @@ export async function resolveIsinToSymbol(
 
     if (response.ok) {
       const data: EODHDIdMappingResponse = await response.json();
-      if (data.data && data.data.length > 0 && data.data[0].symbol) {
-        const item = data.data[0];
-        return { symbol: item.symbol, name: item.name || null };
+      if (data.data?.length > 0 && data.data[0].symbol) {
+        const symbol = data.data[0].symbol;
+        // Step 2: Search API — supplementary call to get the asset name
+        const hit = await searchIsin(isin, options?.apiKey);
+        return { symbol, name: hit?.Name ?? null };
       }
     }
   } catch {
-    // ID mapping failed, fall through to search API
+    // ID mapping failed — fall through to Search API for both symbol and name
   }
 
-  // Fall back to search API
+  // Fallback: derive symbol from Search API result (reuses cached fetch if already called above)
   try {
-    const key = getApiKey(options?.apiKey);
-    const searchUrl = `${EODHD.BASE_URL}/search/${encodeURIComponent(isin)}?api_token=${key}&fmt=json`;
-
-    const response = await fetch(searchUrl, {
-      headers: { Accept: "application/json" },
-      next: { revalidate: EODHD.ISIN_CACHE_SECONDS },
-    });
-
-    if (response.ok) {
-      const items: EODHDSearchItem[] = await response.json();
-      if (items && items.length > 0) {
-        const item = items[0];
-        if (item.Code && item.Exchange) {
-          return {
-            symbol: `${item.Code}.${item.Exchange}`,
-            name: item.Name || null,
-          };
-        }
-      }
+    const hit = await searchIsin(isin, options?.apiKey);
+    if (hit?.Code && hit?.Exchange) {
+      return { symbol: `${hit.Code}.${hit.Exchange}`, name: hit.Name ?? null };
     }
   } catch (error) {
     console.error(`Search failed for ISIN ${isin}:`, error);
