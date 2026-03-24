@@ -25,7 +25,7 @@ export async function GET() {
       try {
         await refreshAllPrices(
           userId,
-          { forceRefresh: true },
+          { forceRefresh: true, resolveIsins: true },
           (event: SSEEvent) => {
             controller.enqueue(encoder.encode(formatSSE(event)));
           }
