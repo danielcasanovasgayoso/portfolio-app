@@ -72,19 +72,19 @@ export function HoldingCard({
               </h3>
               <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             </div>
-            <p className="text-[12px] font-mono text-muted-foreground mt-0.5">
-              {holding.currentPrice
-                ? formatCurrency(holding.currentPrice)
-                : "—"}
-              <span className="mx-1 text-border">·</span>
-              {portfolioPercent}% {t("weight").toLowerCase()}
+            <div className="text-[12px] font-mono text-muted-foreground mt-0.5 space-y-0.5">
+              <p>
+                {holding.currentPrice
+                  ? formatCurrency(holding.currentPrice)
+                  : "—"}
+              </p>
+              <p>
+                {portfolioPercent}% {t("weight").toLowerCase()}
+              </p>
               {holding.priceDate && (
-                <>
-                  <span className="mx-1 text-border">·</span>
-                  {formatDate(holding.priceDate)}
-                </>
+                <p>{formatDate(holding.priceDate)}</p>
               )}
-            </p>
+            </div>
           </div>
 
           {/* Right: value & performance */}
