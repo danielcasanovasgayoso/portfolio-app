@@ -289,14 +289,18 @@ export async function refreshAllPrices(
     };
   }
 
-  // --- Resolve missing tickers if requested ---
+  // --- Resolve missing tickers and names if requested ---
   if (options?.resolveIsins) {
-    const assetsWithoutTickers = await db.holding.findMany({
-      where: { userId, shares: { gt: 0 }, asset: { ticker: null } },
+    const holdingsNeedingResolution = await db.holding.findMany({
+      where: { userId, shares: { gt: 0 }, asset: { manualPricing: false } },
       include: { asset: true },
     });
-    for (const holding of assetsWithoutTickers) {
-      await resolveAssetTicker(userId, holding.assetId, holding.asset.isin);
+    for (const holding of holdingsNeedingResolution) {
+      const asset = holding.asset;
+      // Resolve if no ticker yet, OR if name is still the ISIN placeholder
+      if (!asset.ticker || asset.name === asset.isin) {
+        await resolveAssetTicker(userId, holding.assetId, asset.isin);
+      }
     }
   }
 
