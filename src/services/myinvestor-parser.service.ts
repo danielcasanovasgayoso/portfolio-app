@@ -2,7 +2,7 @@ import * as cheerio from "cheerio";
 import { SKIP_PATTERNS } from "@/lib/gmail";
 import type { GmailEmail, ParsedEmail, ParsedTransaction, EmailType } from "@/types/import";
 import type { TransactionType, TransferType } from "@prisma/client";
-import { determineFundName, resolveIsinFromDgsfp } from "@/lib/myinvestor-funds";
+import { resolveIsinFromDgsfp } from "@/lib/myinvestor-funds";
 
 /**
  * Subject line regex patterns
@@ -260,7 +260,7 @@ function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
     date = parseSpanishDate(dateMatch[1]);
   }
 
-  const extractFundName = (isin: string): string => determineFundName(isin);
+  const extractFundName = (isin: string): string => isin;
 
   // MyInvestor sends TWO separate emails per transfer:
   // - REEMB.POR TRASPASO = redemption email (OUT from source fund)
@@ -363,7 +363,7 @@ function parsePensionContributionEmail(email: GmailEmail): ParsedTransaction[] {
   }
 
   if (amount > 0) {
-    const finalName = isin ? determineFundName(isin) : name;
+    const finalName = isin ? isin : name;
 
     transactions.push({
       date,
@@ -398,7 +398,7 @@ function parseDividendEmail(email: GmailEmail): ParsedTransaction[] {
   if (amountMatch) {
     const amount = parseSpanishNumber(amountMatch[1]);
     const isin = extractIsinFromHtml(email.body);
-    const name = isin ? determineFundName(isin) : "Interest Settlement";
+    const name = isin ? isin : "Interest Settlement";
 
     transactions.push({
       date: email.date,
@@ -466,7 +466,7 @@ export function parseMyInvestorEmail(email: GmailEmail): ParsedEmail {
         const fees = extractFeesFromHtml(email.body);
         const reference = extractReferenceFromHtml(email.body);
         const name = isin
-          ? determineFundName(isin)
+          ? isin
           : subjectData.name || "Unknown Asset";
 
         result.transactions.push({

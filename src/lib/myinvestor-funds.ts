@@ -187,111 +187,17 @@ export function resolveIsinFromDgsfp(code: string): string | null {
   return DGSFP_TO_ISIN[code.toUpperCase()] ?? null;
 }
 
-// Embedded fund data from MyInvestor CSV
-// This is extracted from the CSV file to enable category lookup without file I/O
-const MYINVESTOR_FUNDS: Array<{
-  isin: string;
-  name: string;
-  fundType: string;
-  category: AssetCategory;
-  currency: string;
-}> = [
-  // Pension Plans (PP)
-  { isin: "ES0165265002", name: "MyInvestor Indexado Global Stock PP", fundType: "PP", category: "PP", currency: "EUR" },
-  { isin: "ES0175105008", name: "MyInvestor Indexado S&P500 PP", fundType: "PP", category: "PP", currency: "EUR" },
-  { isin: "ES0175106006", name: "MyInvestor Indexado Bonos PP", fundType: "PP", category: "PP", currency: "EUR" },
-  { isin: "ES0171664004", name: "MyInvestor Value PP", fundType: "PP", category: "PP", currency: "EUR" },
-  { isin: "ES0125336004", name: "MyInvestor Cartera Permanente PP", fundType: "PP", category: "PP", currency: "EUR" },
-
-  // Popular Funds - Vanguard
-  { isin: "IE00B03HD191", name: "Vanguard Global Stock Index Fund EUR Acc", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "IE0031786696", name: "Vanguard Emerging Markets Stock Index Fund EUR Acc", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "IE00B42W4L06", name: "Vanguard Global Small-Cap Index Fund EUR Acc", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "IE00B18GC888", name: "Vanguard Eurozone Stock Index Fund EUR Acc", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "IE00BG47KH54", name: "Vanguard 2020 Target Retirement Fund EUR", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-
-  // Popular Funds - iShares/BlackRock
-  { isin: "IE000QAZP7L2", name: "iShares Emerging Markets Index Fund (IE) Acc EUR", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "IE00BFMXXD54", name: "iShares Global Aggregate Bond Index Fund", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-
-  // Gold & Precious Metals ETCs/Funds
-  { isin: "IE00B579F325", name: "Invesco Physical Gold ETC (SGLD)", fundType: "ETC", category: "STOCKS", currency: "EUR" },
-  { isin: "LU0273159177", name: "DWS Invest Gold and Precious Metals Equities LC", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "LU0171305526", name: "BlackRock Global Funds - World Gold Fund A2 EUR Acc", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "LU1223083087", name: "Schroder International Selection Fund Global Gold A Acc EUR Hedged", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "IE00BYVJR916", name: "Jupiter Gold & Silver Fund", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "LU0503253931", name: "Invesco Gold & Precious Metals", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-
-  // Technology Funds
-  { isin: "LU1861217088", name: "BlackRock Global Funds - FinTech Fund A2", fundType: "Fondo", category: "FUNDS", currency: "USD" },
-  { isin: "LU2466448532", name: "Echiquier Space B", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-
-  // Regional Funds - Spain
-  { isin: "ES0159201013", name: "Magallanes Iberian Equity M FI", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "ES0167211038", name: "Okavango Delta A FI", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "ES0162735031", name: "Metavalor FI", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "ES0165144009", name: "MUTUAFONDO ESPAÑA A FI", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "ES0175224031", name: "SANTANDER SMALL CAPS ESPAÑA FI", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-
-  // Morgan Stanley Funds
-  { isin: "LU0073232471", name: "Morgan Stanley Investment Funds - US Growth Fund A", fundType: "Fondo", category: "FUNDS", currency: "USD" },
-  { isin: "LU0266117414", name: "Morgan Stanley Investment Funds - US Growth Fund AH (EUR)", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "LU0225737302", name: "Morgan Stanley Investment Funds - US Advantage Fund A", fundType: "Fondo", category: "FUNDS", currency: "USD" },
-  { isin: "LU0552385618", name: "Morgan Stanley Investment Funds - Global Opportunity Fund AH (EUR)", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "LU0868753731", name: "Morgan Stanley Investment Funds - Global Insight Fund A", fundType: "Fondo", category: "FUNDS", currency: "USD" },
-
-  // Amundi Index Funds
-  { isin: "FR0000447823", name: "AXA Trésor Court Terme", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "FR0000989626", name: "Groupama Trésorerie IC", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "FR0013346079", name: "Groupama Ultra Short Term", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-
-  // European Funds
-  { isin: "LU0235308482", name: "Alken European Opportunities R", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "LU0524465548", name: "ALKEN FUND SMALL CAP EUROPE A", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "LU1832174962", name: "Indépendance et Expansion SICAV - Europe Small A (C)", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-
-  // Commodities
-  { isin: "FR0011170182", name: "Ofi Financial Investment - Precious Metals R", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-
-  // Fixed Income
-  { isin: "IE00BYZ28V50", name: "iShares Global Government Bond Index Fund", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-
-  // MyInvestor Cartera Funds (Robo-advisor portfolios)
-  { isin: "ES0156572002", name: "MyInvestor Cartera Permanente FI", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-  { isin: "ES0179551016", name: "MyInvestor Value FI", fundType: "Fondo", category: "FUNDS", currency: "EUR" },
-];
-
-// Build static lookup map
-const STATIC_FUND_MAP = new Map<string, FundInfo>(
-  MYINVESTOR_FUNDS.map((f) => [
-    f.isin,
-    {
-      isin: f.isin,
-      name: f.name,
-      fundType: f.fundType,
-      category: f.category,
-      currency: f.currency,
-      assetType: "",
-    },
-  ])
-);
-
 /**
- * Gets fund info from the static embedded data
- * This is available immediately without needing to load the CSV
+ * Determines asset category based on ISIN and optional name
+ * Uses dynamic cache first, then heuristics based on ISIN prefix and name
  */
-export function getStaticFundByIsin(isin: string): FundInfo | undefined {
-  return STATIC_FUND_MAP.get(isin);
-}
-
-/**
- * Gets category from static data, falling back to heuristics
- */
-export function getStaticCategoryByIsin(isin: string, name?: string): AssetCategory {
-  // First try static lookup
-  const fund = STATIC_FUND_MAP.get(isin);
-  if (fund) {
-    return fund.category;
+export function determineAssetCategory(isin: string, name?: string): AssetCategory {
+  // Try dynamic cache if available
+  if (fundCache) {
+    const cachedFund = fundCache.get(isin);
+    if (cachedFund) {
+      return cachedFund.category;
+    }
   }
 
   // Fall back to heuristics based on ISIN prefix and name
@@ -316,40 +222,4 @@ export function getStaticCategoryByIsin(isin: string, name?: string): AssetCateg
   }
 
   return "OTHERS";
-}
-
-/**
- * Determines asset category based on ISIN and optional name
- * Uses static lookup first, then dynamic cache, then heuristics
- */
-export function determineAssetCategory(isin: string, name?: string): AssetCategory {
-  // Try static lookup first
-  const staticFund = STATIC_FUND_MAP.get(isin);
-  if (staticFund) {
-    return staticFund.category;
-  }
-
-  // Try dynamic cache if available
-  if (fundCache) {
-    const cachedFund = fundCache.get(isin);
-    if (cachedFund) {
-      return cachedFund.category;
-    }
-  }
-
-  // Fall back to heuristics
-  return getStaticCategoryByIsin(isin, name);
-}
-
-/**
- * Gets fund name by ISIN from hardcoded data only.
- * Returns the ISIN itself if not found in the static map.
- */
-export function determineFundName(isin: string): string {
-  const staticFund = STATIC_FUND_MAP.get(isin);
-  if (staticFund) {
-    return staticFund.name;
-  }
-
-  return isin;
 }
