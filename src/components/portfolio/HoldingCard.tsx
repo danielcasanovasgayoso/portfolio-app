@@ -87,20 +87,26 @@ export function HoldingCard({
             )}
           </div>
 
-          <div className="text-right flex-shrink-0">
-            <p className="text-[15px] font-mono font-bold text-foreground tabular-nums">
+          <div className="text-right flex-shrink-0 text-[12px] font-mono space-y-0.5">
+            <p className="font-bold text-foreground tabular-nums">
               {formatCurrency(holding.marketValue)}
             </p>
             <p
               className={cn(
-                "text-[12px] font-mono font-medium tabular-nums mt-0.5",
+                "font-medium tabular-nums",
                 isPositive ? "text-gain" : "text-loss"
               )}
             >
               {holding.gainLoss >= 0 ? "+" : ""}
               {formatCurrency(holding.gainLoss)}
-              {" "}
-              ({formatPercent(holding.gainLossPercent)})
+            </p>
+            <p
+              className={cn(
+                "font-medium tabular-nums",
+                isPositive ? "text-gain" : "text-loss"
+              )}
+            >
+              {formatPercent(holding.gainLossPercent)}
             </p>
           </div>
         </div>
