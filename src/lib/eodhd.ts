@@ -44,6 +44,11 @@ export interface EODHDIdMappingItem {
   type?: string;
 }
 
+export interface ResolvedIsin {
+  symbol: string;
+  name: string | null;
+}
+
 export interface EODHDIdMappingResponse {
   data: EODHDIdMappingItem[];
 }
@@ -293,7 +298,7 @@ export async function resolveIsinToSymbol(
   options?: {
     apiKey?: string | null;
   }
-): Promise<string | null> {
+): Promise<ResolvedIsin | null> {
   // Try ID mapping API first
   try {
     const key = getApiKey(options?.apiKey);
@@ -307,7 +312,8 @@ export async function resolveIsinToSymbol(
     if (response.ok) {
       const data: EODHDIdMappingResponse = await response.json();
       if (data.data && data.data.length > 0 && data.data[0].symbol) {
-        return data.data[0].symbol;
+        const item = data.data[0];
+        return { symbol: item.symbol, name: item.name || null };
       }
     }
   } catch {
@@ -329,7 +335,10 @@ export async function resolveIsinToSymbol(
       if (items && items.length > 0) {
         const item = items[0];
         if (item.Code && item.Exchange) {
-          return `${item.Code}.${item.Exchange}`;
+          return {
+            symbol: `${item.Code}.${item.Exchange}`,
+            name: item.Name || null,
+          };
         }
       }
     }
@@ -349,15 +358,15 @@ export async function batchResolveIsinsToSymbols(
   options?: {
     apiKey?: string | null;
   }
-): Promise<Map<string, string>> {
-  const results = new Map<string, string>();
+): Promise<Map<string, ResolvedIsin>> {
+  const results = new Map<string, ResolvedIsin>();
 
   // Process sequentially to respect rate limits
   for (const isin of isins) {
     try {
-      const symbol = await resolveIsinToSymbol(isin, options);
-      if (symbol) {
-        results.set(isin, symbol);
+      const resolved = await resolveIsinToSymbol(isin, options);
+      if (resolved) {
+        results.set(isin, resolved);
       }
       // Small delay between requests to avoid rate limiting
       await delay(EODHD.RATE_LIMIT_DELAY_MS);

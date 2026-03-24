@@ -12,6 +12,11 @@ import { updateHoldingMarketValue } from "./holdings.service";
 import { getSettings } from "./settings.service";
 import { MARKET_HOURS, PRICE_CACHE } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
+import type { SSEEvent } from "@/types/price-refresh";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface PriceUpdateResult {
   ticker: string;
@@ -28,26 +33,37 @@ interface RefreshPricesResult {
   results: PriceUpdateResult[];
 }
 
-/**
- * Check if cached price is still valid
- */
+interface TradedAsset {
+  assetId: string;
+  ticker: string;
+}
+
+interface AssetPriceWrite {
+  assetId: string;
+  ticker: string;
+  close: number;
+  open: number;
+  high: number;
+  low: number;
+  volume: number;
+  priceDate: Date;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 function isCacheValid(expiresAt: Date): boolean {
   return new Date() < expiresAt;
 }
 
-/**
- * Get cache expiration time based on market hours
- */
 function getCacheExpiration(cacheDurationMin: number): Date {
   const now = new Date();
   const hours = now.getUTCHours();
 
-  // Check if within combined market hours window
   const isMarketHours =
     hours >= MARKET_HOURS.START_UTC && hours <= MARKET_HOURS.END_UTC;
 
-  // During market hours: use configured duration
-  // After hours: cache for longer
   const durationMs = isMarketHours
     ? cacheDurationMin * 60 * 1000
     : PRICE_CACHE.AFTER_HOURS_DURATION_HOURS * 60 * 60 * 1000;
@@ -55,9 +71,96 @@ function getCacheExpiration(cacheDurationMin: number): Date {
   return new Date(now.getTime() + durationMs);
 }
 
+function todayDate(): Date {
+  return new Date(new Date().toISOString().split("T")[0]);
+}
+
 /**
- * Get cached prices for tickers
+ * Get active holdings with tickers (excludes manual-priced assets)
  */
+async function getActiveTradedAssets(userId: string): Promise<TradedAsset[]> {
+  const holdings = await db.holding.findMany({
+    where: { userId, shares: { gt: 0 } },
+    include: { asset: true },
+  });
+
+  return holdings
+    .filter((h) => h.asset.ticker && !h.asset.manualPricing)
+    .map((h) => ({ assetId: h.assetId, ticker: h.asset.ticker! }));
+}
+
+/**
+ * Write price to cache + price table + holding in a single transaction
+ */
+async function persistAssetPrice(
+  write: AssetPriceWrite,
+  cacheDurationMin: number
+): Promise<void> {
+  const expiresAt = getCacheExpiration(cacheDurationMin);
+  const priceDecimal = new Decimal(write.close);
+
+  // Fetch holding data for market value calculation
+  const holding = await db.holding.findUnique({ where: { assetId: write.assetId } });
+
+  await db.$transaction(async (tx) => {
+    // 1. Update price cache
+    await tx.priceCache.upsert({
+      where: { ticker: write.ticker },
+      update: {
+        latestPrice: priceDecimal,
+        priceDate: write.priceDate,
+        fetchedAt: new Date(),
+        expiresAt,
+      },
+      create: {
+        ticker: write.ticker,
+        latestPrice: priceDecimal,
+        priceDate: write.priceDate,
+        fetchedAt: new Date(),
+        expiresAt,
+      },
+    });
+
+    // 2. Upsert price record
+    await tx.price.upsert({
+      where: {
+        assetId_date: { assetId: write.assetId, date: write.priceDate },
+      },
+      update: {
+        open: new Decimal(write.open),
+        high: new Decimal(write.high),
+        low: new Decimal(write.low),
+        close: priceDecimal,
+        volume: BigInt(write.volume || 0),
+      },
+      create: {
+        assetId: write.assetId,
+        date: write.priceDate,
+        open: new Decimal(write.open),
+        high: new Decimal(write.high),
+        low: new Decimal(write.low),
+        close: priceDecimal,
+        volume: BigInt(write.volume || 0),
+        source: "EODHD",
+      },
+    });
+
+    // 3. Update holding market value
+    if (holding && !holding.shares.equals(0)) {
+      const marketValue = holding.shares.times(priceDecimal);
+      const unrealizedGain = marketValue.minus(holding.costBasis);
+      await tx.holding.update({
+        where: { assetId: write.assetId },
+        data: { marketValue, unrealizedGain },
+      });
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Cache
+// ---------------------------------------------------------------------------
+
 export async function getCachedPrices(
   tickers: string[]
 ): Promise<Map<string, { price: Decimal; date: Date; isValid: boolean }>> {
@@ -66,7 +169,6 @@ export async function getCachedPrices(
   });
 
   const result = new Map();
-
   for (const cache of cached) {
     result.set(cache.ticker, {
       price: cache.latestPrice,
@@ -74,50 +176,19 @@ export async function getCachedPrices(
       isValid: isCacheValid(cache.expiresAt),
     });
   }
-
   return result;
 }
 
-/**
- * Update price cache for a ticker
- */
-async function updatePriceCache(
-  ticker: string,
-  price: number,
-  priceDate: Date,
-  cacheDurationMin: number
-): Promise<void> {
-  const expiresAt = getCacheExpiration(cacheDurationMin);
+// ---------------------------------------------------------------------------
+// Store historical prices (batch)
+// ---------------------------------------------------------------------------
 
-  await db.priceCache.upsert({
-    where: { ticker },
-    update: {
-      latestPrice: new Decimal(price),
-      priceDate,
-      fetchedAt: new Date(),
-      expiresAt,
-    },
-    create: {
-      ticker,
-      latestPrice: new Decimal(price),
-      priceDate,
-      fetchedAt: new Date(),
-      expiresAt,
-    },
-  });
-}
-
-/**
- * Store historical prices in the Price table using batch operations
- * Uses a transaction to ensure atomicity and improve performance
- */
 async function storeHistoricalPrices(
   assetId: string,
   prices: EODHDPrice[]
 ): Promise<void> {
   if (prices.length === 0) return;
 
-  // Prepare all price records
   const priceRecords = prices.map((price) => {
     const date = parseEODHDDate(price.date);
     return {
@@ -132,30 +203,20 @@ async function storeHistoricalPrices(
     };
   });
 
-  // Get all dates we're about to insert
   const dates = priceRecords.map((p) => p.date);
 
-  // Use transaction for atomic batch operation
   await db.$transaction(async (tx) => {
-    // Delete existing prices for these dates (faster than individual upserts)
     await tx.price.deleteMany({
-      where: {
-        assetId,
-        date: { in: dates },
-      },
+      where: { assetId, date: { in: dates } },
     });
-
-    // Batch insert all prices
-    await tx.price.createMany({
-      data: priceRecords,
-      skipDuplicates: true,
-    });
+    await tx.price.createMany({ data: priceRecords, skipDuplicates: true });
   });
 }
 
-/**
- * Fetch and store latest price for a single asset
- */
+// ---------------------------------------------------------------------------
+// Single asset refresh
+// ---------------------------------------------------------------------------
+
 export async function refreshAssetPrice(
   userId: string,
   assetId: string,
@@ -176,23 +237,22 @@ export async function refreshAssetPrice(
       return { ticker, success: false, error: "No price data returned" };
     }
 
-    // Get the latest price
     const latestPrice = prices[prices.length - 1];
     const priceDate = parseEODHDDate(latestPrice.date);
 
-    // Update cache
-    await updatePriceCache(
-      ticker,
-      latestPrice.close,
-      priceDate,
+    await persistAssetPrice(
+      {
+        assetId,
+        ticker,
+        close: latestPrice.close,
+        open: latestPrice.open,
+        high: latestPrice.high,
+        low: latestPrice.low,
+        volume: latestPrice.volume || 0,
+        priceDate,
+      },
       settings.priceCacheDurationMin
     );
-
-    // Store in Price table
-    await storeHistoricalPrices(assetId, [latestPrice]);
-
-    // Update holding market value
-    await updateHoldingMarketValue(assetId, new Decimal(latestPrice.close));
 
     return { ticker, success: true, price: latestPrice.close };
   } catch (error) {
@@ -201,20 +261,25 @@ export async function refreshAssetPrice(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Core refresh logic (shared by both batch and streaming callers)
+// ---------------------------------------------------------------------------
+
 /**
- * Refresh prices for all holdings of a user
- * Uses caching to minimize API calls
- * @param userId - The user ID
- * @param resolveIsins - If true, attempt to resolve tickers for assets without them
- * @param forceRefresh - If true, bypass cache and always fetch fresh prices from the API
+ * Refresh all prices for a user.
+ *
+ * @param onAssetDone - Optional callback invoked after each asset is processed
+ *   (enables SSE streaming). When omitted the function runs silently.
  */
 export async function refreshAllPrices(
   userId: string,
-  options?: { resolveIsins?: boolean; forceRefresh?: boolean }
+  options?: { resolveIsins?: boolean; forceRefresh?: boolean },
+  onAssetDone?: (event: SSEEvent) => void
 ): Promise<RefreshPricesResult> {
   const settings = await getSettings(userId);
 
   if (!settings.priceUpdateEnabled) {
+    onAssetDone?.({ type: "done", updated: 0, errors: 0 });
     return {
       success: false,
       updated: 0,
@@ -224,214 +289,193 @@ export async function refreshAllPrices(
     };
   }
 
-  // Get all holdings with their assets for this user
-  const holdings = await db.holding.findMany({
-    where: { userId, shares: { gt: 0 } },
-    include: { asset: true },
-  });
-
-  // If resolveIsins is enabled, attempt to resolve tickers for assets without them
+  // --- Resolve missing tickers if requested ---
   if (options?.resolveIsins) {
-    const assetsWithoutTickers = holdings.filter((h) => !h.asset.ticker);
+    const assetsWithoutTickers = await db.holding.findMany({
+      where: { userId, shares: { gt: 0 }, asset: { ticker: null } },
+      include: { asset: true },
+    });
     for (const holding of assetsWithoutTickers) {
       await resolveAssetTicker(userId, holding.assetId, holding.asset.isin);
     }
-
-    // Refresh holdings data after ticker resolution
-    const refreshedHoldings = await db.holding.findMany({
-      where: { userId, shares: { gt: 0 } },
-      include: { asset: true },
-    });
-    holdings.length = 0;
-    holdings.push(...refreshedHoldings);
   }
 
-  // Filter to assets with tickers, excluding manual assets
-  const assetsWithTickers = holdings
-    .filter((h) => h.asset.ticker && !h.asset.manualPricing)
-    .map((h) => ({
-      assetId: h.assetId,
-      ticker: h.asset.ticker!,
-    }));
+  // --- Get tradeable assets ---
+  const assetsWithTickers = await getActiveTradedAssets(userId);
 
   if (assetsWithTickers.length === 0) {
-    return {
-      success: true,
-      updated: 0,
-      fromCache: 0,
-      errors: [],
-      results: [],
-    };
+    onAssetDone?.({ type: "done", updated: 0, errors: 0 });
+    return { success: true, updated: 0, fromCache: 0, errors: [], results: [] };
   }
 
   const tickers = assetsWithTickers.map((a) => a.ticker);
 
-  // Check cache (skip if forceRefresh is requested)
-  const cached = await getCachedPrices(tickers);
-  const tickersToFetch: string[] = [];
-  let fromCache = 0;
+  // --- Cache check ---
+  const cached = options?.forceRefresh
+    ? new Map()
+    : await getCachedPrices(tickers);
 
-  for (const ticker of tickers) {
-    const cachedPrice = cached.get(ticker);
-    if (!options?.forceRefresh && cachedPrice?.isValid) {
-      fromCache++;
+  // Partition into cached vs to-fetch using Sets for O(1) lookup
+  const tickersToFetchSet = new Set<string>();
+  const cachedAssets: Array<TradedAsset & { price: Decimal }> = [];
+
+  for (const asset of assetsWithTickers) {
+    const cachedPrice = cached.get(asset.ticker);
+    if (cachedPrice?.isValid) {
+      cachedAssets.push({ ...asset, price: cachedPrice.price });
     } else {
-      tickersToFetch.push(ticker);
+      tickersToFetchSet.add(asset.ticker);
     }
   }
 
   const results: PriceUpdateResult[] = [];
   let updated = 0;
+  let fromCache = 0;
   const errors: string[] = [];
 
-  // Use cached prices for valid entries
-  for (const { assetId, ticker } of assetsWithTickers) {
-    const cachedPrice = cached.get(ticker);
-    if (!options?.forceRefresh && cachedPrice?.isValid) {
-      try {
-        await updateHoldingMarketValue(assetId, cachedPrice.price);
-        results.push({ ticker, success: true, price: Number(cachedPrice.price) });
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        results.push({ ticker, success: false, error: msg });
-        errors.push(`${ticker}: ${msg}`);
-      }
+  // --- Process cached assets ---
+  for (const { assetId, ticker, price } of cachedAssets) {
+    try {
+      await updateHoldingMarketValue(assetId, price);
+      results.push({ ticker, success: true, price: Number(price) });
+      fromCache++;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      results.push({ ticker, success: false, error: msg });
+      errors.push(`${ticker}: ${msg}`);
     }
   }
 
-  // Fetch fresh prices for stale/missing entries
-  if (tickersToFetch.length > 0) {
-    // Separate funds (EOD only) from stocks (real-time available)
-    const fundTickers = tickersToFetch.filter((t) => t.includes(".EUFUND"));
-    const stockTickers = tickersToFetch.filter((t) => !t.includes(".EUFUND"));
+  // --- Fetch fresh prices ---
+  if (tickersToFetchSet.size > 0) {
+    const assetsToFetch = assetsWithTickers.filter((a) => tickersToFetchSet.has(a.ticker));
 
-    // Fetch real-time prices for stocks/ETCs
-    if (stockTickers.length > 0) {
+    // Partition funds vs stocks using Sets
+    const fundTickerSet = new Set<string>();
+    const stockTickerSet = new Set<string>();
+    for (const ticker of tickersToFetchSet) {
+      if (ticker.includes(".EUFUND")) {
+        fundTickerSet.add(ticker);
+      } else {
+        stockTickerSet.add(ticker);
+      }
+    }
+
+    const eodFallbackSet = new Set<string>();
+
+    // Emit start event for streaming
+    onAssetDone?.({ type: "start", total: assetsToFetch.length });
+
+    // --- Real-time prices for stocks/ETCs (single batch API call) ---
+    let freshPrices = new Map<string, { open: number; high: number; low: number; close: number; volume: number; timestamp: number }>();
+    if (stockTickerSet.size > 0) {
       try {
-        const freshPrices = await fetchBatchRealTimePrices(stockTickers, {
+        freshPrices = await fetchBatchRealTimePrices([...stockTickerSet], {
           apiKey: settings.eodhdApiKey,
         });
-
-        for (const { assetId, ticker } of assetsWithTickers) {
-          if (!stockTickers.includes(ticker)) continue;
-
-          const price = freshPrices.get(ticker);
-          if (price) {
-            try {
-              await updatePriceCache(
-                ticker,
-                price.close,
-                new Date(price.timestamp * 1000),
-                settings.priceCacheDurationMin
-              );
-
-              await db.price.upsert({
-                where: {
-                  assetId_date: {
-                    assetId,
-                    date: new Date(new Date().toISOString().split("T")[0]),
-                  },
-                },
-                update: {
-                  open: new Decimal(price.open),
-                  high: new Decimal(price.high),
-                  low: new Decimal(price.low),
-                  close: new Decimal(price.close),
-                  volume: BigInt(price.volume || 0),
-                },
-                create: {
-                  assetId,
-                  date: new Date(new Date().toISOString().split("T")[0]),
-                  open: new Decimal(price.open),
-                  high: new Decimal(price.high),
-                  low: new Decimal(price.low),
-                  close: new Decimal(price.close),
-                  volume: BigInt(price.volume || 0),
-                  source: "EODHD",
-                },
-              });
-
-              await updateHoldingMarketValue(assetId, new Decimal(price.close));
-
-              updated++;
-              results.push({ ticker, success: true, price: price.close });
-            } catch (error) {
-              const msg = error instanceof Error ? error.message : String(error);
-              results.push({ ticker, success: false, error: msg });
-              errors.push(`${ticker}: ${msg}`);
-            }
-          } else {
-            // Real-time not available, will fall back to EOD below
-            fundTickers.push(ticker);
-          }
-        }
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         errors.push(`Batch fetch failed: ${msg}`);
+        // All stocks fall back to EOD
+        for (const t of stockTickerSet) eodFallbackSet.add(t);
       }
     }
 
-    // Fetch EOD prices for funds and any stocks that failed real-time
-    for (const { assetId, ticker } of assetsWithTickers) {
-      if (!fundTickers.includes(ticker)) continue;
+    // Process each stock ticker
+    const today = todayDate();
+    for (const { assetId, ticker } of assetsToFetch) {
+      if (!stockTickerSet.has(ticker)) continue;
+
+      const price = freshPrices.get(ticker);
+      if (!price) {
+        eodFallbackSet.add(ticker);
+        continue;
+      }
 
       try {
-        const prices = await fetchHistoricalPrices(ticker, {
-          apiKey: settings.eodhdApiKey,
-        });
-
-        if (prices && prices.length > 0) {
-          const latestPrice = prices[prices.length - 1];
-          const priceDate = parseEODHDDate(latestPrice.date);
-
-          await updatePriceCache(
+        await persistAssetPrice(
+          {
+            assetId,
             ticker,
-            latestPrice.close,
-            priceDate,
-            settings.priceCacheDurationMin
-          );
+            close: price.close,
+            open: price.open,
+            high: price.high,
+            low: price.low,
+            volume: price.volume || 0,
+            priceDate: today,
+          },
+          settings.priceCacheDurationMin
+        );
 
-          await db.price.upsert({
-            where: {
-              assetId_date: {
-                assetId,
-                date: priceDate,
-              },
-            },
-            update: {
-              open: new Decimal(latestPrice.open),
-              high: new Decimal(latestPrice.high),
-              low: new Decimal(latestPrice.low),
-              close: new Decimal(latestPrice.close),
-              volume: BigInt(latestPrice.volume || 0),
-            },
-            create: {
-              assetId,
-              date: priceDate,
-              open: new Decimal(latestPrice.open),
-              high: new Decimal(latestPrice.high),
-              low: new Decimal(latestPrice.low),
-              close: new Decimal(latestPrice.close),
-              volume: BigInt(latestPrice.volume || 0),
-              source: "EODHD",
-            },
-          });
-
-          await updateHoldingMarketValue(assetId, new Decimal(latestPrice.close));
-
-          updated++;
-          results.push({ ticker, success: true, price: latestPrice.close });
-        } else {
-          results.push({ ticker, success: false, error: "No price data" });
-          errors.push(`${ticker}: No price data returned`);
-        }
+        updated++;
+        results.push({ ticker, success: true, price: price.close });
+        onAssetDone?.({ type: "price_updated", assetId, ticker });
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         results.push({ ticker, success: false, error: msg });
         errors.push(`${ticker}: ${msg}`);
+        onAssetDone?.({ type: "price_error", assetId, ticker, error: msg });
+      }
+    }
+
+    // --- EOD prices for funds + stock fallbacks (parallel with concurrency limit) ---
+    const eodAssets = assetsToFetch.filter(
+      (a) => fundTickerSet.has(a.ticker) || eodFallbackSet.has(a.ticker)
+    );
+
+    const CONCURRENCY = 5;
+    for (let i = 0; i < eodAssets.length; i += CONCURRENCY) {
+      const batch = eodAssets.slice(i, i + CONCURRENCY);
+      const batchResults = await Promise.allSettled(
+        batch.map(async ({ assetId, ticker }) => {
+          const prices = await fetchHistoricalPrices(ticker, {
+            apiKey: settings.eodhdApiKey,
+          });
+
+          if (!prices || prices.length === 0) {
+            throw new Error("No price data");
+          }
+
+          const latestPrice = prices[prices.length - 1];
+          const priceDate = parseEODHDDate(latestPrice.date);
+
+          await persistAssetPrice(
+            {
+              assetId,
+              ticker,
+              close: latestPrice.close,
+              open: latestPrice.open,
+              high: latestPrice.high,
+              low: latestPrice.low,
+              volume: latestPrice.volume || 0,
+              priceDate,
+            },
+            settings.priceCacheDurationMin
+          );
+
+          return { assetId, ticker, price: latestPrice.close };
+        })
+      );
+
+      for (let j = 0; j < batchResults.length; j++) {
+        const result = batchResults[j];
+        const { assetId, ticker } = batch[j];
+
+        if (result.status === "fulfilled") {
+          updated++;
+          results.push({ ticker, success: true, price: result.value.price });
+          onAssetDone?.({ type: "price_updated", assetId, ticker });
+        } else {
+          const msg = result.reason instanceof Error ? result.reason.message : String(result.reason);
+          results.push({ ticker, success: false, error: msg });
+          errors.push(`${ticker}: ${msg}`);
+          onAssetDone?.({ type: "price_error", assetId, ticker, error: msg });
+        }
       }
     }
   }
+
+  onAssetDone?.({ type: "done", updated, errors: errors.length });
 
   return {
     success: errors.length === 0,
@@ -442,10 +486,10 @@ export async function refreshAllPrices(
   };
 }
 
-/**
- * Backfill historical prices for an asset
- * Called when a new asset is added
- */
+// ---------------------------------------------------------------------------
+// Historical backfill
+// ---------------------------------------------------------------------------
+
 export async function backfillHistoricalPrices(
   userId: string,
   assetId: string,
@@ -472,12 +516,23 @@ export async function backfillHistoricalPrices(
 
     // Update cache with latest
     const latest = prices[prices.length - 1];
-    await updatePriceCache(
-      ticker,
-      latest.close,
-      parseEODHDDate(latest.date),
-      settings.priceCacheDurationMin
-    );
+    const expiresAt = getCacheExpiration(settings.priceCacheDurationMin);
+    await db.priceCache.upsert({
+      where: { ticker },
+      update: {
+        latestPrice: new Decimal(latest.close),
+        priceDate: parseEODHDDate(latest.date),
+        fetchedAt: new Date(),
+        expiresAt,
+      },
+      create: {
+        ticker,
+        latestPrice: new Decimal(latest.close),
+        priceDate: parseEODHDDate(latest.date),
+        fetchedAt: new Date(),
+        expiresAt,
+      },
+    });
 
     return { success: true, count: prices.length };
   } catch (error) {
@@ -487,15 +542,44 @@ export async function backfillHistoricalPrices(
 }
 
 /**
- * Get price history for an asset
+ * Backfill historical prices for all active traded assets of a user.
+ * Best-effort: errors on individual assets are logged but don't stop the process.
  */
+export async function backfillAllHistoricalPrices(userId: string): Promise<void> {
+  const assets = await getActiveTradedAssets(userId);
+
+  for (const { assetId, ticker } of assets) {
+    try {
+      await backfillHistoricalPrices(userId, assetId, ticker);
+    } catch {
+      // Best-effort; continue with remaining assets
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Full refresh (background via after())
+// ---------------------------------------------------------------------------
+
+export async function refreshAllData(
+  userId: string,
+  options?: { forceRefresh?: boolean }
+): Promise<void> {
+  await refreshAllPrices(userId, { resolveIsins: true, forceRefresh: options?.forceRefresh });
+
+  revalidatePath("/");
+  revalidatePath("/portfolio", "layout");
+
+  await backfillAllHistoricalPrices(userId);
+}
+
+// ---------------------------------------------------------------------------
+// Price queries
+// ---------------------------------------------------------------------------
+
 export async function getPriceHistory(
   assetId: string,
-  options?: {
-    from?: Date;
-    to?: Date;
-    limit?: number;
-  }
+  options?: { from?: Date; to?: Date; limit?: number }
 ): Promise<{ date: Date; close: number; open?: number; high?: number; low?: number }[]> {
   const where: { assetId: string; date?: { gte?: Date; lte?: Date } } = { assetId };
 
@@ -520,9 +604,6 @@ export async function getPriceHistory(
   }));
 }
 
-/**
- * Get latest price for an asset
- */
 export async function getLatestPrice(
   assetId: string
 ): Promise<{ price: number; date: Date } | null> {
@@ -532,28 +613,24 @@ export async function getLatestPrice(
   });
 
   if (!price) return null;
-
-  return {
-    price: Number(price.close),
-    date: price.date,
-  };
+  return { price: Number(price.close), date: price.date };
 }
 
-/**
- * Clear expired cache entries
- */
+// ---------------------------------------------------------------------------
+// Cache cleanup
+// ---------------------------------------------------------------------------
+
 export async function clearExpiredCache(): Promise<number> {
   const result = await db.priceCache.deleteMany({
     where: { expiresAt: { lt: new Date() } },
   });
-
   return result.count;
 }
 
-/**
- * Resolve ISIN to ticker for an asset and save it
- * Returns the resolved ticker or null if resolution failed
- */
+// ---------------------------------------------------------------------------
+// Ticker resolution
+// ---------------------------------------------------------------------------
+
 export async function resolveAssetTicker(
   userId: string,
   assetId: string,
@@ -562,17 +639,28 @@ export async function resolveAssetTicker(
   const settings = await getSettings(userId);
 
   try {
-    const ticker = await resolveIsinToSymbol(isin, {
+    const resolved = await resolveIsinToSymbol(isin, {
       apiKey: settings.eodhdApiKey,
     });
 
-    if (ticker) {
+    if (resolved) {
+      const updateData: { ticker: string; name?: string } = {
+        ticker: resolved.symbol,
+      };
+
+      if (resolved.name) {
+        // Only update name if the current name matches the ISIN (i.e. no user-provided name)
+        const asset = await db.asset.findUnique({ where: { id: assetId } });
+        if (asset && asset.name === asset.isin) {
+          updateData.name = resolved.name;
+        }
+      }
+
       await db.asset.update({
         where: { id: assetId },
-        data: { ticker },
+        data: updateData,
       });
-
-      return ticker;
+      return resolved.symbol;
     }
 
     return null;
@@ -581,21 +669,13 @@ export async function resolveAssetTicker(
   }
 }
 
-/**
- * Resolve tickers for all assets without tickers for a user
- * Useful for batch processing newly imported assets
- */
 export async function resolveAllMissingTickers(userId: string): Promise<{
   resolved: number;
   failed: number;
   results: Array<{ isin: string; ticker: string | null; error?: string }>;
 }> {
   const assetsWithoutTickers = await db.asset.findMany({
-    where: {
-      userId,
-      ticker: null,
-      isActive: true,
-    },
+    where: { userId, ticker: null, isActive: true },
   });
 
   const results: Array<{ isin: string; ticker: string | null; error?: string }> = [];
@@ -620,36 +700,4 @@ export async function resolveAllMissingTickers(userId: string): Promise<{
   }
 
   return { resolved, failed, results };
-}
-
-/**
- * Full async refresh: latest prices + historical backfill for all assets.
- * Intended to run in the background via next/server `after()`.
- */
-export async function refreshAllData(
-  userId: string,
-  options?: { forceRefresh?: boolean }
-): Promise<void> {
-  // Phase 1: Fetch latest prices (real-time for stocks, EOD for funds)
-  await refreshAllPrices(userId, { resolveIsins: true, forceRefresh: options?.forceRefresh });
-
-  // Revalidate portfolio pages so updated market values are served
-  revalidatePath("/");
-  revalidatePath("/portfolio", "layout");
-
-  // Phase 2: Backfill historical prices for all assets with tickers
-  const holdings = await db.holding.findMany({
-    where: { userId, shares: { gt: 0 } },
-    include: { asset: true },
-  });
-
-  for (const holding of holdings) {
-    if (!holding.asset.ticker || holding.asset.manualPricing) continue;
-
-    try {
-      await backfillHistoricalPrices(userId, holding.assetId, holding.asset.ticker);
-    } catch (error) {
-      // Historical backfill is best-effort; continue with remaining assets
-    }
-  }
 }

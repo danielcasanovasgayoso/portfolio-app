@@ -68,7 +68,8 @@
     "synced": "Synced",
     "error": "Error",
     "marketValue": "Market Value",
-    "profitLoss": "Profit/Loss"
+    "profitLoss": "Profit/Loss",
+    "updatingCount": "{updated}/{total}"
   },
   "assetDetail": {
     "backToPortfolio": "Back to portfolio",

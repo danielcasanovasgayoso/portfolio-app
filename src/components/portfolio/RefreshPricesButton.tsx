@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Check, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { SSEEvent } from "@/types/price-refresh";
 
 type Status = "idle" | "syncing" | "success" | "error";
 
@@ -13,30 +14,62 @@ export function RefreshPricesButton() {
   const t = useTranslations("portfolio");
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
+  const [progress, setProgress] = useState({ updated: 0, total: 0 });
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleRefresh = useCallback(async () => {
+  const debouncedRefresh = useCallback(() => {
+    if (refreshTimerRef.current) return;
+    refreshTimerRef.current = setTimeout(() => {
+      router.refresh();
+      refreshTimerRef.current = null;
+    }, 500);
+  }, [router]);
+
+  const handleRefresh = useCallback(() => {
     if (status === "syncing") return;
 
     setStatus("syncing");
+    setProgress({ updated: 0, total: 0 });
 
-    try {
-      const response = await fetch("/api/prices/refresh", { method: "POST" });
+    const es = new EventSource("/api/prices/refresh/stream");
+    eventSourceRef.current = es;
 
-      if (!response.ok) {
-        throw new Error("Failed to trigger refresh");
+    es.onmessage = (event) => {
+      const data: SSEEvent = JSON.parse(event.data);
+
+      switch (data.type) {
+        case "start":
+          setProgress((prev) => ({ ...prev, total: data.total }));
+          break;
+
+        case "price_updated":
+          setProgress((prev) => ({ ...prev, updated: prev.updated + 1 }));
+          debouncedRefresh();
+          break;
+
+        case "price_error":
+          setProgress((prev) => ({ ...prev, updated: prev.updated + 1 }));
+          break;
+
+        case "done":
+          es.close();
+          eventSourceRef.current = null;
+          // Final refresh to ensure UI is fully up to date
+          router.refresh();
+          setStatus(data.errors > 0 && data.updated === 0 ? "error" : "success");
+          setTimeout(() => setStatus("idle"), 5000);
+          break;
       }
+    };
 
-      // Wait for background work to complete latest prices, then refresh page
-      setTimeout(() => {
-        router.refresh();
-        setStatus("success");
-        setTimeout(() => setStatus("idle"), 5000);
-      }, 4000);
-    } catch {
+    es.onerror = () => {
+      es.close();
+      eventSourceRef.current = null;
       setStatus("error");
       setTimeout(() => setStatus("idle"), 5000);
-    }
-  }, [status, router]);
+    };
+  }, [status, router, debouncedRefresh]);
 
   return (
     <div className="flex items-center gap-3">
@@ -56,7 +89,11 @@ export function RefreshPricesButton() {
           className={cn("h-3.5 w-3.5", status === "syncing" && "animate-spin")}
         />
         <span className="hidden sm:inline">
-          {status === "syncing" ? t("syncing") : t("refresh")}
+          {status === "syncing"
+            ? progress.total > 0
+              ? t("updatingCount", { updated: progress.updated, total: progress.total })
+              : t("syncing")
+            : t("refresh")}
         </span>
       </Button>
 
