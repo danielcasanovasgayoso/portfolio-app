@@ -30,6 +30,7 @@ const TransactionBaseSchema = z.object({
   transferType: TransferTypeEnum.optional(),
   // New asset fields (when assetId === "__new__")
   newAssetName: z.string().optional(),
+  newAssetIsin: z.string().optional(),
   newAssetCategory: AssetCategoryEnum.optional(),
 });
 

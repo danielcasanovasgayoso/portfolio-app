@@ -161,6 +161,8 @@
     "addDescription": "Add a manual asset like cash, real estate, or other holdings.",
     "name": "Name",
     "namePlaceholder": "e.g. Emergency Fund, Apartment Madrid",
+    "isin": "ISIN",
+    "isinPlaceholder": "e.g. ES0000000000",
     "category": "Category",
     "selectCategory": "Select category",
     "value": "Value",

@@ -83,13 +83,28 @@ export function TransactionForm({
       fees: "",
       transferType: undefined,
       newAssetName: "",
+      newAssetIsin: "",
       newAssetCategory: "OTHERS",
     },
   });
 
   const watchedType = form.watch("type");
   const watchedAssetId = form.watch("assetId");
+  const watchedShares = form.watch("shares");
+  const watchedPricePerShare = form.watch("pricePerShare");
+  const watchedFees = form.watch("fees");
   const isNewAsset = watchedAssetId === NEW_ASSET_ID;
+
+  // Auto-calculate total amount from shares * pricePerShare + fees
+  useEffect(() => {
+    const shares = parseFloat(watchedShares);
+    const price = parseFloat(watchedPricePerShare || "");
+    if (!isNaN(shares) && !isNaN(price)) {
+      const fees = parseFloat(watchedFees || "") || 0;
+      const total = (shares * price + fees).toFixed(2);
+      form.setValue("totalAmount", total);
+    }
+  }, [watchedShares, watchedPricePerShare, watchedFees, form]);
 
   // Reset form when transaction changes
   useEffect(() => {
@@ -106,6 +121,7 @@ export function TransactionForm({
         fees: transaction.fees ? String(transaction.fees) : "",
         transferType: transaction.transferType || undefined,
         newAssetName: "",
+        newAssetIsin: "",
         newAssetCategory: "OTHERS",
       });
     } else {
@@ -119,6 +135,7 @@ export function TransactionForm({
         fees: "",
         transferType: undefined,
         newAssetName: "",
+        newAssetIsin: "",
         newAssetCategory: "OTHERS",
       });
     }
@@ -219,6 +236,22 @@ export function TransactionForm({
                       <FormControl>
                         <Input
                           placeholder={tAssets("namePlaceholder")}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="newAssetIsin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{tAssets("isin")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={tAssets("isinPlaceholder")}
                           {...field}
                         />
                       </FormControl>

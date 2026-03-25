@@ -161,6 +161,8 @@
     "addDescription": "Añade un activo manual como efectivo, inmuebles u otras posiciones.",
     "name": "Nombre",
     "namePlaceholder": "ej. Fondo de Emergencia, Apartamento Madrid",
+    "isin": "ISIN",
+    "isinPlaceholder": "ej. ES0000000000",
     "category": "Categoría",
     "selectCategory": "Seleccionar categoría",
     "value": "Valor",

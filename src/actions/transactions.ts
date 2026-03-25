@@ -116,7 +116,8 @@ export async function createTransaction(
 
     if (assetId === "__new__" && validated.newAssetName) {
       // Create a new asset first
-      const isin = `MANUAL-${crypto.randomUUID()}`;
+      const hasIsin = validated.newAssetIsin && validated.newAssetIsin.trim() !== "";
+      const isin = hasIsin ? validated.newAssetIsin!.trim() : `MANUAL-${crypto.randomUUID()}`;
       const newAsset = await db.asset.create({
         data: {
           userId,
@@ -124,7 +125,7 @@ export async function createTransaction(
           ticker: null,
           name: validated.newAssetName.trim(),
           category: validated.newAssetCategory || "OTHERS",
-          manualPricing: true,
+          manualPricing: !hasIsin,
         },
       });
       assetId = newAsset.id;
