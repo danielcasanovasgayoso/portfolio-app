@@ -180,7 +180,7 @@ export function TransactionTable({
                     {formatCurrency(Number(transaction.totalAmount))}
                   </TableCell>
                   <TableCell className="text-right tabular-nums text-muted-foreground">
-                    {transaction.fees && Number(transaction.fees) > 0
+                    {Number(transaction.fees) > 0
                       ? formatCurrency(Number(transaction.fees))
                       : "—"}
                   </TableCell>

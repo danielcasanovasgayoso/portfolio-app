@@ -99,7 +99,7 @@ export function TransactionRow({
             {transaction.pricePerShare &&
               ` @ ${formatCurrency(Number(transaction.pricePerShare))}`}
           </p>
-          {transaction.fees && Number(transaction.fees) > 0 && (
+          {Number(transaction.fees) > 0 && (
             <p className="text-[13px] text-muted-foreground">
               {t("feeAmount", { amount: formatCurrency(Number(transaction.fees)) })}
             </p>
