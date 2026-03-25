@@ -66,13 +66,28 @@ export default function AddTransactionPage() {
       fees: "",
       transferType: undefined,
       newAssetName: "",
+      newAssetIsin: "",
       newAssetCategory: "OTHERS",
     },
   });
 
   const watchedType = form.watch("type");
   const watchedAssetId = form.watch("assetId");
+  const watchedShares = form.watch("shares");
+  const watchedPricePerShare = form.watch("pricePerShare");
+  const watchedFees = form.watch("fees");
   const isNewAsset = watchedAssetId === NEW_ASSET_ID;
+
+  // Auto-calculate total amount from shares * pricePerShare + fees
+  useEffect(() => {
+    const shares = parseFloat(watchedShares);
+    const price = parseFloat(watchedPricePerShare || "");
+    if (!isNaN(shares) && !isNaN(price)) {
+      const fees = parseFloat(watchedFees || "") || 0;
+      const total = (shares * price + fees).toFixed(2);
+      form.setValue("totalAmount", total);
+    }
+  }, [watchedShares, watchedPricePerShare, watchedFees, form]);
 
   useEffect(() => {
     getAssets().then((data) => {
@@ -200,6 +215,22 @@ export default function AddTransactionPage() {
                   />
                   <FormField
                     control={form.control}
+                    name="newAssetIsin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{tAssets("isin")}</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={tAssets("isinPlaceholder")}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="newAssetCategory"
                     render={({ field }) => (
                       <FormItem>
@@ -230,8 +261,44 @@ export default function AddTransactionPage() {
                 </div>
               )}
 
-              {/* Type and Transfer Type */}
+              {/* Date and Type */}
               <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>{t("date")}</FormLabel>
+                      <Popover>
+                        <FormControl>
+                          <PopoverTrigger
+                            className={cn(
+                              "inline-flex items-center justify-between w-full h-8 px-2.5 rounded-lg border border-input bg-transparent text-sm font-normal hover:bg-muted transition-colors",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "dd/MM/yyyy")
+                            ) : (
+                              <span>{t("pickDate")}</span>
+                            )}
+                            <CalendarIcon className="h-4 w-4 opacity-50" />
+                          </PopoverTrigger>
+                        </FormControl>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date > new Date()}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="type"
@@ -261,78 +328,41 @@ export default function AddTransactionPage() {
                     </FormItem>
                   )}
                 />
-
-                {watchedType === "TRANSFER" && (
-                  <FormField
-                    control={form.control}
-                    name="transferType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("direction")}</FormLabel>
-                        <Select
-                          value={field.value || ""}
-                          onValueChange={field.onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue>
-                                {field.value
-                                  ? transferLabels[field.value]
-                                  : t("selectDirection")}
-                              </SelectValue>
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {transferTypeKeys.map((type) => (
-                              <SelectItem key={type} value={type}>
-                                {transferLabels[type]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
               </div>
 
-              {/* Date */}
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>{t("date")}</FormLabel>
-                    <Popover>
-                      <FormControl>
-                        <PopoverTrigger
-                          className={cn(
-                            "inline-flex items-center justify-between w-full h-8 px-2.5 rounded-lg border border-input bg-transparent text-sm font-normal hover:bg-muted transition-colors",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "dd/MM/yyyy")
-                          ) : (
-                            <span>{t("pickDate")}</span>
-                          )}
-                          <CalendarIcon className="h-4 w-4 opacity-50" />
-                        </PopoverTrigger>
-                      </FormControl>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date > new Date()}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {watchedType === "TRANSFER" && (
+                <FormField
+                  control={form.control}
+                  name="transferType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("direction")}</FormLabel>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue>
+                              {field.value
+                                ? transferLabels[field.value]
+                                : t("selectDirection")}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {transferTypeKeys.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {transferLabels[type]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {/* Shares and Price per Share */}
               <div className="grid grid-cols-2 gap-4">
@@ -375,46 +405,45 @@ export default function AddTransactionPage() {
                 />
               </div>
 
-              {/* Total Amount and Fees */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="totalAmount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("totalAmount")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          placeholder="0.00"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {/* Fees */}
+              <FormField
+                control={form.control}
+                name="fees"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("fees")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="fees"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("fees")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          placeholder="0.00"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              {/* Total Amount */}
+              <FormField
+                control={form.control}
+                name="totalAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("totalAmount")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {form.formState.errors.root && (
                 <p className="text-sm text-destructive">
