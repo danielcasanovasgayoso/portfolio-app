@@ -391,7 +391,7 @@ export async function refreshAllPrices(
       if (!stockTickerSet.has(ticker)) continue;
 
       const price = freshPrices.get(ticker);
-      if (!price) {
+      if (!price || price.close === 0) {
         eodFallbackSet.add(ticker);
         continue;
       }
