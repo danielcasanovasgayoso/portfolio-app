@@ -99,17 +99,17 @@ export function TransactionRow({
             {transaction.pricePerShare &&
               ` @ ${formatCurrency(Number(transaction.pricePerShare))}`}
           </p>
-        </div>
-
-        <div className="flex items-baseline justify-between">
-          <p className="text-[17px] font-semibold text-foreground tabular-nums">
-            {formatCurrency(Number(transaction.totalAmount))}
-          </p>
           {transaction.fees && Number(transaction.fees) > 0 && (
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               {t("feeAmount", { amount: formatCurrency(Number(transaction.fees)) })}
             </p>
           )}
+        </div>
+
+        <div>
+          <p className="text-[17px] font-semibold text-foreground tabular-nums">
+            {formatCurrency(Number(transaction.totalAmount))}
+          </p>
         </div>
       </div>
     </article>
