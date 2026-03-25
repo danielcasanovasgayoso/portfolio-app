@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PriceChart } from "@/components/charts";
 import { TransactionTimeline } from "@/components/asset-detail/TransactionTimeline";
+import { RefreshAssetButton } from "@/components/asset-detail/RefreshAssetButton";
 import { requireAuth } from "@/lib/auth";
 
 interface AssetDetailPageProps {
@@ -69,9 +70,14 @@ export default async function AssetDetailPage({
             </h1>
             <p className="text-sm text-muted-foreground">{holding.isin}</p>
           </div>
-          <Badge variant="secondary" className="uppercase">
-            {holding.category}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="uppercase">
+              {holding.category}
+            </Badge>
+            {!holding.manualPricing && holding.assetId && (
+              <RefreshAssetButton assetId={holding.assetId} />
+            )}
+          </div>
         </div>
       </header>
 

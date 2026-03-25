@@ -91,7 +91,10 @@
     "sharesAt": "{shares} participaciones @ {price}",
     "transferIn": "Traspaso Entrada",
     "transferOut": "Traspaso Salida",
-    "unrealized": "No realizado"
+    "unrealized": "No realizado",
+    "refresh": "Actualizar",
+    "synced": "Actualizado",
+    "error": "Error"
   },
   "transactions": {
     "title": "Transacciones",

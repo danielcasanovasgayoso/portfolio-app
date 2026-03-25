@@ -91,7 +91,10 @@
     "sharesAt": "{shares} shares @ {price}",
     "transferIn": "Transfer In",
     "transferOut": "Transfer Out",
-    "unrealized": "Unrealized"
+    "unrealized": "Unrealized",
+    "refresh": "Refresh",
+    "synced": "Synced",
+    "error": "Error"
   },
   "transactions": {
     "title": "Transactions",

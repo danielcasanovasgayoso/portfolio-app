@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPriceHistory } from "@/services/price.service";
+import { getPriceHistory, refreshAssetPrice } from "@/services/price.service";
 import { getUserId } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 
 /**
  * GET /api/prices/[assetId]
@@ -72,6 +73,63 @@ export async function GET(
     }
 
     console.error("[API] Get price history failed:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/prices/[assetId]
+ * Refresh the price for a single asset
+ */
+export async function POST(
+  _request: NextRequest,
+  { params }: { params: Promise<{ assetId: string }> }
+) {
+  try {
+    const userId = await getUserId();
+    const { assetId } = await params;
+
+    const asset = await db.asset.findFirst({
+      where: { id: assetId, userId },
+      select: { id: true, ticker: true, manualPricing: true },
+    });
+
+    if (!asset) {
+      return NextResponse.json(
+        { success: false, error: "Asset not found" },
+        { status: 404 }
+      );
+    }
+
+    if (asset.manualPricing || !asset.ticker) {
+      return NextResponse.json(
+        { success: false, error: "Asset has no external pricing" },
+        { status: 400 }
+      );
+    }
+
+    const result = await refreshAssetPrice(userId, assetId, asset.ticker);
+
+    revalidatePath(`/portfolio/${assetId}`);
+    revalidatePath("/");
+
+    return NextResponse.json({ success: result.success, price: result.price, error: result.error });
+  } catch (error) {
+    if (error instanceof Error && error.message === "Not authenticated") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    console.error("[API] Single asset price refresh failed:", error);
 
     return NextResponse.json(
       {
