@@ -96,6 +96,12 @@
     "synced": "Actualizado",
     "error": "Error"
   },
+  "portfolioChart": {
+    "title": "Evolución del Patrimonio",
+    "backToPortfolio": "Volver a la cartera",
+    "noData": "No hay datos suficientes para mostrar el gráfico",
+    "monthlyChanges": "Cambios Mensuales"
+  },
   "transactions": {
     "title": "Transacciones",
     "backToPortfolio": "Volver a la cartera",
@@ -297,7 +303,7 @@
     "error": "Error"
   },
   "meta": {
-    "title": "Cartera | Swiss Terminal",
+    "title": "Cartera",
     "description": "Sigue tu cartera de inversiones con precisión y claridad",
     "importTitle": "Importar Transacciones | Portfolio Tracker",
     "importDescription": "Importar transacciones desde Gmail"

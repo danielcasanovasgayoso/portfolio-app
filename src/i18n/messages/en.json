@@ -96,6 +96,12 @@
     "synced": "Synced",
     "error": "Error"
   },
+  "portfolioChart": {
+    "title": "Net Worth History",
+    "backToPortfolio": "Back to portfolio",
+    "noData": "Not enough data to display the chart",
+    "monthlyChanges": "Monthly Changes"
+  },
   "transactions": {
     "title": "Transactions",
     "backToPortfolio": "Back to portfolio",
@@ -297,7 +303,7 @@
     "error": "Error"
   },
   "meta": {
-    "title": "Portfolio | Swiss Terminal",
+    "title": "Portfolio",
     "description": "Track your investment portfolio with precision and clarity",
     "importTitle": "Import Transactions | Portfolio Tracker",
     "importDescription": "Import transactions from Gmail"

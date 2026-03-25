@@ -20,7 +20,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Portfolio | Swiss Terminal",
+  title: "Portfolio",
   description: "Track your investment portfolio with precision and clarity",
   manifest: "/manifest.json",
   appleWebApp: {

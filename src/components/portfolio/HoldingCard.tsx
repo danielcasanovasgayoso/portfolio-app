@@ -43,16 +43,16 @@ export function HoldingCard({
                 <h3 className="text-[15px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                   {holding.name}
                 </h3>
-                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               </div>
               <p className="text-[12px] font-mono text-muted-foreground mt-1">
                 {holding.manualPricing ? t("manual") : t("avail")} · {portfolioPercent}%
               </p>
             </div>
-            <div className="text-right flex-shrink-0">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <p className="text-lg font-mono font-semibold text-foreground tabular-nums">
                 {formatCurrency(holding.marketValue)}
               </p>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </div>
           </div>
         </article>
@@ -63,8 +63,8 @@ export function HoldingCard({
   return (
     <Link href={`/portfolio/${holding.id}`} className="block group">
       <article className="bg-card rounded-xl shadow-sm px-4 py-3 border-0 transition-transform duration-150 active:scale-[0.98]">
-        {/* Row 1: Name takes the full line */}
-        <div className="flex items-center gap-1.5">
+        {/* Row 1: Name left, chevron right */}
+        <div className="flex items-center justify-between gap-1.5">
           <h3 className="text-[15px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
             {holding.name}
           </h3>

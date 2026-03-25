@@ -1,8 +1,9 @@
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { formatCurrency, formatPercent, getGainClass } from "@/lib/formatters";
 import type { CategoryTotal } from "@/types/portfolio";
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Wallet, Percent } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Percent, ChevronRight } from "lucide-react";
 
 interface PortfolioSummaryCardProps {
   grand: CategoryTotal | null;
@@ -33,10 +34,12 @@ export function PortfolioSummaryCard({
   const isPositive = gainClass === "positive";
 
   return (
-    <article className="dark bg-hero-gradient rounded-xl border-0 shadow-ambient p-6 sm:p-8 h-full">
+    <Link href="/portfolio/chart" className="block group">
+    <article className="dark bg-hero-gradient rounded-xl border-0 shadow-ambient p-6 sm:p-8 h-full transition-transform duration-150 active:scale-[0.98]">
       {/* Header */}
       <div className="flex items-center justify-between mb-3 sm:mb-6">
-        <span className="label-sm">{t("totalNetWorth")}</span>
+        <span className="label-sm group-hover:text-primary transition-colors">{t("totalNetWorth")}</span>
+        <ChevronRight className="w-4 h-4 text-muted-foreground" />
       </div>
 
       {/* Main Value */}
@@ -97,5 +100,6 @@ export function PortfolioSummaryCard({
         </div>
       </div>
     </article>
+    </Link>
   );
 }
