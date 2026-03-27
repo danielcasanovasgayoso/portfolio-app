@@ -1,10 +1,12 @@
 import { db } from "@/lib/db";
 import {
   fetchHistoricalPrices,
+  fetchRealTimePrice,
   fetchBatchRealTimePrices,
   parseEODHDDate,
   getHistoricalStartDate,
   resolveIsinToSymbol,
+  isFundTicker,
   EODHDPrice,
 } from "@/lib/eodhd";
 import { Decimal } from "@prisma/client/runtime/client";
@@ -228,7 +230,39 @@ export async function refreshAssetPrice(
     return { ticker, success: false, error: "Price updates disabled" };
   }
 
+  const isFund = isFundTicker(ticker);
+
   try {
+    // Try real-time API first for non-fund tickers (matches batch refresh behavior)
+    if (!isFund) {
+      try {
+        const realTime = await fetchRealTimePrice(ticker, {
+          apiKey: settings.eodhdApiKey,
+        });
+
+        if (realTime && realTime.close !== 0) {
+          await persistAssetPrice(
+            {
+              assetId,
+              ticker,
+              close: realTime.close,
+              open: realTime.open,
+              high: realTime.high,
+              low: realTime.low,
+              volume: realTime.volume || 0,
+              priceDate: todayDate(),
+            },
+            settings.priceCacheDurationMin
+          );
+
+          return { ticker, success: true, price: realTime.close };
+        }
+      } catch {
+        // Real-time failed, fall through to EOD
+      }
+    }
+
+    // Fallback to EOD historical prices (always used for funds, fallback for stocks)
     const prices = await fetchHistoricalPrices(ticker, {
       apiKey: settings.eodhdApiKey,
     });
@@ -358,7 +392,7 @@ export async function refreshAllPrices(
     const fundTickerSet = new Set<string>();
     const stockTickerSet = new Set<string>();
     for (const ticker of tickersToFetchSet) {
-      if (ticker.includes(".EUFUND")) {
+      if (isFundTicker(ticker)) {
         fundTickerSet.add(ticker);
       } else {
         stockTickerSet.add(ticker);

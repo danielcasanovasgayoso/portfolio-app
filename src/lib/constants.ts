@@ -12,6 +12,7 @@ export const EODHD = {
   RATE_LIMIT_DELAY_MS: 100,
   CACHE_REVALIDATE_SECONDS: 300, // 5 minutes
   ISIN_CACHE_SECONDS: 86400, // 24 hours
+  FUND_EXCHANGE_SUFFIX: ".EUFUND",
 } as const;
 
 // Market Hours (UTC)

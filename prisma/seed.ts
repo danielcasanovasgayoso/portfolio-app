@@ -1,4 +1,5 @@
 import { PrismaClient, AssetCategory } from "@prisma/client";
+import { EODHD } from "@/lib/constants";
 
 const prisma = new PrismaClient();
 
@@ -107,7 +108,7 @@ function classifyAsset(
   const tickerUpper = ticker.toUpperCase();
   const nameUpper = (name || "").toUpperCase();
 
-  if (tickerUpper.endsWith(".EUFUND")) return "FUNDS";
+  if (tickerUpper.endsWith(EODHD.FUND_EXCHANGE_SUFFIX)) return "FUNDS";
   if (
     nameUpper.includes(" PP") ||
     nameUpper.includes("PENSION") ||

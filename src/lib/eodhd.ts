@@ -153,6 +153,13 @@ function delay(ms: number): Promise<void> {
 }
 
 /**
+ * Check if a ticker represents a European fund (uses EOD-only pricing)
+ */
+export function isFundTicker(ticker: string): boolean {
+  return ticker.includes(EODHD.FUND_EXCHANGE_SUFFIX);
+}
+
+/**
  * Format ticker for EODHD API
  * EODHD uses format: SYMBOL.EXCHANGE
  * e.g., AAPL.US, PHAU.XETRA, etc.
