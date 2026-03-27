@@ -1,6 +1,15 @@
-import { createGmailClient, MYINVESTOR_QUERIES } from "@/lib/gmail";
+import {
+  getAccessToken,
+  gmailApiFetch,
+  MYINVESTOR_QUERIES,
+} from "@/lib/gmail";
+import type {
+  GmailMessage,
+  GmailMessageListResponse,
+  GmailMessagePart,
+  GmailProfile,
+} from "@/lib/gmail";
 import type { GmailEmail } from "@/types/import";
-import { gmail_v1 } from "googleapis";
 
 /**
  * Fetches MyInvestor notification emails from Gmail
@@ -12,7 +21,7 @@ export async function fetchMyInvestorEmails(
     maxResults?: number;
   } = {}
 ): Promise<GmailEmail[]> {
-  const gmail = createGmailClient(refreshToken);
+  const accessToken = await getAccessToken(refreshToken);
   const { afterDate, maxResults = 100 } = options;
 
   // Build query with optional date filter
@@ -26,26 +35,33 @@ export async function fetchMyInvestorEmails(
   let pageToken: string | undefined;
 
   do {
-    const response = await gmail.users.messages.list({
-      userId: "me",
+    const params: Record<string, string> = {
       q: query,
-      maxResults: Math.min(maxResults - emails.length, 100),
-      pageToken,
-    });
+      maxResults: String(Math.min(maxResults - emails.length, 100)),
+    };
+    if (pageToken) {
+      params.pageToken = pageToken;
+    }
 
-    const messages = response.data.messages || [];
+    const response = await gmailApiFetch<GmailMessageListResponse>(
+      accessToken,
+      "/users/me/messages",
+      params
+    );
+
+    const messages = response.messages || [];
 
     // Fetch full email details for each message
     for (const message of messages) {
       if (emails.length >= maxResults) break;
 
-      const fullEmail = await fetchEmailDetails(gmail, message.id!);
+      const fullEmail = await fetchEmailDetails(accessToken, message.id!);
       if (fullEmail) {
         emails.push(fullEmail);
       }
     }
 
-    pageToken = response.data.nextPageToken || undefined;
+    pageToken = response.nextPageToken || undefined;
   } while (pageToken && emails.length < maxResults);
 
   return emails;
@@ -55,17 +71,16 @@ export async function fetchMyInvestorEmails(
  * Fetches full email details including body
  */
 async function fetchEmailDetails(
-  gmail: gmail_v1.Gmail,
+  accessToken: string,
   messageId: string
 ): Promise<GmailEmail | null> {
   try {
-    const response = await gmail.users.messages.get({
-      userId: "me",
-      id: messageId,
-      format: "full",
-    });
+    const message = await gmailApiFetch<GmailMessage>(
+      accessToken,
+      `/users/me/messages/${encodeURIComponent(messageId)}`,
+      { format: "full" }
+    );
 
-    const message = response.data;
     const headers = message.payload?.headers || [];
 
     // Extract headers
@@ -101,7 +116,7 @@ async function fetchEmailDetails(
 /**
  * Extracts HTML body from email payload
  */
-function extractHtmlBody(payload?: gmail_v1.Schema$MessagePart): string {
+function extractHtmlBody(payload?: GmailMessagePart): string {
   if (!payload) return "";
 
   // Check if this part is HTML
@@ -132,8 +147,8 @@ export async function testGmailConnection(
   refreshToken: string
 ): Promise<boolean> {
   try {
-    const gmail = createGmailClient(refreshToken);
-    await gmail.users.getProfile({ userId: "me" });
+    const accessToken = await getAccessToken(refreshToken);
+    await gmailApiFetch<GmailProfile>(accessToken, "/users/me/profile");
     return true;
   } catch {
     return false;

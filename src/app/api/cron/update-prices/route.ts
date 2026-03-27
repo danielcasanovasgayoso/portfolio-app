@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
 
     const userIds = usersWithHoldings.map((h) => h.userId);
 
+    // Process users concurrently (3 at a time) to maximize throughput
+    // within the 60s Vercel function limit
+    const CONCURRENCY = 3;
     const results: Array<{
       userId: string;
       success: boolean;
@@ -38,24 +41,34 @@ export async function GET(request: NextRequest) {
       errors: string[];
     }> = [];
 
-    for (const userId of userIds) {
-      try {
-        const result = await refreshAllPrices(userId);
-        results.push({
-          userId,
-          success: result.success,
-          updated: result.updated,
-          fromCache: result.fromCache,
-          errors: result.errors,
-        });
-      } catch (error) {
-        results.push({
-          userId,
-          success: false,
-          updated: 0,
-          fromCache: 0,
-          errors: [error instanceof Error ? error.message : "Unknown error"],
-        });
+    for (let i = 0; i < userIds.length; i += CONCURRENCY) {
+      const batch = userIds.slice(i, i + CONCURRENCY);
+      const batchResults = await Promise.allSettled(
+        batch.map(async (userId) => {
+          const result = await refreshAllPrices(userId);
+          return {
+            userId,
+            success: result.success,
+            updated: result.updated,
+            fromCache: result.fromCache,
+            errors: result.errors,
+          };
+        })
+      );
+
+      for (let j = 0; j < batchResults.length; j++) {
+        const result = batchResults[j];
+        if (result.status === "fulfilled") {
+          results.push(result.value);
+        } else {
+          results.push({
+            userId: batch[j],
+            success: false,
+            updated: 0,
+            fromCache: 0,
+            errors: [result.reason instanceof Error ? result.reason.message : "Unknown error"],
+          });
+        }
       }
     }
 

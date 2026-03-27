@@ -7,7 +7,7 @@ import { getUserId } from "@/lib/auth";
 import { setUserLocale } from "@/i18n/locale";
 import type { Locale } from "@/i18n/config";
 import { z } from "zod";
-import { encryptIfConfigured } from "@/lib/crypto";
+import { encryptIfConfigured, decryptIfEncrypted } from "@/lib/crypto";
 
 export interface SettingsData {
   eodhdApiKey: string | null;
@@ -44,9 +44,16 @@ export async function getSettings(): Promise<SettingsData> {
   }
 
   return {
-    // Mask API key for security (only show last 4 chars)
+    // Decrypt then mask API key for display (only show last 4 chars)
     eodhdApiKey: settings.eodhdApiKey
-      ? `${"•".repeat(20)}${settings.eodhdApiKey.slice(-4)}`
+      ? (() => {
+          try {
+            const decrypted = decryptIfEncrypted(settings.eodhdApiKey);
+            return `${"•".repeat(20)}${decrypted.slice(-4)}`;
+          } catch {
+            return `${"•".repeat(20)}****`;
+          }
+        })()
       : null,
     priceUpdateEnabled: settings.priceUpdateEnabled,
     priceCacheDurationMin: settings.priceCacheDurationMin,
@@ -200,39 +207,41 @@ export async function resetDatabase(): Promise<{
   try {
     const userId = await getUserId();
 
-    // Get user's assets before deleting (needed for price/cache cleanup)
-    const userAssets = await db.asset.findMany({
-      where: { userId },
-      select: { id: true, ticker: true },
-    });
-    const assetIds = userAssets.map((a) => a.id);
-    const tickers = userAssets.map((a) => a.ticker).filter(Boolean) as string[];
+    await db.$transaction(async (tx) => {
+      // Get user's assets before deleting (needed for price/cache cleanup)
+      const userAssets = await tx.asset.findMany({
+        where: { userId },
+        select: { id: true, ticker: true },
+      });
+      const assetIds = userAssets.map((a) => a.id);
+      const tickers = userAssets.map((a) => a.ticker).filter(Boolean) as string[];
 
-    // Delete in order respecting foreign keys:
-    // 1. Transactions (reference assets and importBatches)
-    await db.transaction.deleteMany({ where: { userId } });
-    // 2. Holdings (reference assets)
-    await db.holding.deleteMany({ where: { userId } });
-    // 3. Prices and PriceCache (reference assets/tickers)
-    if (assetIds.length > 0) {
-      await db.price.deleteMany({ where: { assetId: { in: assetIds } } });
-    }
-    if (tickers.length > 0) {
-      await db.priceCache.deleteMany({ where: { ticker: { in: tickers } } });
-    }
-    // 4. Assets
-    await db.asset.deleteMany({ where: { userId } });
-    // 5. Import batches (now safe since transactions are deleted)
-    await db.importBatch.deleteMany({ where: { userId } });
+      // Delete in order respecting foreign keys:
+      // 1. Transactions (reference assets and importBatches)
+      await tx.transaction.deleteMany({ where: { userId } });
+      // 2. Holdings (reference assets)
+      await tx.holding.deleteMany({ where: { userId } });
+      // 3. Prices and PriceCache (reference assets/tickers)
+      if (assetIds.length > 0) {
+        await tx.price.deleteMany({ where: { assetId: { in: assetIds } } });
+      }
+      if (tickers.length > 0) {
+        await tx.priceCache.deleteMany({ where: { ticker: { in: tickers } } });
+      }
+      // 4. Assets
+      await tx.asset.deleteMany({ where: { userId } });
+      // 5. Import batches (now safe since transactions are deleted)
+      await tx.importBatch.deleteMany({ where: { userId } });
 
-    // Reset Gmail connection in settings
-    await db.settings.update({
-      where: { userId },
-      data: {
-        gmailConnected: false,
-        gmailRefreshToken: null,
-        lastGmailImport: null,
-      },
+      // Reset Gmail connection in settings
+      await tx.settings.update({
+        where: { userId },
+        data: {
+          gmailConnected: false,
+          gmailRefreshToken: null,
+          lastGmailImport: null,
+        },
+      });
     });
 
     revalidatePath("/");

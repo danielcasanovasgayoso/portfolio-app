@@ -21,6 +21,19 @@ const nextConfig: NextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
+          // Content Security Policy — allows inline theme script + Supabase
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob:",
+              "font-src 'self'",
+              `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL || ""} https://eodhd.com https://eodhistoricaldata.com`,
+              "frame-ancestors 'none'",
+            ].join("; "),
+          },
           // Force HTTPS for 1 year once first visited (production only via env)
           ...(process.env.NODE_ENV === "production"
             ? [

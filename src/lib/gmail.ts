@@ -1,4 +1,3 @@
-import { google } from "googleapis";
 import { randomBytes } from "crypto";
 
 // Gmail OAuth2 configuration
@@ -11,19 +10,13 @@ const GMAIL_REDIRECT_URI =
 // Required scopes for reading Gmail
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
 
+// Google OAuth2 endpoints
+const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const GMAIL_API_BASE = "https://gmail.googleapis.com/gmail/v1";
+
 /** Cookie name used to store the OAuth CSRF state nonce */
 export const GMAIL_OAUTH_STATE_COOKIE = "gmail_oauth_state";
-
-/**
- * Creates a new OAuth2 client for Gmail API access
- */
-export function createOAuth2Client() {
-  return new google.auth.OAuth2(
-    GMAIL_CLIENT_ID,
-    GMAIL_CLIENT_SECRET,
-    GMAIL_REDIRECT_URI
-  );
-}
 
 /**
  * Generates the authorization URL for Gmail OAuth along with a CSRF state nonce.
@@ -31,14 +24,17 @@ export function createOAuth2Client() {
  * in the OAuth callback to prevent CSRF attacks.
  */
 export function getAuthUrl(): { url: string; state: string } {
-  const oauth2Client = createOAuth2Client();
   const state = randomBytes(32).toString("hex");
-  const url = oauth2Client.generateAuthUrl({
+  const params = new URLSearchParams({
+    client_id: GMAIL_CLIENT_ID!,
+    redirect_uri: GMAIL_REDIRECT_URI,
+    response_type: "code",
+    scope: SCOPES.join(" "),
     access_type: "offline",
-    scope: SCOPES,
-    prompt: "consent", // Force consent screen to get refresh token
+    prompt: "consent",
     state,
   });
+  const url = `${GOOGLE_AUTH_URL}?${params.toString()}`;
   return { url, state };
 }
 
@@ -46,19 +42,138 @@ export function getAuthUrl(): { url: string; state: string } {
  * Exchanges authorization code for tokens
  */
 export async function getTokensFromCode(code: string) {
-  const oauth2Client = createOAuth2Client();
-  const { tokens } = await oauth2Client.getToken(code);
+  const response = await fetch(GOOGLE_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: GMAIL_CLIENT_ID!,
+      client_secret: GMAIL_CLIENT_SECRET!,
+      redirect_uri: GMAIL_REDIRECT_URI,
+      grant_type: "authorization_code",
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Token exchange failed (${response.status}): ${error}`);
+  }
+
+  const tokens: OAuthTokens = await response.json();
   return tokens;
 }
 
 /**
- * Creates an authenticated Gmail API client
+ * Refreshes an access token using a refresh token.
+ * Returns a short-lived access token for Gmail API calls.
  */
-export function createGmailClient(refreshToken: string) {
-  const oauth2Client = createOAuth2Client();
-  oauth2Client.setCredentials({ refresh_token: refreshToken });
-  return google.gmail({ version: "v1", auth: oauth2Client });
+export async function getAccessToken(refreshToken: string): Promise<string> {
+  const response = await fetch(GOOGLE_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      refresh_token: refreshToken,
+      client_id: GMAIL_CLIENT_ID!,
+      client_secret: GMAIL_CLIENT_SECRET!,
+      grant_type: "refresh_token",
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Token refresh failed (${response.status}): ${error}`);
+  }
+
+  const data: { access_token: string } = await response.json();
+  return data.access_token;
 }
+
+/**
+ * Makes an authenticated GET request to the Gmail API.
+ */
+export async function gmailApiFetch<T>(
+  accessToken: string,
+  path: string,
+  params?: Record<string, string>
+): Promise<T> {
+  const url = new URL(`${GMAIL_API_BASE}${path}`);
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== "") {
+        url.searchParams.set(key, value);
+      }
+    }
+  }
+
+  const response = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Gmail API error (${response.status}): ${error}`);
+  }
+
+  return response.json();
+}
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface OAuthTokens {
+  access_token?: string;
+  refresh_token?: string;
+  scope?: string;
+  token_type?: string;
+  expiry_date?: number;
+  expires_in?: number;
+  id_token?: string;
+}
+
+export interface GmailMessagePartBody {
+  attachmentId?: string;
+  size?: number;
+  data?: string;
+}
+
+export interface GmailHeader {
+  name?: string;
+  value?: string;
+}
+
+export interface GmailMessagePart {
+  partId?: string;
+  mimeType?: string;
+  filename?: string;
+  headers?: GmailHeader[];
+  body?: GmailMessagePartBody;
+  parts?: GmailMessagePart[];
+}
+
+export interface GmailMessage {
+  id?: string;
+  threadId?: string;
+  labelIds?: string[];
+  snippet?: string;
+  payload?: GmailMessagePart;
+  sizeEstimate?: number;
+  historyId?: string;
+  internalDate?: string;
+}
+
+export interface GmailMessageListResponse {
+  messages?: Array<{ id?: string; threadId?: string }>;
+  nextPageToken?: string;
+  resultSizeEstimate?: number;
+}
+
+export interface GmailProfile {
+  emailAddress?: string;
+  messagesTotal?: number;
+  threadsTotal?: number;
+  historyId?: string;
+}
+
+// ─── Query constants ────────────────────────────────────────────────────────
 
 /**
  * MyInvestor email query constants

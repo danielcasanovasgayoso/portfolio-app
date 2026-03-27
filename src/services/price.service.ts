@@ -101,9 +101,6 @@ async function persistAssetPrice(
   const expiresAt = getCacheExpiration(cacheDurationMin);
   const priceDecimal = new Decimal(write.close);
 
-  // Fetch holding data for market value calculation
-  const holding = await db.holding.findUnique({ where: { assetId: write.assetId } });
-
   await db.$transaction(async (tx) => {
     // 1. Update price cache
     await tx.priceCache.upsert({
@@ -147,7 +144,8 @@ async function persistAssetPrice(
       },
     });
 
-    // 3. Update holding market value
+    // 3. Read holding inside transaction to avoid race conditions
+    const holding = await tx.holding.findUnique({ where: { assetId: write.assetId } });
     if (holding && !holding.shares.equals(0)) {
       const marketValue = holding.shares.times(priceDecimal);
       const unrealizedGain = marketValue.minus(holding.costBasis);

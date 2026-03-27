@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,16 @@ export function RefreshPricesButton() {
   const [progress, setProgress] = useState({ updated: 0, total: 0 });
   const eventSourceRef = useRef<EventSource | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up EventSource and timers on unmount
+  useEffect(() => {
+    return () => {
+      eventSourceRef.current?.close();
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+    };
+  }, []);
 
   const debouncedRefresh = useCallback(() => {
     if (refreshTimerRef.current) return;
@@ -55,10 +65,9 @@ export function RefreshPricesButton() {
         case "done":
           es.close();
           eventSourceRef.current = null;
-          // Final refresh to ensure UI is fully up to date
           router.refresh();
           setStatus(data.errors > 0 && data.updated === 0 ? "error" : "success");
-          setTimeout(() => setStatus("idle"), 5000);
+          statusTimerRef.current = setTimeout(() => setStatus("idle"), 5000);
           break;
       }
     };
@@ -67,7 +76,7 @@ export function RefreshPricesButton() {
       es.close();
       eventSourceRef.current = null;
       setStatus("error");
-      setTimeout(() => setStatus("idle"), 5000);
+      statusTimerRef.current = setTimeout(() => setStatus("idle"), 5000);
     };
   }, [status, router, debouncedRefresh]);
 

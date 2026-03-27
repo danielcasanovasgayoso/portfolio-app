@@ -249,29 +249,43 @@ export async function confirmImport(
     const errors: string[] = [];
     const affectedAssetIds = new Set<string>();
 
-    for (const item of selectedItems) {
+    // Step 1: Resolve all unique ISINs to assets upfront (batch)
+    const uniqueIsins = [...new Set(selectedItems.map((item) => item.transaction.isin))];
+    const existingAssets = await db.asset.findMany({
+      where: { userId, isin: { in: uniqueIsins } },
+    });
+    const isinToAsset = new Map(existingAssets.map((a) => [a.isin, a]));
+
+    // Create missing assets in one pass
+    const missingIsins = uniqueIsins.filter((isin) => !isinToAsset.has(isin));
+    for (const isin of missingIsins) {
+      const item = selectedItems.find((i) => i.transaction.isin === isin)!;
       try {
-        // Find or create asset for this user
-        let asset = await db.asset.findFirst({
-          where: { userId, isin: item.transaction.isin },
+        const asset = await db.asset.create({
+          data: {
+            userId,
+            isin,
+            name: item.transaction.name,
+            category: determineAssetCategory(isin, item.transaction.name),
+            currency: item.transaction.currency,
+          },
         });
+        isinToAsset.set(isin, asset);
+      } catch (error) {
+        errors.push(
+          `Failed to create asset ${isin}: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
 
-        if (!asset) {
-          asset = await db.asset.create({
-            data: {
-              userId,
-              isin: item.transaction.isin,
-              name: item.transaction.name,
-              category: determineAssetCategory(item.transaction.isin, item.transaction.name),
-              currency: item.transaction.currency,
-            },
-          });
-        }
+    // Step 2: Create all transactions
+    for (const item of selectedItems) {
+      const asset = isinToAsset.get(item.transaction.isin);
+      if (!asset) continue; // Asset creation failed above
 
-        // Track affected assets for holdings recalculation
-        affectedAssetIds.add(asset.id);
-
-        // Create transaction
+      try {
         await db.transaction.create({
           data: {
             userId,
@@ -293,6 +307,7 @@ export async function confirmImport(
           },
         });
 
+        affectedAssetIds.add(asset.id);
         importedCount++;
       } catch (error) {
         errors.push(

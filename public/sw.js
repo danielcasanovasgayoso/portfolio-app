@@ -1,9 +1,15 @@
-const CACHE_VERSION = "v1";
+// Bump this on each deploy to clear stale caches
+const CACHE_VERSION = "2025-03-27a";
 const STATIC_CACHE = `portfolio-static-${CACHE_VERSION}`;
 const APP_CACHE = `portfolio-app-${CACHE_VERSION}`;
-const PRECACHE_URLS = ["/offline.html"];
 
-// Install: precache offline fallback
+const PRECACHE_URLS = [
+  "/offline.html",
+  "/manifest.json",
+  "/icons/icon-192x192.png",
+];
+
+// Install: precache critical app shell assets
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -13,7 +19,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// Activate: clean up old versioned caches
+// Activate: clean up all old versioned caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
@@ -37,16 +43,22 @@ self.addEventListener("fetch", (event) => {
   // Only handle same-origin requests
   if (url.origin !== self.location.origin) return;
 
-  // Skip: API routes, auth routes — always network
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) {
+  // Skip: API routes, auth routes, SSE streams — always network
+  if (
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/auth/")
+  ) {
     return;
   }
 
-  // Cache-first for immutable static assets
-  if (
-    url.pathname.startsWith("/_next/static/") ||
-    url.pathname.startsWith("/_next/image/")
-  ) {
+  // Cache-first for immutable Next.js static assets (content-hashed filenames)
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(cacheFirst(request, STATIC_CACHE));
+    return;
+  }
+
+  // Cache-first for Next.js image optimization
+  if (url.pathname.startsWith("/_next/image/")) {
     event.respondWith(cacheFirst(request, STATIC_CACHE));
     return;
   }
@@ -60,7 +72,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Network-first for navigation (HTML pages)
+  // Network-first for navigation (HTML pages) with offline fallback
   if (request.mode === "navigate") {
     event.respondWith(networkFirstNavigation(request));
     return;
@@ -85,11 +97,22 @@ async function cacheFirst(request, cacheName) {
 
 async function networkFirstNavigation(request) {
   try {
-    return await fetch(request);
+    const response = await fetch(request);
+    // Cache successful navigations for offline access
+    if (response.ok) {
+      const cache = await caches.open(APP_CACHE);
+      cache.put(request, response.clone());
+    }
+    return response;
   } catch {
-    const cached = await caches.match("/offline.html");
+    // Try the cached version of this page first
+    const cached = await caches.match(request);
+    if (cached) return cached;
+
+    // Fall back to offline page
+    const offlinePage = await caches.match("/offline.html");
     return (
-      cached ||
+      offlinePage ||
       new Response("Offline", {
         status: 503,
         headers: { "Content-Type": "text/html" },
@@ -97,3 +120,10 @@ async function networkFirstNavigation(request) {
     );
   }
 }
+
+// Accept skip-waiting messages from the client
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
