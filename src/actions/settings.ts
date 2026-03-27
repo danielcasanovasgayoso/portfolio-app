@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getUserId } from "@/lib/auth";
 import { setUserLocale } from "@/i18n/locale";
 import type { Locale } from "@/i18n/config";
+import { z } from "zod";
 
 export interface SettingsData {
   eodhdApiKey: string | null;
@@ -292,33 +293,35 @@ export async function exportPortfolioData(): Promise<{
   }
 }
 
-// Types for import data
-interface ImportAsset {
-  isin: string;
-  ticker?: string | null;
-  name: string;
-  category?: "FUNDS" | "STOCKS" | "PP" | "OTHERS";
-  currency?: string;
-  manualPricing?: boolean;
-}
+// Zod schemas for import validation
+const ImportAssetSchema = z.object({
+  isin: z.string().min(1).max(20),
+  ticker: z.string().max(20).nullable().optional(),
+  name: z.string().min(1).max(200),
+  category: z.enum(["FUNDS", "STOCKS", "PP", "OTHERS"]).optional(),
+  currency: z.string().length(3).optional(),
+  manualPricing: z.boolean().optional(),
+});
 
-interface ImportTransaction {
-  date: string;
-  asset?: string;
-  isin: string;
-  type: "BUY" | "SELL" | "DIVIDEND" | "FEE" | "TRANSFER";
-  transferType?: "IN" | "OUT" | null;
-  shares: number;
-  pricePerShare?: number | null;
-  totalAmount: number;
-  fees?: number;
-}
+const ImportTransactionSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
+  asset: z.string().optional(),
+  isin: z.string().min(1).max(20),
+  type: z.enum(["BUY", "SELL", "DIVIDEND", "FEE", "TRANSFER"]),
+  transferType: z.enum(["IN", "OUT"]).nullable().optional(),
+  shares: z.number().finite(),
+  pricePerShare: z.number().finite().nullable().optional(),
+  totalAmount: z.number().finite(),
+  fees: z.number().finite().min(0).optional(),
+});
 
-interface ImportData {
-  exportedAt?: string;
-  assets: ImportAsset[];
-  transactions: ImportTransaction[];
-}
+const ImportDataSchema = z.object({
+  exportedAt: z.string().optional(),
+  assets: z.array(ImportAssetSchema).max(5000),
+  transactions: z.array(ImportTransactionSchema).max(50000),
+});
+
+type ImportData = z.infer<typeof ImportDataSchema>;
 
 export async function importPortfolioData(jsonData: string): Promise<{
   success: boolean;
@@ -333,21 +336,25 @@ export async function importPortfolioData(jsonData: string): Promise<{
   try {
     const userId = await getUserId();
 
-    // Parse and validate JSON
-    let data: ImportData;
+    // Parse JSON
+    let raw: unknown;
     try {
-      data = JSON.parse(jsonData);
+      raw = JSON.parse(jsonData);
     } catch {
       return { success: false, error: "Invalid JSON format" };
     }
 
-    // Validate required fields
-    if (!data.assets || !Array.isArray(data.assets)) {
-      return { success: false, error: "Missing or invalid 'assets' array" };
+    // Validate structure with Zod
+    const parseResult = ImportDataSchema.safeParse(raw);
+    if (!parseResult.success) {
+      const firstError = parseResult.error.errors[0];
+      return {
+        success: false,
+        error: `Invalid import data: ${firstError.path.join(".")} — ${firstError.message}`,
+      };
     }
-    if (!data.transactions || !Array.isArray(data.transactions)) {
-      return { success: false, error: "Missing or invalid 'transactions' array" };
-    }
+
+    const data: ImportData = parseResult.data;
 
     let assetsImported = 0;
     let assetsSkipped = 0;

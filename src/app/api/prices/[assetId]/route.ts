@@ -46,7 +46,10 @@ export async function GET(
     }
 
     if (limitStr) {
-      options.limit = parseInt(limitStr, 10);
+      const parsed = parseInt(limitStr, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        options.limit = Math.min(parsed, 3650); // cap at ~10 years of daily data
+      }
     }
 
     const prices = await getPriceHistory(assetId, options);
@@ -75,10 +78,7 @@ export async function GET(
     console.error("[API] Get price history failed:", error);
 
     return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
+      { success: false, error: "Failed to retrieve price history" },
       { status: 500 }
     );
   }
@@ -132,10 +132,7 @@ export async function POST(
     console.error("[API] Single asset price refresh failed:", error);
 
     return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
+      { success: false, error: "Failed to refresh asset price" },
       { status: 500 }
     );
   }
