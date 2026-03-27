@@ -362,7 +362,7 @@ export async function importPortfolioData(jsonData: string): Promise<{
     // Validate structure with Zod
     const parseResult = ImportDataSchema.safeParse(raw);
     if (!parseResult.success) {
-      const firstError = parseResult.error.errors[0];
+      const firstError = parseResult.error.issues[0];
       return {
         success: false,
         error: `Invalid import data: ${firstError.path.join(".")} — ${firstError.message}`,
