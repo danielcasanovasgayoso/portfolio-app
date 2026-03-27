@@ -86,9 +86,14 @@ export function encryptIfConfigured(value: string): string {
 
 /**
  * Decrypts a value that may be encrypted or plain-prefixed.
- * Handles both formats produced by `encryptIfConfigured`.
+ * Handles both formats produced by `encryptIfConfigured`, plus legacy
+ * raw plaintext values stored before encryption was introduced.
  */
 export function decryptIfEncrypted(value: string): string {
   if (value.startsWith("plain:")) return value.slice(6);
+  // Values encrypted by `encrypt()` always have exactly 3 colon-separated
+  // hex components (iv:authTag:ciphertext). Anything else is a legacy raw
+  // plaintext value stored before encryption was added.
+  if (value.split(":").length !== 3) return value;
   return decrypt(value);
 }
