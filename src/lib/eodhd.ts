@@ -112,7 +112,7 @@ async function fetchWithRetry<T>(
         headers: {
           Accept: "application/json",
         },
-        next: { revalidate: EODHD.CACHE_REVALIDATE_SECONDS },
+        cache: "no-store",
       });
 
       if (!response.ok) {
