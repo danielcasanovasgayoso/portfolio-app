@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { PRICE_CACHE } from "@/lib/constants";
+import { decryptIfEncrypted } from "@/lib/crypto";
 
 /**
  * Application settings with defaults
@@ -73,15 +74,19 @@ export async function getSettings(userId: string): Promise<AppSettings> {
     where: { userId },
   });
 
-  // Merge with defaults
+  // Merge with defaults, decrypting sensitive fields on the way out
   const settings: AppSettings = {
     ...DEFAULT_SETTINGS,
     ...(dbSettings && {
-      eodhdApiKey: dbSettings.eodhdApiKey,
+      eodhdApiKey: dbSettings.eodhdApiKey
+        ? decryptIfEncrypted(dbSettings.eodhdApiKey)
+        : null,
       priceCacheDurationMin: dbSettings.priceCacheDurationMin,
       priceUpdateEnabled: dbSettings.priceUpdateEnabled,
       gmailConnected: dbSettings.gmailConnected,
-      gmailRefreshToken: dbSettings.gmailRefreshToken,
+      gmailRefreshToken: dbSettings.gmailRefreshToken
+        ? decryptIfEncrypted(dbSettings.gmailRefreshToken)
+        : null,
       lastGmailImport: dbSettings.lastGmailImport,
       defaultCurrency: dbSettings.defaultCurrency,
       theme: dbSettings.theme,

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthUrl } from "@/lib/gmail";
+import { getAuthUrl, GMAIL_OAUTH_STATE_COOKIE } from "@/lib/gmail";
 import { getUserId } from "@/lib/auth";
 
 /**
@@ -24,8 +24,19 @@ export async function GET() {
       );
     }
 
-    const authUrl = getAuthUrl();
-    return NextResponse.redirect(authUrl);
+    const { url, state } = getAuthUrl();
+    const response = NextResponse.redirect(url);
+
+    // Store the CSRF state nonce in a short-lived, HTTP-only cookie
+    response.cookies.set(GMAIL_OAUTH_STATE_COOKIE, state, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 600, // 10 minutes — enough to complete the OAuth flow
+      path: "/",
+    });
+
+    return response;
   } catch (error) {
     // Check if it's an auth error
     if (error instanceof Error && error.message === "Not authenticated") {

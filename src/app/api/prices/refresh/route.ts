@@ -31,10 +31,7 @@ export async function POST() {
     console.error("[API] Price refresh failed:", error);
 
     return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
+      { success: false, error: "Failed to trigger price refresh" },
       { status: 500 }
     );
   }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokensFromCode } from "@/lib/gmail";
+import { getTokensFromCode, GMAIL_OAUTH_STATE_COOKIE } from "@/lib/gmail";
 import { db } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
+import { encryptIfConfigured } from "@/lib/crypto";
 
 /**
  * GET /api/auth/gmail/callback
@@ -10,6 +11,7 @@ import { getUserId } from "@/lib/auth";
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
+  const stateParam = searchParams.get("state");
   const error = searchParams.get("error");
 
   // Handle OAuth errors
@@ -18,6 +20,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(
       new URL(
         `/import?error=${encodeURIComponent("Gmail authorization was denied")}`,
+        request.url
+      )
+    );
+  }
+
+  // Validate CSRF state parameter before anything else
+  const storedState = request.cookies.get(GMAIL_OAUTH_STATE_COOKIE)?.value;
+  if (!storedState || !stateParam || stateParam !== storedState) {
+    console.error("Gmail OAuth state mismatch — possible CSRF attack");
+    return NextResponse.redirect(
+      new URL(
+        `/import?error=${encodeURIComponent("Invalid OAuth state. Please try again.")}`,
         request.url
       )
     );
@@ -50,27 +64,32 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Encrypt refresh token before persisting
+    const encryptedToken = encryptIfConfigured(tokens.refresh_token);
+
     // Store refresh token in user's settings
     await db.settings.upsert({
       where: { userId },
       update: {
         gmailConnected: true,
-        gmailRefreshToken: tokens.refresh_token,
+        gmailRefreshToken: encryptedToken,
       },
       create: {
         userId,
         gmailConnected: true,
-        gmailRefreshToken: tokens.refresh_token,
+        gmailRefreshToken: encryptedToken,
       },
     });
 
-    // Redirect to import page with success message
-    return NextResponse.redirect(
+    // Redirect to import page with success message; clear the one-time state cookie
+    const successResponse = NextResponse.redirect(
       new URL(
         `/import?success=${encodeURIComponent("Gmail connected successfully!")}`,
         request.url
       )
     );
+    successResponse.cookies.delete(GMAIL_OAUTH_STATE_COOKIE);
+    return successResponse;
   } catch (error) {
     // Check if it's an auth error
     if (error instanceof Error && error.message === "Not authenticated") {
