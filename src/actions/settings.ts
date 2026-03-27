@@ -7,6 +7,7 @@ import { getUserId } from "@/lib/auth";
 import { setUserLocale } from "@/i18n/locale";
 import type { Locale } from "@/i18n/config";
 import { z } from "zod";
+import { encryptIfConfigured } from "@/lib/crypto";
 
 export interface SettingsData {
   eodhdApiKey: string | null;
@@ -71,8 +72,8 @@ export async function updateApiKey(
 
     await db.settings.upsert({
       where: { userId },
-      update: { eodhdApiKey: apiKey },
-      create: { userId, eodhdApiKey: apiKey },
+      update: { eodhdApiKey: encryptIfConfigured(apiKey) },
+      create: { userId, eodhdApiKey: encryptIfConfigured(apiKey) },
     });
 
     revalidatePath("/settings");
@@ -147,10 +148,24 @@ export async function updateLocale(
   }
 }
 
+const CACHE_DURATION_MIN = 1;
+const CACHE_DURATION_MAX = 1440; // 24 hours
+
 export async function updatePriceSettings(
   enabled: boolean,
   cacheDurationMin: number
 ): Promise<{ success: boolean; error?: string }> {
+  if (
+    !Number.isInteger(cacheDurationMin) ||
+    cacheDurationMin < CACHE_DURATION_MIN ||
+    cacheDurationMin > CACHE_DURATION_MAX
+  ) {
+    return {
+      success: false,
+      error: `Cache duration must be between ${CACHE_DURATION_MIN} and ${CACHE_DURATION_MAX} minutes`,
+    };
+  }
+
   try {
     const userId = await getUserId();
 

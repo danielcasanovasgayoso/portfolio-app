@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getTokensFromCode, GMAIL_OAUTH_STATE_COOKIE } from "@/lib/gmail";
 import { db } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
+import { encryptIfConfigured } from "@/lib/crypto";
 
 /**
  * GET /api/auth/gmail/callback
@@ -63,17 +64,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Encrypt refresh token before persisting
+    const encryptedToken = encryptIfConfigured(tokens.refresh_token);
+
     // Store refresh token in user's settings
     await db.settings.upsert({
       where: { userId },
       update: {
         gmailConnected: true,
-        gmailRefreshToken: tokens.refresh_token,
+        gmailRefreshToken: encryptedToken,
       },
       create: {
         userId,
         gmailConnected: true,
-        gmailRefreshToken: tokens.refresh_token,
+        gmailRefreshToken: encryptedToken,
       },
     });
 
