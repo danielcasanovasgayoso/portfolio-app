@@ -11,10 +11,11 @@ export const TransactionTypeEnum = z.enum([
 
 export const TransferTypeEnum = z.enum(["IN", "OUT"]);
 
-// Decimal string validator (accepts numbers or numeric strings)
+// Decimal string validator (accepts numbers or numeric strings, allows comma as decimal separator)
 const decimalString = z
   .string()
-  .regex(/^-?\d*\.?\d+$/, "Must be a valid number");
+  .transform((val) => val.replace(",", "."))
+  .pipe(z.string().regex(/^-?\d*\.?\d+$/, "Must be a valid number"));
 
 export const AssetCategoryEnum = z.enum(["FUNDS", "STOCKS", "PP", "OTHERS"]);
 

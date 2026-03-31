@@ -201,7 +201,7 @@ export function TransactionFormFields({ form, assets }: TransactionFormFieldsPro
                     mode="single"
                     selected={field.value}
                     onSelect={field.onChange}
-                    disabled={(date) => date > new Date()}
+                    disabled={false}
                   />
                 </PopoverContent>
               </Popover>
@@ -286,6 +286,7 @@ export function TransactionFormFields({ form, assets }: TransactionFormFieldsPro
                   inputMode="decimal"
                   placeholder="0.0000"
                   {...field}
+                  onChange={(e) => field.onChange(e.target.value.replace(",", "."))}
                 />
               </FormControl>
               <FormMessage />
@@ -305,6 +306,7 @@ export function TransactionFormFields({ form, assets }: TransactionFormFieldsPro
                   inputMode="decimal"
                   placeholder="0.00"
                   {...field}
+                  onChange={(e) => field.onChange(e.target.value.replace(",", "."))}
                 />
               </FormControl>
               <FormMessage />
@@ -326,6 +328,7 @@ export function TransactionFormFields({ form, assets }: TransactionFormFieldsPro
                 inputMode="decimal"
                 placeholder="0.00"
                 {...field}
+                onChange={(e) => field.onChange(e.target.value.replace(",", "."))}
               />
             </FormControl>
             <FormMessage />
@@ -346,6 +349,7 @@ export function TransactionFormFields({ form, assets }: TransactionFormFieldsPro
                 inputMode="decimal"
                 placeholder="0.00"
                 {...field}
+                onChange={(e) => field.onChange(e.target.value.replace(",", "."))}
               />
             </FormControl>
             <FormMessage />
