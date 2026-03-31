@@ -3,7 +3,6 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import {
   ArrowLeft,
-  Calculator,
   Database,
   Download,
   Globe,
@@ -19,7 +18,6 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RecalculateHoldingsButton } from "@/components/settings/RecalculateHoldingsButton";
 import { ApiKeyForm } from "@/components/settings/ApiKeyForm";
 import { ThemeToggle } from "@/components/settings/ThemeToggle";
 import { LanguageSwitcher } from "@/components/settings/LanguageSwitcher";
@@ -157,28 +155,6 @@ async function SettingsContent() {
         </CardHeader>
         <CardContent>
           <LanguageSwitcher />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Calculator className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle>{t("holdingsMaintenance")}</CardTitle>
-              <CardDescription>
-                {t("holdingsMaintenanceDesc")}
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <RecalculateHoldingsButton />
-          <p className="text-sm text-muted-foreground mt-2">
-            {t("recalculateHelp")}
-          </p>
         </CardContent>
       </Card>
 

@@ -60,6 +60,3 @@ export function getGainClass(value: number): "positive" | "negative" {
   return value >= 0 ? "positive" : "negative";
 }
 
-export function getGainSign(value: number): string {
-  return value >= 0 ? "+" : "";
-}
