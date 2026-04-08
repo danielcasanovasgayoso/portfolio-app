@@ -34,31 +34,24 @@ export function PortfolioSummarySkeleton() {
 
 export function HoldingCardSkeleton() {
   return (
-    <div className="terminal-card p-4 pl-5">
-      {/* Accent line */}
-      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-muted rounded-l-lg" />
+    <div className="bg-card rounded-xl shadow-sm px-4 py-3">
+      {/* Row 1: Name left, chevron right */}
+      <div className="flex items-center justify-between gap-1.5">
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="w-4 h-4 rounded flex-shrink-0" />
+      </div>
 
-      <div className="pl-3">
-        {/* Header */}
-        <div className="flex justify-between items-start gap-3 mb-4">
-          <div className="flex-1 min-w-0 space-y-2">
-            <Skeleton className="h-4 w-48" />
-            <Skeleton className="h-3 w-32" />
-          </div>
-          <div className="space-y-2 text-right">
-            <Skeleton className="h-5 w-24 ml-auto" />
-            <Skeleton className="h-5 w-20 ml-auto" />
-          </div>
+      {/* Row 2: Details left, value & performance right */}
+      <div className="flex items-end justify-between gap-3 mt-1">
+        <div className="space-y-1">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-3 w-18" />
         </div>
-
-        {/* Data grid */}
-        <div className="grid grid-cols-3 gap-4 pt-3 border-t border-border">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="text-center space-y-1">
-              <Skeleton className="h-2 w-12 mx-auto" />
-              <Skeleton className="h-4 w-16 mx-auto" />
-            </div>
-          ))}
+        <div className="text-right space-y-1">
+          <Skeleton className="h-3 w-20 ml-auto" />
+          <Skeleton className="h-3 w-16 ml-auto" />
+          <Skeleton className="h-3 w-14 ml-auto" />
         </div>
       </div>
     </div>
@@ -71,23 +64,17 @@ export function PortfolioSectionSkeleton() {
       {/* Header */}
       <div className="px-5 pb-4">
         <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-3">
-            <Skeleton className="w-1 h-8 rounded-full" />
-            <div className="space-y-1">
-              <Skeleton className="h-5 w-24" />
-              <Skeleton className="h-2 w-16" />
-            </div>
+          <div>
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-2 w-16 mt-1" />
           </div>
-          <div className="text-right space-y-1">
-            <Skeleton className="h-6 w-28 ml-auto" />
-            <Skeleton className="h-3 w-16 ml-auto" />
-          </div>
+          <Skeleton className="h-6 w-28" />
         </div>
 
         {/* Stats bar */}
-        <div className="terminal-card p-3">
-          <div className="grid grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
+        <div className="bg-card rounded-xl p-6 shadow-ambient">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="text-center space-y-1">
                 <Skeleton className="h-3 w-12 mx-auto" />
                 <Skeleton className="h-4 w-20 mx-auto" />
