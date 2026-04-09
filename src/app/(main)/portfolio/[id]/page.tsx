@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
+import { CopyTickerButton } from "@/components/asset-detail/CopyTickerButton";
 import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -183,7 +184,8 @@ export default async function AssetDetailPage({
               )}
               <div className="flex justify-between items-center py-2">
                 <span className="text-muted-foreground">{t("ticker")}</span>
-                <span className="font-semibold">
+                <span className="font-semibold flex items-center">
+                  {holding.ticker && <CopyTickerButton ticker={holding.ticker} />}
                   {holding.ticker || "—"}
                 </span>
               </div>
