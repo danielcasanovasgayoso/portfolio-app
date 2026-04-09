@@ -30,13 +30,14 @@ interface PriceChartProps {
   showTimeframes?: boolean;
 }
 
-type Timeframe = "1W" | "1M" | "3M" | "6M" | "1Y" | "ALL";
+type Timeframe = "1W" | "1M" | "3M" | "6M" | "YTD" | "1Y" | "ALL";
 
 const TIMEFRAME_DAYS: Record<Timeframe, number | null> = {
   "1W": 7,
   "1M": 30,
   "3M": 90,
   "6M": 180,
+  YTD: -1,
   "1Y": 365,
   ALL: null,
 };
@@ -51,11 +52,16 @@ export function PriceChart({
 
   const filteredData = useMemo(() => {
     const days = TIMEFRAME_DAYS[timeframe];
-    if (!days) return data;
+    if (days === null) return data;
 
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
-    const cutoffStr = cutoffDate.toISOString().split("T")[0];
+    let cutoffStr: string;
+    if (timeframe === "YTD") {
+      cutoffStr = `${new Date().getFullYear()}-01-01`;
+    } else {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+      cutoffStr = cutoffDate.toISOString().split("T")[0];
+    }
 
     return data.filter((d) => d.date >= cutoffStr);
   }, [data, timeframe]);
