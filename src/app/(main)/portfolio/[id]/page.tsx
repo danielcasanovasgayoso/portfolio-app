@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { CopyTickerButton } from "@/components/asset-detail/CopyTickerButton";
 import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,66 +83,6 @@ export default async function AssetDetailPage({
       </header>
 
       <main className="p-4 space-y-4">
-        <Card className="bg-gradient-to-br from-indigo-900 to-indigo-600 text-white border-0">
-          <CardContent className="p-6">
-            <p className="text-sm font-medium uppercase tracking-wide opacity-85 mb-2">
-              {holding.manualPricing ? t("costBasis") : t("marketValue")}
-            </p>
-            <p className="text-4xl font-bold tracking-tight mb-4">
-              {formatCurrency(holding.marketValue)}
-            </p>
-            {!holding.manualPricing && (
-              <div className="flex items-center gap-2">
-                {isPositive ? (
-                  <TrendingUp className="h-5 w-5 text-emerald-300" />
-                ) : (
-                  <TrendingDown className="h-5 w-5 text-red-300" />
-                )}
-                <span
-                  className={cn(
-                    "text-lg font-semibold",
-                    isPositive ? "text-emerald-300" : "text-red-300"
-                  )}
-                >
-                  {isPositive ? "+" : ""}
-                  {formatCurrency(holding.gainLoss)} (
-                  {formatPercent(holding.gainLossPercent)})
-                </span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {!holding.manualPricing && (
-          <div className="grid grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {t("shares")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">
-                  {formatShares(holding.shares)}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {t("costBasis")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">
-                  {formatCurrency(holding.costBasis)}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
         {!holding.manualPricing && chartData.length > 0 && (
           <Card>
             <CardHeader>
@@ -153,6 +93,65 @@ export default async function AssetDetailPage({
             </CardContent>
           </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("performance")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">
+                {holding.manualPricing ? t("costBasis") : t("marketValue")}
+              </span>
+              <span className="font-semibold">
+                {formatCurrency(holding.marketValue)}
+              </span>
+            </div>
+            {!holding.manualPricing && (
+              <>
+                <div className="flex justify-between items-center py-2 border-b border-border">
+                  <span className="text-muted-foreground">{t("costBasis")}</span>
+                  <span className="font-semibold">
+                    {formatCurrency(holding.costBasis)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-border">
+                  <span className="text-muted-foreground">{t("unrealizedGainLoss")}</span>
+                  <span
+                    className={cn(
+                      "font-semibold",
+                      isPositive
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-red-600 dark:text-red-400"
+                    )}
+                  >
+                    {isPositive ? "+" : ""}
+                    {formatCurrency(holding.gainLoss)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-border">
+                  <span className="text-muted-foreground">{t("totalReturn")}</span>
+                  <span
+                    className={cn(
+                      "font-semibold",
+                      isPositive
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-red-600 dark:text-red-400"
+                    )}
+                  >
+                    {formatPercent(holding.gainLossPercent)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-muted-foreground">{t("shares")}</span>
+                  <span className="font-semibold">
+                    {formatShares(holding.shares)}
+                  </span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
         {!holding.manualPricing && (
           <Card>
@@ -188,49 +187,6 @@ export default async function AssetDetailPage({
                   {holding.ticker && <CopyTickerButton ticker={holding.ticker} />}
                   {holding.ticker || "—"}
                 </span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {!holding.manualPricing && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("performance")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    {t("unrealizedGainLoss")}
-                  </p>
-                  <p
-                    className={cn(
-                      "text-xl font-bold",
-                      isPositive
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-red-600 dark:text-red-400"
-                    )}
-                  >
-                    {isPositive ? "+" : ""}
-                    {formatCurrency(holding.gainLoss)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    {t("totalReturn")}
-                  </p>
-                  <p
-                    className={cn(
-                      "text-xl font-bold",
-                      isPositive
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-red-600 dark:text-red-400"
-                    )}
-                  >
-                    {formatPercent(holding.gainLossPercent)}
-                  </p>
-                </div>
               </div>
             </CardContent>
           </Card>
