@@ -160,9 +160,10 @@ export default async function AssetDetailPage({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center py-2 border-b border-border">
-                <span className="text-muted-foreground">{t("averagePrice")}</span>
-                <span className="font-semibold">
-                  {formatCurrency(holding.avgPrice)}
+                <span className="text-muted-foreground">{t("ticker")}</span>
+                <span className="font-semibold flex items-center">
+                  {holding.ticker && <CopyTickerButton ticker={holding.ticker} />}
+                  {holding.ticker || "—"}
                 </span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-border">
@@ -173,21 +174,20 @@ export default async function AssetDetailPage({
                     : "—"}
                 </span>
               </div>
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-muted-foreground">{t("averagePrice")}</span>
+                <span className="font-semibold">
+                  {formatCurrency(holding.avgPrice)}
+                </span>
+              </div>
               {holding.priceDate && (
-                <div className="flex justify-between items-center py-2 border-b border-border">
+                <div className="flex justify-between items-center py-2">
                   <span className="text-muted-foreground">{t("priceDate")}</span>
                   <span className="font-semibold">
                     {formatDate(holding.priceDate)}
                   </span>
                 </div>
               )}
-              <div className="flex justify-between items-center py-2">
-                <span className="text-muted-foreground">{t("ticker")}</span>
-                <span className="font-semibold flex items-center">
-                  {holding.ticker && <CopyTickerButton ticker={holding.ticker} />}
-                  {holding.ticker || "—"}
-                </span>
-              </div>
             </CardContent>
           </Card>
         )}
