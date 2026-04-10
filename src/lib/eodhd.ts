@@ -3,7 +3,7 @@
  * https://eodhd.com/financial-apis/api-for-historical-data-and-volumes
  */
 
-import { EODHD, HISTORICAL_DATA } from "./constants";
+import { EODHD } from "./constants";
 import { PriceServiceError, ConfigurationError } from "./errors";
 
 export interface EODHDPrice {
@@ -421,11 +421,3 @@ export function parseEODHDDate(dateString: string): Date {
   return new Date(dateString + "T00:00:00.000Z");
 }
 
-/**
- * Get start date for historical backfill
- */
-export function getHistoricalStartDate(): Date {
-  const date = new Date();
-  date.setFullYear(date.getFullYear() - HISTORICAL_DATA.BACKFILL_YEARS);
-  return date;
-}

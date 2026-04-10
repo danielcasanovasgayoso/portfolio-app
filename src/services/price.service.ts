@@ -4,7 +4,7 @@ import {
   fetchRealTimePrice,
   fetchBatchRealTimePrices,
   parseEODHDDate,
-  getHistoricalStartDate,
+
   resolveIsinToSymbol,
   isFundTicker,
   EODHDPrice,
@@ -534,12 +534,8 @@ export async function backfillHistoricalPrices(
   const settings = await getSettings(userId);
 
   try {
-    const from = getHistoricalStartDate();
-    const to = new Date();
-
     const prices = await fetchHistoricalPrices(ticker, {
-      from,
-      to,
+      to: new Date(),
       period: "d",
       apiKey: settings.eodhdApiKey,
     });

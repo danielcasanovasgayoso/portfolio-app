@@ -48,8 +48,3 @@ export const PAGINATION = {
 export const ANIMATION = {
   MAX_STAGGER_INDEX: 6,
 } as const;
-
-// Historical Data Configuration
-export const HISTORICAL_DATA = {
-  BACKFILL_YEARS: 5,
-} as const;
