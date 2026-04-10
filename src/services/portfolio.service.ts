@@ -219,6 +219,7 @@ export async function getPortfolioValueHistory(
   const sharesMap = new Map<string, number>(); // assetId → cumulative shares
   const costBasisMap = new Map<string, number>(); // assetId → historical costBasis
   const lastKnownPrice = new Map<string, number>(); // assetId → last known close
+  let inTransit = 0; // Tracks value between TRANSFER OUT and TRANSFER IN
   const result: { date: string; close: number }[] = [];
 
   // Collect all txn dates <= current price date
@@ -235,11 +236,17 @@ export async function getPortfolioValueHistory(
         if (txn.type === "BUY" || (txn.type === "TRANSFER" && txn.transferType === "IN")) {
           sharesMap.set(txn.assetId, currentShares + txn.shares);
           costBasisMap.set(txn.assetId, currentCost + txn.totalAmount);
+          if (txn.type === "TRANSFER") {
+            inTransit = Math.max(0, inTransit - txn.totalAmount);
+          }
         } else if (txn.type === "SELL" || (txn.type === "TRANSFER" && txn.transferType === "OUT")) {
           const avgCost = currentShares > 0 ? currentCost / currentShares : 0;
           const newShares = currentShares - txn.shares;
           sharesMap.set(txn.assetId, newShares);
           costBasisMap.set(txn.assetId, newShares > 0 ? newShares * avgCost : 0);
+          if (txn.type === "TRANSFER") {
+            inTransit += txn.totalAmount;
+          }
         }
         // DIVIDEND and FEE don't change shares
       }
@@ -271,6 +278,9 @@ export async function getPortfolioValueHistory(
         }
       }
     }
+
+    // Include in-transit value from pending transfers
+    totalValue += inTransit;
 
     result.push({ date: dateStr, close: Math.round(totalValue * 100) / 100 });
   }
