@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { updateTheme } from "@/actions/settings";
@@ -13,6 +13,9 @@ interface ThemeToggleProps {
 
 type Theme = "light" | "dark" | "system";
 
+const THEME_STORAGE_KEY = "theme";
+const THEME_CHANGE_EVENT = "theme-change";
+
 export function ThemeToggle({ currentTheme }: ThemeToggleProps) {
   const t = useTranslations("settings");
   const [theme, setTheme] = useState<Theme>(currentTheme as Theme);
@@ -24,38 +27,13 @@ export function ThemeToggle({ currentTheme }: ThemeToggleProps) {
     { value: "system", icon: Monitor, labelKey: "themeSystem" },
   ];
 
-  // Apply theme to document
-  useEffect(() => {
-    const root = document.documentElement;
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-    const applyTheme = () => {
-      const effectiveTheme =
-        theme === "system"
-          ? mediaQuery.matches
-            ? "dark"
-            : "light"
-          : theme;
-
-      root.classList.remove("light", "dark");
-      root.classList.add(effectiveTheme);
-    };
-
-    applyTheme();
-
-    // Listen for system theme changes
-    if (theme === "system") {
-      mediaQuery.addEventListener("change", applyTheme);
-      return () => mediaQuery.removeEventListener("change", applyTheme);
-    }
-  }, [theme]);
-
   const handleThemeChange = async (newTheme: Theme) => {
     if (newTheme === theme || isLoading) return;
 
     setIsLoading(true);
     setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
+    localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
 
     await updateTheme(newTheme);
     setIsLoading(false);
