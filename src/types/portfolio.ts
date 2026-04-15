@@ -16,6 +16,12 @@ export interface Holding {
   gainLoss: number;
   gainLossPercent: number;
   manualPricing?: boolean;
+  /**
+   * True if this holding contains any TRANSFER leg that is not paired to a
+   * counterparty. Used to warn the user that the displayed fiscal cost basis
+   * may be incomplete — the cost basis of the unpaired leg did not carry over.
+   */
+  hasUnpairedTransfers?: boolean;
 }
 
 export interface CategoryTotal {

@@ -18,6 +18,7 @@ export interface SerializedTransaction {
   totalAmount: number;
   fees: number | null;
   transferType: TransferType | null;
+  transferPairId: string | null;
   importBatchId: string | null;
   sourceHash: string | null;
   gmailMessageId: string | null;

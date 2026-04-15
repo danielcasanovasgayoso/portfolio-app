@@ -47,6 +47,7 @@ export function TransactionFormFields({ form, assets }: TransactionFormFieldsPro
 
   const watchedType = form.watch("type");
   const watchedAssetId = form.watch("assetId");
+  const watchedTransferType = form.watch("transferType");
   const isNewAsset = watchedAssetId === NEW_ASSET_ID;
 
   const typeLabels: Record<string, string> = {
@@ -266,6 +267,50 @@ export function TransactionFormFields({ form, assets }: TransactionFormFieldsPro
                   ))}
                 </SelectContent>
               </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+
+      {watchedType === "TRANSFER" && watchedTransferType && (
+        <FormField
+          control={form.control}
+          name="counterpartAssetId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                {watchedTransferType === "IN"
+                  ? t("counterpartSource")
+                  : t("counterpartDestination")}
+              </FormLabel>
+              <Select
+                value={field.value || ""}
+                onValueChange={field.onChange}
+              >
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue>
+                      {field.value
+                        ? assets.find((a) => a.id === field.value)?.name ||
+                          t("selectCounterpart")
+                        : t("selectCounterpart")}
+                    </SelectValue>
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {assets
+                    .filter((a) => a.id !== watchedAssetId)
+                    .map((asset) => (
+                      <SelectItem key={asset.id} value={asset.id}>
+                        {asset.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {t("counterpartHelp")}
+              </p>
               <FormMessage />
             </FormItem>
           )}

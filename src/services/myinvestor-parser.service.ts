@@ -272,6 +272,10 @@ function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
   // For SUSCR: use second ISIN (Fondo Suscrito = destination)
   const isin = isRedemption ? uniqueIsins[0] : (uniqueIsins[1] || uniqueIsins[0]);
   const transferType: TransferType = isRedemption ? "OUT" : "IN";
+  // Counterpart = the *other* ISIN in the email, used later to pair legs.
+  const counterpartIsin = isRedemption
+    ? (uniqueIsins[1] || undefined)
+    : (uniqueIsins[0] || undefined);
 
   const transaction: ParsedTransaction = {
     date,
@@ -286,6 +290,7 @@ function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
     currency: "EUR",
     emailId: email.id,
     emailType: "FUND_TRANSFER",
+    counterpartIsin,
   };
 
   transactions.push(transaction);

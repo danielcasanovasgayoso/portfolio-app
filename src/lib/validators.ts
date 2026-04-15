@@ -29,6 +29,9 @@ const TransactionBaseSchema = z.object({
   totalAmount: decimalString,
   fees: decimalString.optional().or(z.literal("")),
   transferType: TransferTypeEnum.optional(),
+  // For TRANSFER: the counterparty asset (source for IN, destination for OUT).
+  // Used to auto-pair the two legs so fiscal cost basis carries over.
+  counterpartAssetId: z.string().optional().or(z.literal("")),
   // New asset fields (when assetId === "__new__")
   newAssetName: z.string().optional(),
   newAssetIsin: z.string().optional(),

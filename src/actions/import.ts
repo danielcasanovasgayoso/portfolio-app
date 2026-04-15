@@ -12,7 +12,7 @@ import type {
   ImportResult,
 } from "@/types/import";
 import { Decimal } from "@prisma/client/runtime/client";
-import { recalculateHolding } from "@/services/holdings.service";
+import { recalculateAllHoldings } from "@/services/holdings.service";
 import { determineAssetCategory } from "@/lib/myinvestor-funds";
 import { getUserId } from "@/lib/auth";
 
@@ -249,25 +249,30 @@ export async function confirmImport(
     const errors: string[] = [];
     const affectedAssetIds = new Set<string>();
 
-    // Step 1: Resolve all unique ISINs to assets upfront (batch)
-    const uniqueIsins = [...new Set(selectedItems.map((item) => item.transaction.isin))];
+    // Step 1: Resolve all unique ISINs (including counterparts, for asset creation) to assets upfront
+    const primaryIsins = selectedItems.map((item) => item.transaction.isin);
+    const counterpartIsins = selectedItems
+      .map((item) => item.transaction.counterpartIsin)
+      .filter((isin): isin is string => !!isin);
+    const uniqueIsins = [...new Set([...primaryIsins, ...counterpartIsins])];
     const existingAssets = await db.asset.findMany({
       where: { userId, isin: { in: uniqueIsins } },
     });
     const isinToAsset = new Map(existingAssets.map((a) => [a.isin, a]));
 
-    // Create missing assets in one pass
+    // Create missing assets in one pass. For counterpart-only ISINs we don't have
+    // a parsed transaction to copy name/category from, so fall back to defaults.
     const missingIsins = uniqueIsins.filter((isin) => !isinToAsset.has(isin));
     for (const isin of missingIsins) {
-      const item = selectedItems.find((i) => i.transaction.isin === isin)!;
+      const item = selectedItems.find((i) => i.transaction.isin === isin);
       try {
         const asset = await db.asset.create({
           data: {
             userId,
             isin,
-            name: item.transaction.name,
-            category: determineAssetCategory(isin, item.transaction.name),
-            currency: item.transaction.currency,
+            name: item?.transaction.name || isin,
+            category: determineAssetCategory(isin, item?.transaction.name || ""),
+            currency: item?.transaction.currency || "EUR",
           },
         });
         isinToAsset.set(isin, asset);
@@ -280,13 +285,24 @@ export async function confirmImport(
       }
     }
 
-    // Step 2: Create all transactions
+    // Step 2: Create all transactions. Track created transfers so we can pair them.
+    interface CreatedTransfer {
+      id: string;
+      assetId: string;
+      counterpartIsin: string | undefined;
+      transferType: "IN" | "OUT";
+      date: Date;
+      shares: Decimal;
+      totalAmount: Decimal;
+    }
+    const createdTransfers: CreatedTransfer[] = [];
+
     for (const item of selectedItems) {
       const asset = isinToAsset.get(item.transaction.isin);
       if (!asset) continue; // Asset creation failed above
 
       try {
-        await db.transaction.create({
+        const created = await db.transaction.create({
           data: {
             userId,
             assetId: asset.id,
@@ -307,6 +323,21 @@ export async function confirmImport(
           },
         });
 
+        if (
+          created.type === "TRANSFER" &&
+          (created.transferType === "IN" || created.transferType === "OUT")
+        ) {
+          createdTransfers.push({
+            id: created.id,
+            assetId: created.assetId,
+            counterpartIsin: item.transaction.counterpartIsin,
+            transferType: created.transferType,
+            date: created.date,
+            shares: created.shares,
+            totalAmount: created.totalAmount,
+          });
+        }
+
         affectedAssetIds.add(asset.id);
         importedCount++;
       } catch (error) {
@@ -318,12 +349,16 @@ export async function confirmImport(
       }
     }
 
-    // Recalculate holdings for all affected assets
-    for (const assetId of affectedAssetIds) {
+    // Step 3: Pair TRANSFER_OUT / TRANSFER_IN legs.
+    // Same day, matching shares (8-decimal tolerance), OUT.assetId == IN.counterpartAssetId and vice versa.
+    await pairImportedTransfers(userId, createdTransfers, isinToAsset);
+
+    // Step 4: Recalculate ALL holdings globally so fiscal cost basis flows across paired transfers.
+    if (affectedAssetIds.size > 0) {
       try {
-        await recalculateHolding(userId, assetId);
+        await recalculateAllHoldings(userId);
       } catch (error) {
-        console.error(`Failed to recalculate holding for ${assetId}:`, error);
+        console.error(`Failed to recalculate holdings:`, error);
       }
     }
 
@@ -371,6 +406,178 @@ export async function confirmImport(
       success: false,
       error: error instanceof Error ? error.message : "Failed to import transactions",
     };
+  }
+}
+
+/**
+ * Pairs TRANSFER_OUT and TRANSFER_IN legs from a just-completed import.
+ * Uses same-day + same-shares (8-decimal tolerance) + crossed-ISIN matching,
+ * and also considers any existing un-paired transfers the user already has
+ * (useful when one leg was imported earlier).
+ */
+async function pairImportedTransfers(
+  userId: string,
+  createdTransfers: Array<{
+    id: string;
+    assetId: string;
+    counterpartIsin: string | undefined;
+    transferType: "IN" | "OUT";
+    date: Date;
+    shares: Decimal;
+    totalAmount: Decimal;
+  }>,
+  isinToAsset: Map<string, { id: string; isin: string }>
+): Promise<void> {
+  if (createdTransfers.length === 0) return;
+
+  const isinByAssetId = new Map<string, string>();
+  for (const asset of isinToAsset.values()) {
+    isinByAssetId.set(asset.id, asset.isin);
+  }
+  // Fill missing ISINs via a DB lookup (e.g. for pre-existing counterpart assets).
+  const unknownAssetIds = new Set<string>();
+  for (const tx of createdTransfers) {
+    if (!isinByAssetId.has(tx.assetId)) unknownAssetIds.add(tx.assetId);
+  }
+  if (unknownAssetIds.size > 0) {
+    const rows = await db.asset.findMany({
+      where: { id: { in: [...unknownAssetIds] } },
+      select: { id: true, isin: true },
+    });
+    for (const r of rows) isinByAssetId.set(r.id, r.isin);
+  }
+
+  const SHARES_TOLERANCE = new Decimal("0.00000001");
+  const AMOUNT_TOLERANCE = new Decimal("0.05");
+  const DATE_WINDOW_DAYS = 45;
+  const claimedIds = new Set<string>();
+
+  for (const outTx of createdTransfers) {
+    if (outTx.transferType !== "OUT") continue;
+    if (claimedIds.has(outTx.id)) continue;
+    if (!outTx.counterpartIsin) continue;
+    const destAsset = isinToAsset.get(outTx.counterpartIsin);
+    if (!destAsset) continue;
+
+    // 1) Try to pair with a freshly created IN leg.
+    let match = createdTransfers.find((cand) => {
+      if (cand.transferType !== "IN") return false;
+      if (claimedIds.has(cand.id)) return false;
+      if (cand.assetId !== destAsset.id) return false;
+      const candIsin = isinByAssetId.get(cand.assetId);
+      const outAssetIsin = isinByAssetId.get(outTx.assetId);
+      // Counterpart-ISIN cross-check.
+      if (outTx.counterpartIsin !== candIsin) return false;
+      if (cand.counterpartIsin && outAssetIsin && cand.counterpartIsin !== outAssetIsin) {
+        return false;
+      }
+      // Within window
+      const dDiffDays = Math.abs(cand.date.getTime() - outTx.date.getTime()) / (1000 * 60 * 60 * 24);
+      if (dDiffDays > DATE_WINDOW_DAYS) return false;
+
+      // Same shares (tolerance) OR same amount (tolerance)
+      const sharesMatch = cand.shares.minus(outTx.shares).abs().lessThanOrEqualTo(SHARES_TOLERANCE);
+      const amountMatch = cand.totalAmount
+        ? cand.totalAmount.minus(outTx.totalAmount).abs().lessThanOrEqualTo(AMOUNT_TOLERANCE)
+        : false;
+
+      return sharesMatch || amountMatch;
+    });
+
+    // 2) If no newly-created leg matched, look for a pre-existing un-paired IN
+    //    in the database (partner email imported in a previous batch).
+    if (!match) {
+      const windowStart = new Date(outTx.date.getTime() - DATE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+      const windowEnd = new Date(outTx.date.getTime() + DATE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+      const existing = await db.transaction.findFirst({
+        where: {
+          userId,
+          type: "TRANSFER",
+          transferType: "IN",
+          transferPairId: null,
+          assetId: destAsset.id,
+          date: { gte: windowStart, lte: windowEnd },
+          OR: [
+            { shares: { gte: outTx.shares.minus(SHARES_TOLERANCE), lte: outTx.shares.plus(SHARES_TOLERANCE) } },
+            { totalAmount: { gte: outTx.totalAmount.minus(AMOUNT_TOLERANCE), lte: outTx.totalAmount.plus(AMOUNT_TOLERANCE) } }
+          ]
+        },
+        select: { id: true, assetId: true, date: true, shares: true, totalAmount: true },
+      });
+
+      if (existing) {
+        match = {
+          id: existing.id,
+          assetId: existing.assetId,
+          counterpartIsin: undefined,
+          transferType: "IN",
+          date: existing.date,
+          shares: existing.shares,
+          totalAmount: existing.totalAmount
+        };
+      }
+    }
+
+    if (match) {
+      const pairId = crypto.randomUUID();
+      await db.$transaction([
+        db.transaction.update({
+          where: { id: outTx.id },
+          data: { transferPairId: pairId },
+        }),
+        db.transaction.update({
+          where: { id: match.id },
+          data: { transferPairId: pairId },
+        }),
+      ]);
+      claimedIds.add(outTx.id);
+      claimedIds.add(match.id);
+    }
+  }
+
+  // Second pass: handle INs in createdTransfers whose OUT leg already exists in the DB.
+  for (const inTx of createdTransfers) {
+    if (inTx.transferType !== "IN") continue;
+    if (claimedIds.has(inTx.id)) continue;
+    if (!inTx.counterpartIsin) continue;
+    const srcAsset = isinToAsset.get(inTx.counterpartIsin);
+    if (!srcAsset) continue;
+
+    const windowStart = new Date(inTx.date.getTime() - DATE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    const windowEnd = new Date(inTx.date.getTime() + DATE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+    const existing = await db.transaction.findFirst({
+      where: {
+        userId,
+        type: "TRANSFER",
+        transferType: "OUT",
+        transferPairId: null,
+        assetId: srcAsset.id,
+        date: { gte: windowStart, lte: windowEnd },
+        OR: [
+          { shares: { gte: inTx.shares.minus(SHARES_TOLERANCE), lte: inTx.shares.plus(SHARES_TOLERANCE) } },
+          { totalAmount: { gte: inTx.totalAmount.minus(AMOUNT_TOLERANCE), lte: inTx.totalAmount.plus(AMOUNT_TOLERANCE) } }
+        ]
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      const pairId = crypto.randomUUID();
+      await db.$transaction([
+        db.transaction.update({
+          where: { id: inTx.id },
+          data: { transferPairId: pairId },
+        }),
+        db.transaction.update({
+          where: { id: existing.id },
+          data: { transferPairId: pairId },
+        }),
+      ]);
+      claimedIds.add(inTx.id);
+      claimedIds.add(existing.id);
+    }
   }
 }
 

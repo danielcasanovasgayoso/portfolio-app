@@ -22,7 +22,10 @@ const holdingInclude = {
 /**
  * Maps a Prisma holding row to the Holding DTO
  */
-function mapDbHoldingToDto(h: DbHoldingWithAsset): Holding {
+function mapDbHoldingToDto(
+  h: DbHoldingWithAsset,
+  hasUnpairedTransfers: boolean
+): Holding {
   const latestPrice = h.asset.prices[0];
   const currentPrice = latestPrice?.close ? Number(latestPrice.close) : null;
   const shares = Number(h.shares);
@@ -49,22 +52,46 @@ function mapDbHoldingToDto(h: DbHoldingWithAsset): Holding {
     gainLoss,
     gainLossPercent,
     manualPricing: isManual,
+    hasUnpairedTransfers,
   };
+}
+
+/**
+ * Returns the set of asset IDs belonging to this user that have at least one
+ * un-paired TRANSFER transaction. Used to flag holdings whose displayed
+ * fiscal cost basis may be incomplete.
+ */
+async function getAssetsWithUnpairedTransfers(userId: string): Promise<Set<string>> {
+  const rows = await db.transaction.findMany({
+    where: {
+      userId,
+      type: "TRANSFER",
+      transferPairId: null,
+    },
+    select: { assetId: true },
+    distinct: ["assetId"],
+  });
+  return new Set(rows.map((r) => r.assetId));
 }
 
 /**
  * Fetches all holdings for a user and formats them for the portfolio view
  */
 export async function getPortfolioData(userId: string): Promise<PortfolioSummary> {
-  const dbHoldings = await db.holding.findMany({
-    where: {
-      userId,
-      shares: { gt: 0 },
-    },
-    include: holdingInclude,
-  });
+  const [dbHoldings, unpairedAssetIds] = await Promise.all([
+    db.holding.findMany({
+      where: {
+        userId,
+        shares: { gt: 0 },
+      },
+      include: holdingInclude,
+    }),
+    getAssetsWithUnpairedTransfers(userId),
+  ]);
 
-  const holdings: Holding[] = dbHoldings.map(mapDbHoldingToDto);
+  const holdings: Holding[] = dbHoldings.map((h) =>
+    mapDbHoldingToDto(h, unpairedAssetIds.has(h.assetId))
+  );
 
   // Sort by market value descending
   const sortByValue = (a: Holding, b: Holding) => b.marketValue - a.marketValue;
@@ -123,7 +150,17 @@ export async function getHoldingById(userId: string, holdingId: string): Promise
 
   if (!dbHolding) return null;
 
-  return mapDbHoldingToDto(dbHolding);
+  const hasUnpaired =
+    (await db.transaction.count({
+      where: {
+        userId,
+        type: "TRANSFER",
+        transferPairId: null,
+        assetId: dbHolding.assetId,
+      },
+    })) > 0;
+
+  return mapDbHoldingToDto(dbHolding, hasUnpaired);
 }
 
 /**

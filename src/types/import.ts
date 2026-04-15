@@ -42,6 +42,7 @@ export interface ParsedTransaction {
   reference?: string;
   emailId: string;
   emailType: EmailType;
+  counterpartIsin?: string;
 }
 
 /**

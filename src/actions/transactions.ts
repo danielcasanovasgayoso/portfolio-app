@@ -11,7 +11,7 @@ import {
   type TransactionCreateInput,
   type TransactionFiltersInput,
 } from "@/lib/validators";
-import { recalculateHolding } from "@/services/holdings.service";
+import { recalculateAllHoldings } from "@/services/holdings.service";
 import type { ActionResult } from "@/lib/action-utils";
 import type {
   TransactionWithAsset,
@@ -104,6 +104,60 @@ export async function getAssets() {
   });
 }
 
+/**
+ * Attempts to pair a just-created TRANSFER with an existing un-paired counterpart.
+ * Matches on same-day, matching share count, and crossed asset identity.
+ * If a match is found, assigns a shared `transferPairId` to both rows.
+ */
+async function tryPairTransfer(
+  userId: string,
+  createdTx: {
+    id: string;
+    assetId: string;
+    transferType: "IN" | "OUT" | null;
+    date: Date;
+    shares: Prisma.Decimal;
+  },
+  counterpartAssetId: string | undefined
+): Promise<void> {
+  if (!createdTx.transferType) return;
+  if (!counterpartAssetId) return;
+
+  const oppositeDirection = createdTx.transferType === "IN" ? "OUT" : "IN";
+  const dayStart = new Date(createdTx.date);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(createdTx.date);
+  dayEnd.setHours(23, 59, 59, 999);
+
+  const match = await db.transaction.findFirst({
+    where: {
+      userId,
+      type: "TRANSFER",
+      transferType: oppositeDirection,
+      transferPairId: null,
+      assetId: counterpartAssetId,
+      date: { gte: dayStart, lte: dayEnd },
+      shares: createdTx.shares,
+      id: { not: createdTx.id },
+    },
+    select: { id: true },
+  });
+
+  if (match) {
+    const pairId = crypto.randomUUID();
+    await db.$transaction([
+      db.transaction.update({
+        where: { id: createdTx.id },
+        data: { transferPairId: pairId },
+      }),
+      db.transaction.update({
+        where: { id: match.id },
+        data: { transferPairId: pairId },
+      }),
+    ]);
+  }
+}
+
 // Create a new transaction (optionally creating a new asset first)
 export async function createTransaction(
   data: TransactionCreateInput
@@ -166,8 +220,35 @@ export async function createTransaction(
       },
     });
 
-    // Recalculate holdings for the affected asset
-    await recalculateHolding(userId, assetId);
+    // Pair with counterpart if provided
+    if (
+      transaction.type === "TRANSFER" &&
+      validated.counterpartAssetId &&
+      validated.counterpartAssetId !== "" &&
+      validated.counterpartAssetId !== assetId
+    ) {
+      // Verify counterpart belongs to user
+      const counterpart = await db.asset.findFirst({
+        where: { id: validated.counterpartAssetId, userId },
+        select: { id: true },
+      });
+      if (counterpart) {
+        await tryPairTransfer(
+          userId,
+          {
+            id: transaction.id,
+            assetId: transaction.assetId,
+            transferType: transaction.transferType,
+            date: transaction.date,
+            shares: transaction.shares,
+          },
+          counterpart.id
+        );
+      }
+    }
+
+    // Recalculate holdings globally so fiscal basis flows across any new pair.
+    await recalculateAllHoldings(userId);
 
     revalidatePath("/transactions");
     revalidatePath("/");
@@ -195,7 +276,7 @@ export async function updateTransaction(
     // Verify transaction belongs to user
     const existingTx = await db.transaction.findFirst({
       where: { id, userId },
-      select: { assetId: true },
+      select: { assetId: true, transferPairId: true, type: true },
     });
     if (!existingTx) {
       return { success: false, error: "Transaction not found" };
@@ -229,6 +310,22 @@ export async function updateTransaction(
       updateData.transferType = validated.transferType || null;
     }
 
+    // Key fields that affect pairing (asset/type/direction/date/shares) changed?
+    // Clear any stale pair on this leg AND its partner; we'll try to re-pair after.
+    const pairingKeyFieldsChanged =
+      validated.assetId !== undefined ||
+      validated.type !== undefined ||
+      validated.transferType !== undefined ||
+      validated.date !== undefined ||
+      validated.shares !== undefined;
+
+    if (existingTx.transferPairId && pairingKeyFieldsChanged) {
+      await db.transaction.updateMany({
+        where: { userId, transferPairId: existingTx.transferPairId },
+        data: { transferPairId: null },
+      });
+    }
+
     const transaction = await db.transaction.update({
       where: { id },
       data: updateData,
@@ -245,15 +342,41 @@ export async function updateTransaction(
       },
     });
 
-    // Recalculate holdings for affected assets
-    await recalculateHolding(userId, transaction.assetId);
-    if (existingTx.assetId !== transaction.assetId) {
-      await recalculateHolding(userId, existingTx.assetId);
+    // Re-try pairing if this is a TRANSFER and the user picked a counterpart
+    if (
+      transaction.type === "TRANSFER" &&
+      validated.counterpartAssetId &&
+      validated.counterpartAssetId !== "" &&
+      validated.counterpartAssetId !== transaction.assetId
+    ) {
+      const counterpart = await db.asset.findFirst({
+        where: { id: validated.counterpartAssetId, userId },
+        select: { id: true },
+      });
+      if (counterpart) {
+        await tryPairTransfer(
+          userId,
+          {
+            id: transaction.id,
+            assetId: transaction.assetId,
+            transferType: transaction.transferType,
+            date: transaction.date,
+            shares: transaction.shares,
+          },
+          counterpart.id
+        );
+      }
     }
+
+    // Recalculate all holdings globally
+    await recalculateAllHoldings(userId);
 
     revalidatePath("/transactions");
     revalidatePath("/");
     revalidatePath(`/portfolio/${transaction.assetId}`);
+    if (existingTx.assetId !== transaction.assetId) {
+      revalidatePath(`/portfolio/${existingTx.assetId}`);
+    }
 
     return { success: true, data: serializeTransaction(transaction) };
   } catch (error) {
@@ -275,17 +398,30 @@ export async function deleteTransaction(
     // Verify transaction belongs to user
     const transaction = await db.transaction.findFirst({
       where: { id, userId },
-      select: { assetId: true },
+      select: { assetId: true, transferPairId: true },
     });
 
     if (!transaction) {
       return { success: false, error: "Transaction not found" };
     }
 
+    // If this transaction was part of a transfer pair, clear the other leg's
+    // pair id so it reverts to the unpaired (non-fiscal) fallback, with a UI warning.
+    if (transaction.transferPairId) {
+      await db.transaction.updateMany({
+        where: {
+          userId,
+          transferPairId: transaction.transferPairId,
+          id: { not: id },
+        },
+        data: { transferPairId: null },
+      });
+    }
+
     await db.transaction.delete({ where: { id } });
 
-    // Recalculate holdings for the affected asset
-    await recalculateHolding(userId, transaction.assetId);
+    // Recalculate all holdings globally
+    await recalculateAllHoldings(userId);
 
     revalidatePath("/transactions");
     revalidatePath("/");

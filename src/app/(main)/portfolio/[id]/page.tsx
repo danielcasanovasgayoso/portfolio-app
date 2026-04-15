@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 import { CopyTickerButton } from "@/components/asset-detail/CopyTickerButton";
 import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,6 +99,15 @@ export default async function AssetDetailPage({
             <CardTitle>{t("performance")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {holding.hasUnpairedTransfers && (
+              <div
+                className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200"
+                title={t("unpairedTransferHelp")}
+              >
+                <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <span>{t("unpairedTransferWarning")}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">
                 {holding.manualPricing ? t("costBasis") : t("marketValue")}

@@ -98,6 +98,7 @@ model Transaction {
   fees          Decimal?        @default(0) @db.Decimal(18, 4)
 
   transferType   TransferType?
+  transferPairId String?
   importBatchId  String?
   importBatch    ImportBatch?   @relation(fields: [importBatchId], references: [id])
   sourceHash     String?
@@ -113,6 +114,7 @@ model Transaction {
   @@index([date])
   @@index([type])
   @@index([importBatchId])
+  @@index([transferPairId])
   // Composite index for FIFO calculations (asset + date ordering)
   @@index([assetId, date])
 }
