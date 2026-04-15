@@ -319,7 +319,8 @@ export async function exportPortfolioData(): Promise<{
 
 // Zod schemas for import validation
 const ImportAssetSchema = z.object({
-  isin: z.string().min(1).max(20),
+  // Supports both standard ISINs and app-generated manual IDs like MANUAL-<uuid>.
+  isin: z.string().min(1).max(100),
   ticker: z.string().max(20).nullable().optional(),
   name: z.string().min(1).max(200),
   category: z.enum(["FUNDS", "STOCKS", "PP", "OTHERS"]).optional(),
@@ -330,7 +331,8 @@ const ImportAssetSchema = z.object({
 const ImportTransactionSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
   asset: z.string().optional(),
-  isin: z.string().min(1).max(20),
+  // Matches the asset import schema so manual assets can be restored from backups.
+  isin: z.string().min(1).max(100),
   type: z.enum(["BUY", "SELL", "DIVIDEND", "FEE", "TRANSFER"]),
   transferType: z.enum(["IN", "OUT"]).nullable().optional(),
   shares: z.number().finite(),
