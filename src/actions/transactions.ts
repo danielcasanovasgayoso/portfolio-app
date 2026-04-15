@@ -21,7 +21,10 @@ import type {
 import { getUserId } from "@/lib/auth";
 
 // Helper to serialize Decimal and Date fields for client components
-function serializeTransaction(tx: TransactionWithAsset): SerializedTransaction {
+function serializeTransaction(
+  tx: TransactionWithAsset,
+  counterpartAssetId: string | null = null
+): SerializedTransaction {
   return {
     ...tx,
     shares: Number(tx.shares),
@@ -31,7 +34,48 @@ function serializeTransaction(tx: TransactionWithAsset): SerializedTransaction {
     date: tx.date.toISOString(),
     createdAt: tx.createdAt.toISOString(),
     updatedAt: tx.updatedAt.toISOString(),
+    counterpartAssetId,
   };
+}
+
+// For a set of transactions, build a map from transferPairId -> counterpart assetId
+// by looking up the other leg of each pair. Used to pre-fill the transfer source/
+// destination field when editing a paired TRANSFER transaction.
+async function buildCounterpartAssetMap(
+  userId: string,
+  transactions: { id: string; transferPairId: string | null }[]
+): Promise<Map<string, string>> {
+  const pairIds = Array.from(
+    new Set(
+      transactions
+        .map((t) => t.transferPairId)
+        .filter((pid): pid is string => !!pid)
+    )
+  );
+
+  const map = new Map<string, string>();
+  if (pairIds.length === 0) return map;
+
+  const ownIds = new Set(transactions.map((t) => t.id));
+
+  const partners = await db.transaction.findMany({
+    where: {
+      userId,
+      transferPairId: { in: pairIds },
+    },
+    select: { id: true, assetId: true, transferPairId: true },
+  });
+
+  for (const partner of partners) {
+    if (!partner.transferPairId) continue;
+    // Skip rows that are themselves in the result set; we want the OTHER leg.
+    if (ownIds.has(partner.id) && map.has(partner.transferPairId)) continue;
+    if (!ownIds.has(partner.id)) {
+      map.set(partner.transferPairId, partner.assetId);
+    }
+  }
+
+  return map;
 }
 
 // Get paginated transactions with filters
@@ -79,8 +123,15 @@ export async function getTransactions(
     db.transaction.count({ where }),
   ]);
 
+  const counterpartMap = await buildCounterpartAssetMap(userId, transactions);
+
   return {
-    data: transactions.map(serializeTransaction),
+    data: transactions.map((tx) =>
+      serializeTransaction(
+        tx,
+        tx.transferPairId ? counterpartMap.get(tx.transferPairId) ?? null : null
+      )
+    ),
     total,
     page,
     perPage,
@@ -254,7 +305,16 @@ export async function createTransaction(
     revalidatePath("/");
     revalidatePath(`/portfolio/${assetId}`);
 
-    return { success: true, data: serializeTransaction(transaction) };
+    const counterpartMap = await buildCounterpartAssetMap(userId, [transaction]);
+    return {
+      success: true,
+      data: serializeTransaction(
+        transaction,
+        transaction.transferPairId
+          ? counterpartMap.get(transaction.transferPairId) ?? null
+          : null
+      ),
+    };
   } catch (error) {
     console.error("Failed to create transaction:", error);
     if (error instanceof Error) {
@@ -378,7 +438,16 @@ export async function updateTransaction(
       revalidatePath(`/portfolio/${existingTx.assetId}`);
     }
 
-    return { success: true, data: serializeTransaction(transaction) };
+    const counterpartMap = await buildCounterpartAssetMap(userId, [transaction]);
+    return {
+      success: true,
+      data: serializeTransaction(
+        transaction,
+        transaction.transferPairId
+          ? counterpartMap.get(transaction.transferPairId) ?? null
+          : null
+      ),
+    };
   } catch (error) {
     console.error("Failed to update transaction:", error);
     if (error instanceof Error) {

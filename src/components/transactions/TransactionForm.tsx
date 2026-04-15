@@ -92,7 +92,7 @@ export function TransactionForm({
         totalAmount: String(transaction.totalAmount),
         fees: transaction.fees ? String(transaction.fees) : "",
         transferType: transaction.transferType || undefined,
-        counterpartAssetId: "",
+        counterpartAssetId: transaction.counterpartAssetId ?? "",
         newAssetName: "",
         newAssetIsin: "",
         newAssetCategory: "OTHERS",

@@ -25,6 +25,8 @@ export interface SerializedTransaction {
   createdAt: string;
   updatedAt: string;
   asset: Pick<Asset, "id" | "name" | "isin" | "ticker" | "category">;
+  // Resolved counterpart asset for paired TRANSFER transactions (null when unpaired).
+  counterpartAssetId: string | null;
 }
 
 export interface TransactionFilters {
