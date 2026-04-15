@@ -105,18 +105,29 @@ export async function getSettings(userId: string): Promise<AppSettings> {
 
 /**
  * Get Gmail settings for a user
+ * Reads directly from the database instead of the in-memory cache so OAuth
+ * callback updates are visible immediately on the import screen.
  */
 export async function getGmailSettings(userId: string): Promise<{
   connected: boolean;
   refreshToken: string | null;
   lastImport: Date | null;
 }> {
-  const settings = await getSettings(userId);
+  const dbSettings = await db.settings.findUnique({
+    where: { userId },
+    select: {
+      gmailConnected: true,
+      gmailRefreshToken: true,
+      lastGmailImport: true,
+    },
+  });
 
   return {
-    connected: settings.gmailConnected,
-    refreshToken: settings.gmailRefreshToken,
-    lastImport: settings.lastGmailImport,
+    connected: dbSettings?.gmailConnected ?? DEFAULT_SETTINGS.gmailConnected,
+    refreshToken: dbSettings?.gmailRefreshToken
+      ? decryptIfEncrypted(dbSettings.gmailRefreshToken)
+      : DEFAULT_SETTINGS.gmailRefreshToken,
+    lastImport: dbSettings?.lastGmailImport ?? DEFAULT_SETTINGS.lastGmailImport,
   };
 }
 

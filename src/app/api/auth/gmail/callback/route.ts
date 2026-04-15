@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getTokensFromCode, GMAIL_OAUTH_STATE_COOKIE } from "@/lib/gmail";
 import { db } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
@@ -82,6 +83,7 @@ export async function GET(request: NextRequest) {
       },
     });
     invalidateSettingsCache(userId);
+    revalidatePath("/import");
 
     // Redirect to import page with success message; clear the one-time state cookie
     const successResponse = NextResponse.redirect(
