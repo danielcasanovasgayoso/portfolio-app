@@ -13,7 +13,7 @@
     "signInWithGoogle": "Iniciar sesión con Google",
     "signUpWithGoogle": "Registrarse con Google",
     "email": "Email",
-    "emailPlaceholder": "tu@ejemplo.com",
+    "emailPlaceholder": "tuemail@dominio.com",
     "password": "Contraseña",
     "passwordPlaceholder": "Introduce tu contraseña",
     "createPassword": "Crea una contraseña",

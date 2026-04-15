@@ -13,7 +13,7 @@
     "signInWithGoogle": "Sign in with Google",
     "signUpWithGoogle": "Sign up with Google",
     "email": "Email",
-    "emailPlaceholder": "you@example.com",
+    "emailPlaceholder": "youremail@domain.com",
     "password": "Password",
     "passwordPlaceholder": "Enter your password",
     "createPassword": "Create a password",
