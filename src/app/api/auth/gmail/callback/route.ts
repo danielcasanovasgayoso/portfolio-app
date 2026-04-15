@@ -3,6 +3,7 @@ import { getTokensFromCode, GMAIL_OAUTH_STATE_COOKIE } from "@/lib/gmail";
 import { db } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
 import { encryptIfConfigured } from "@/lib/crypto";
+import { invalidateSettingsCache } from "@/services/settings.service";
 
 /**
  * GET /api/auth/gmail/callback
@@ -80,6 +81,7 @@ export async function GET(request: NextRequest) {
         gmailRefreshToken: encryptedToken,
       },
     });
+    invalidateSettingsCache(userId);
 
     // Redirect to import page with success message; clear the one-time state cookie
     const successResponse = NextResponse.redirect(

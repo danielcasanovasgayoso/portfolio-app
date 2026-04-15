@@ -15,6 +15,7 @@ import { Decimal } from "@prisma/client/runtime/client";
 import { recalculateHolding } from "@/services/holdings.service";
 import { determineAssetCategory } from "@/lib/myinvestor-funds";
 import { getUserId } from "@/lib/auth";
+import { getGmailSettings, invalidateSettingsCache } from "@/services/settings.service";
 
 /**
  * Check if Gmail is connected for the current user
@@ -25,16 +26,14 @@ export async function checkGmailConnection(): Promise<
   try {
     const userId = await getUserId();
 
-    const settings = await db.settings.findUnique({
-      where: { userId },
-    });
+    const settings = await getGmailSettings(userId);
 
-    if (!settings?.gmailConnected || !settings.gmailRefreshToken) {
+    if (!settings.connected || !settings.refreshToken) {
       return { success: true, data: { connected: false, canFetch: false } };
     }
 
     // Test the connection
-    const canFetch = await testGmailConnection(settings.gmailRefreshToken);
+    const canFetch = await testGmailConnection(settings.refreshToken);
 
     return { success: true, data: { connected: true, canFetch } };
   } catch (error) {
@@ -59,6 +58,7 @@ export async function disconnectGmail(): Promise<ActionResult<void>> {
         gmailRefreshToken: null,
       },
     });
+    invalidateSettingsCache(userId);
 
     revalidatePath("/import");
     return { success: true, data: undefined };
@@ -80,17 +80,14 @@ export async function fetchGmailTransactions(options?: {
   try {
     const userId = await getUserId();
 
-    // Get refresh token from settings
-    const settings = await db.settings.findUnique({
-      where: { userId },
-    });
+    const settings = await getGmailSettings(userId);
 
-    if (!settings?.gmailRefreshToken) {
+    if (!settings.refreshToken) {
       return { success: false, error: "Gmail not connected" };
     }
 
     // Fetch emails from Gmail
-    const emails = await fetchMyInvestorEmails(settings.gmailRefreshToken, {
+    const emails = await fetchMyInvestorEmails(settings.refreshToken, {
       afterDate: options?.afterDate,
       maxResults: options?.maxResults || 100,
     });
