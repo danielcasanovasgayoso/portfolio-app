@@ -48,7 +48,7 @@ export function PriceChart({
   className,
   showTimeframes = true,
 }: PriceChartProps) {
-  const [timeframe, setTimeframe] = useState<Timeframe>("1M");
+  const [timeframe, setTimeframe] = useState<Timeframe>("YTD");
 
   const filteredData = useMemo(() => {
     const days = TIMEFRAME_DAYS[timeframe];
