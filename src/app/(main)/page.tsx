@@ -21,12 +21,11 @@ export default async function PortfolioPage() {
     <div className="min-h-screen bg-background">
       <main className="pt-[max(1.5rem,env(safe-area-inset-top))] pb-24 max-w-5xl mx-auto">
         {/* Header renders instantly — no data dependency */}
-        <div className="flex justify-between items-start px-8 mb-12">
+        <div className="flex justify-between items-center px-8 mb-8">
           <div className="flex flex-col max-w-[60%]">
              <h1 className="text-[1.75rem] font-bold tracking-tight">{t("title")}</h1>
-             <p className="body-md text-muted-foreground mt-2">{t("subtitle")}</p>
           </div>
-          <div className="mt-2">
+          <div>
             <RefreshPricesButton />
           </div>
         </div>
