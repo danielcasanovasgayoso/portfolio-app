@@ -48,6 +48,7 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={true}
               className={cn(
                 "relative flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200",
                 isActive
@@ -68,6 +69,7 @@ export function BottomNav() {
 
       <Link
         href="/add"
+        prefetch={true}
         className={cn(
           "flex items-center justify-center h-11 w-11 rounded-2xl shadow-lg shadow-black/10 dark:shadow-black/30 transition-all duration-200 active:scale-95",
           isAddActive
