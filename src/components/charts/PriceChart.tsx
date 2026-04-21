@@ -30,7 +30,7 @@ interface PriceChartProps {
   showTimeframes?: boolean;
 }
 
-type Timeframe = "1W" | "1M" | "3M" | "6M" | "YTD" | "1Y" | "ALL";
+type Timeframe = "1W" | "1M" | "3M" | "6M" | "YTD" | "1Y" | "2Y" | "ALL";
 
 const TIMEFRAME_DAYS: Record<Timeframe, number | null> = {
   "1W": 7,
@@ -39,6 +39,7 @@ const TIMEFRAME_DAYS: Record<Timeframe, number | null> = {
   "6M": 180,
   YTD: -1,
   "1Y": 365,
+  "2Y": 730,
   ALL: null,
 };
 
