@@ -73,6 +73,10 @@
   --color-loss: var(--loss);
   --color-gain-muted: var(--gain-muted);
   --color-loss-muted: var(--loss-muted);
+
+  /* Font families — wire Next.js font-loader variables into Tailwind */
+  --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 :root {
