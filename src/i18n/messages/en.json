@@ -68,7 +68,10 @@
     "error": "Error",
     "marketValue": "Market Value",
     "profitLoss": "Profit/Loss",
-    "updatingCount": "{updated}/{total}"
+    "updatingCount": "{updated}/{total}",
+    "worth": "Worth",
+    "gain": "Gain",
+    "ofPortfolio": "% of portfolio"
   },
   "assetDetail": {
     "backToPortfolio": "Back to portfolio",

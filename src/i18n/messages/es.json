@@ -68,7 +68,10 @@
     "error": "Error",
     "marketValue": "Valor de Mercado",
     "profitLoss": "Gan./Perd.",
-    "updatingCount": "{updated}/{total}"
+    "updatingCount": "{updated}/{total}",
+    "worth": "Valor",
+    "gain": "Ganancia",
+    "ofPortfolio": "% de la cartera"
   },
   "assetDetail": {
     "backToPortfolio": "Volver a la cartera",

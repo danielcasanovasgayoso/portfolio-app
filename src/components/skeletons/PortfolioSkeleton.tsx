@@ -34,25 +34,28 @@ export function PortfolioSummarySkeleton() {
 
 export function HoldingCardSkeleton() {
   return (
-    <div className="bg-card rounded-xl shadow-sm px-4 py-3">
-      {/* Row 1: Name left, chevron right */}
-      <div className="flex items-center justify-between gap-1.5">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="w-4 h-4 rounded flex-shrink-0" />
-      </div>
-
-      {/* Row 2: Details left, value & performance right */}
-      <div className="flex items-end justify-between gap-3 mt-1">
-        <div className="space-y-1">
-          <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-3 w-20" />
-          <Skeleton className="h-3 w-18" />
+    <div className="relative pt-[18px] px-[6px] pb-[6px]">
+      <div className="relative bg-card rounded-[18px] overflow-hidden px-[18px] py-[16px] shadow-sm">
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-muted/40" />
+        <div className="flex justify-between items-start gap-3">
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-2.5 w-32" />
+          </div>
+          <Skeleton className="h-3 w-12 flex-shrink-0" />
         </div>
-        <div className="text-right space-y-1">
-          <Skeleton className="h-3 w-20 ml-auto" />
-          <Skeleton className="h-3 w-16 ml-auto" />
-          <Skeleton className="h-3 w-14 ml-auto" />
+        <div className="mt-4 flex items-baseline justify-between gap-3">
+          <div className="space-y-1.5">
+            <Skeleton className="h-2 w-10" />
+            <Skeleton className="h-7 w-32" />
+          </div>
+          <div className="text-right space-y-1.5">
+            <Skeleton className="h-2 w-8 ml-auto" />
+            <Skeleton className="h-3 w-20 ml-auto" />
+          </div>
         </div>
+        <Skeleton className="mt-[10px] h-[3px] w-full rounded-full" />
+        <Skeleton className="mt-[5px] h-2.5 w-24" />
       </div>
     </div>
   );
