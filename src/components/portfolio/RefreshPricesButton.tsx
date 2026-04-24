@@ -87,6 +87,13 @@ export function RefreshPricesButton() {
         size="sm"
         onClick={handleRefresh}
         disabled={status === "syncing"}
+        aria-label={
+          status === "syncing"
+            ? progress.total > 0
+              ? t("updatingCount", { updated: progress.updated, total: progress.total })
+              : t("syncing")
+            : t("refresh")
+        }
         className={cn(
           "gap-2 h-8 px-3 rounded-lg border-border font-mono text-xs uppercase tracking-wider",
           "transition-all duration-300",
@@ -95,6 +102,7 @@ export function RefreshPricesButton() {
         )}
       >
         <RefreshCw
+          aria-hidden="true"
           className={cn("h-3.5 w-3.5", status === "syncing" && "animate-spin")}
         />
         <span className="hidden sm:inline">
@@ -107,8 +115,11 @@ export function RefreshPricesButton() {
       </Button>
 
       {status === "success" && (
-        <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-gain-muted">
-          <Check className="h-3 w-3 text-gain" />
+        <div
+          role="status"
+          className="flex items-center gap-1 px-2 py-1 rounded-md bg-gain-muted"
+        >
+          <Check aria-hidden="true" className="h-3 w-3 text-gain" />
           <span className="text-[10px] font-mono text-gain uppercase tracking-wider">
             {t("synced")}
           </span>
@@ -116,8 +127,11 @@ export function RefreshPricesButton() {
       )}
 
       {status === "error" && (
-        <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-loss-muted">
-          <AlertCircle className="h-3 w-3 text-loss" />
+        <div
+          role="status"
+          className="flex items-center gap-1 px-2 py-1 rounded-md bg-loss-muted"
+        >
+          <AlertCircle aria-hidden="true" className="h-3 w-3 text-loss" />
           <span className="text-[10px] font-mono text-loss uppercase tracking-wider">
             {t("error")}
           </span>

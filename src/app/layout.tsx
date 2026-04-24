@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
+import { Toaster } from "@/components/Toaster";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -72,6 +73,7 @@ export default async function RootLayout({
         <ServiceWorkerRegistrar />
         <NextIntlClientProvider messages={messages}>
           {children}
+          <Toaster />
         </NextIntlClientProvider>
       </body>
     </html>
