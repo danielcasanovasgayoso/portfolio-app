@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useTranslations } from "next-intl";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -62,9 +62,12 @@ export function TransactionForm({
     defaultValues,
   });
 
-  const watchedShares = form.watch("shares");
-  const watchedPricePerShare = form.watch("pricePerShare");
-  const watchedFees = form.watch("fees");
+  const watchedShares = useWatch({ control: form.control, name: "shares" });
+  const watchedPricePerShare = useWatch({
+    control: form.control,
+    name: "pricePerShare",
+  });
+  const watchedFees = useWatch({ control: form.control, name: "fees" });
 
   // Auto-calculate total amount from shares * pricePerShare + fees
   useEffect(() => {

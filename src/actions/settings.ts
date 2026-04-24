@@ -94,9 +94,10 @@ export async function updateApiKey(
   }
 }
 
-export async function removeApiKey(
-  type: "primary"
-): Promise<{ success: boolean; error?: string }> {
+export async function removeApiKey(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
   try {
     const userId = await getUserId();
 

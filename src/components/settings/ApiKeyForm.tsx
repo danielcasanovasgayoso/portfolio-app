@@ -48,7 +48,7 @@ export function ApiKeyForm({ type, currentKey }: ApiKeyFormProps) {
     setIsRemoving(true);
     setMessage(null);
 
-    const result = await removeApiKey(type);
+    const result = await removeApiKey();
 
     if (result.success) {
       setMessage({ type: "success", text: t("apiKeyRemoved") });
