@@ -75,12 +75,21 @@ export function decrypt(encrypted: string): string {
 
 /**
  * Encrypts a value only if ENCRYPTION_KEY is configured.
- * Falls back to plaintext when the key is absent (development / migration path).
- * Plaintext values are stored with a "plain:" prefix so they can be
- * distinguished from encrypted ones during a gradual migration.
+ * Falls back to plaintext when the key is absent — permitted only in development
+ * so local runs don't require generating a key. In production the absence of a
+ * key is a misconfiguration and we fail closed to avoid silently downgrading
+ * the security posture. Plaintext values are stored with a "plain:" prefix so
+ * they can be distinguished from encrypted ones during a gradual migration.
  */
 export function encryptIfConfigured(value: string): string {
-  if (!process.env.ENCRYPTION_KEY) return `plain:${value}`;
+  if (!process.env.ENCRYPTION_KEY) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "ENCRYPTION_KEY is required in production — refusing to store secrets in plaintext."
+      );
+    }
+    return `plain:${value}`;
+  }
   return encrypt(value);
 }
 

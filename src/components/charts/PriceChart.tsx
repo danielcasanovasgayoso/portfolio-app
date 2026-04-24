@@ -43,6 +43,17 @@ const TIMEFRAME_DAYS: Record<Timeframe, number | null> = {
   ALL: null,
 };
 
+const TIMEFRAME_LABEL: Record<Timeframe, string> = {
+  "1W": "1 week",
+  "1M": "1 month",
+  "3M": "3 months",
+  "6M": "6 months",
+  YTD: "Year to date",
+  "1Y": "1 year",
+  "2Y": "2 years",
+  ALL: "All time",
+};
+
 export function PriceChart({
   data,
   avgPrice,
@@ -129,12 +140,14 @@ export function PriceChart({
               {priceChangePercent.toFixed(2)}%)
             </span>
           </div>
-          <div className="flex gap-1">
+          <div role="group" aria-label="Timeframe" className="flex gap-1">
             {(Object.keys(TIMEFRAME_DAYS) as Timeframe[]).map((tf) => (
               <Button
                 key={tf}
                 variant={timeframe === tf ? "secondary" : "ghost"}
                 size="sm"
+                aria-label={TIMEFRAME_LABEL[tf]}
+                aria-pressed={timeframe === tf}
                 className="h-7 px-2 text-xs"
                 onClick={() => setTimeframe(tf)}
               >

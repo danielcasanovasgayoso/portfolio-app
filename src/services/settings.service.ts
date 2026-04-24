@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "@/lib/db";
 import { PRICE_CACHE } from "@/lib/constants";
 import { decryptIfEncrypted } from "@/lib/crypto";
@@ -25,18 +26,6 @@ export interface AppSettings {
 }
 
 /**
- * Cached settings entry (per user)
- */
-interface CachedSettings {
-  data: AppSettings;
-  expiresAt: Date;
-}
-
-// In-memory cache for settings (1 minute TTL, keyed by userId)
-const CACHE_TTL_MS = 60 * 1000;
-const settingsCache = new Map<string, CachedSettings>();
-
-/**
  * Default settings values
  */
 const DEFAULT_SETTINGS: AppSettings = {
@@ -52,30 +41,20 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 /**
- * Check if cache is still valid for a user
+ * Get application settings for a user.
+ *
+ * Wrapped in `React.cache()` for request-scoped deduplication — within a
+ * single server render, repeated calls for the same userId share one DB hit.
+ * Across requests or serverless invocations, each call hits Postgres fresh,
+ * which avoids the cross-instance staleness that a process-wide cache would
+ * introduce on Vercel.
  */
-function isCacheValid(userId: string): boolean {
-  const cached = settingsCache.get(userId);
-  return cached !== null && cached !== undefined && cached.expiresAt > new Date();
-}
-
-/**
- * Get application settings for a user with caching
- * Reduces database calls for frequently accessed settings
- */
-export async function getSettings(userId: string): Promise<AppSettings> {
-  // Return cached settings if valid
-  if (isCacheValid(userId)) {
-    return settingsCache.get(userId)!.data;
-  }
-
-  // Fetch from database
+export const getSettings = cache(async (userId: string): Promise<AppSettings> => {
   const dbSettings = await db.settings.findUnique({
     where: { userId },
   });
 
-  // Merge with defaults, decrypting sensitive fields on the way out
-  const settings: AppSettings = {
+  return {
     ...DEFAULT_SETTINGS,
     ...(dbSettings && {
       eodhdApiKey: dbSettings.eodhdApiKey
@@ -93,15 +72,7 @@ export async function getSettings(userId: string): Promise<AppSettings> {
       locale: dbSettings.locale,
     }),
   };
-
-  // Update cache
-  settingsCache.set(userId, {
-    data: settings,
-    expiresAt: new Date(Date.now() + CACHE_TTL_MS),
-  });
-
-  return settings;
-}
+});
 
 /**
  * Get Gmail settings for a user
@@ -132,15 +103,10 @@ export async function getGmailSettings(userId: string): Promise<{
 }
 
 /**
- * Invalidate settings cache for a user
- * Call this after updating settings
- */
-export function invalidateSettingsCache(userId: string): void {
-  settingsCache.delete(userId);
-}
-
-/**
- * Update settings in database for a user and invalidate cache
+ * Update settings in database for a user.
+ * No explicit cache invalidation is needed: `getSettings` is request-scoped,
+ * and after a mutation callers are expected to `revalidatePath` so the next
+ * render triggers a fresh query.
  */
 export async function updateSettings(
   userId: string,
@@ -155,9 +121,6 @@ export async function updateSettings(
       ...updates,
     },
   });
-
-  // Invalidate cache to force refresh
-  invalidateSettingsCache(userId);
 
   return getSettings(userId);
 }

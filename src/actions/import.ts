@@ -15,7 +15,7 @@ import { Decimal } from "@prisma/client/runtime/client";
 import { recalculateHolding } from "@/services/holdings.service";
 import { determineAssetCategory } from "@/lib/myinvestor-funds";
 import { getUserId } from "@/lib/auth";
-import { getGmailSettings, invalidateSettingsCache } from "@/services/settings.service";
+import { getGmailSettings } from "@/services/settings.service";
 
 /**
  * Check if Gmail is connected for the current user
@@ -58,7 +58,6 @@ export async function disconnectGmail(): Promise<ActionResult<void>> {
         gmailRefreshToken: null,
       },
     });
-    invalidateSettingsCache(userId);
 
     revalidatePath("/import");
     return { success: true, data: undefined };
