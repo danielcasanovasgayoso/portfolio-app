@@ -4,7 +4,6 @@ import { useTranslations } from "next-intl";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { formatCurrency, formatShares, formatDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { updateLocale } from "@/actions/settings";
 import { Loader2 } from "lucide-react";

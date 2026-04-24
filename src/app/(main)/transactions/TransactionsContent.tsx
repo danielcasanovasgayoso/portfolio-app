@@ -31,13 +31,12 @@ export function TransactionsContent({
   const t = useTranslations("transactions");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const shouldOpenForm = searchParams.get("openForm") === "true";
+  const [isFormOpen, setIsFormOpen] = useState(shouldOpenForm);
 
-  // Open form when navigated with ?openForm=true
+  // Clean up the ?openForm=true query param after it triggered the form open
   useEffect(() => {
-    if (searchParams.get("openForm") === "true") {
-      setIsFormOpen(true);
-      // Clean up the URL param
+    if (shouldOpenForm) {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("openForm");
       const newUrl = params.toString()
@@ -45,7 +44,7 @@ export function TransactionsContent({
         : "/transactions";
       router.replace(newUrl);
     }
-  }, [searchParams, router]);
+  }, [shouldOpenForm, searchParams, router]);
 
   const handleTransactionChange = () => {
     router.refresh();

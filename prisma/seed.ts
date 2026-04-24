@@ -1,5 +1,4 @@
 import { PrismaClient, AssetCategory } from "@prisma/client";
-import { EODHD } from "@/lib/constants";
 
 const prisma = new PrismaClient();
 
@@ -78,50 +77,6 @@ const TICKER_MAPPINGS: Array<{
     category: "OTHERS",
   },
 ];
-
-// Stock exchange suffixes for classification
-const STOCK_EXCHANGE_SUFFIXES = [
-  ".AS", // Amsterdam
-  ".L", // London
-  ".DE", // Germany (XETRA)
-  ".PA", // Paris
-  ".MC", // Madrid
-  ".MI", // Milan
-  ".SW", // Swiss
-  ".VI", // Vienna
-  ".BR", // Brussels
-  ".LS", // Lisbon
-  ".HE", // Helsinki
-  ".CO", // Copenhagen
-  ".ST", // Stockholm
-  ".OL", // Oslo
-  ".IR", // Dublin
-  ".AT", // Athens
-];
-
-function classifyAsset(
-  ticker: string,
-  name: string
-): AssetCategory {
-  if (!ticker) return "OTHERS";
-
-  const tickerUpper = ticker.toUpperCase();
-  const nameUpper = (name || "").toUpperCase();
-
-  if (tickerUpper.endsWith(EODHD.FUND_EXCHANGE_SUFFIX)) return "FUNDS";
-  if (
-    nameUpper.includes(" PP") ||
-    nameUpper.includes("PENSION") ||
-    nameUpper.includes("PLAN DE PENSIONES")
-  )
-    return "PP";
-
-  for (const suffix of STOCK_EXCHANGE_SUFFIXES) {
-    if (tickerUpper.endsWith(suffix.toUpperCase())) return "STOCKS";
-  }
-
-  return "OTHERS";
-}
 
 async function main() {
   console.log("Starting seed...");

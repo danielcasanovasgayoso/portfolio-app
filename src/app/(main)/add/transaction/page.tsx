@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,9 +43,12 @@ export default function AddTransactionPage() {
     },
   });
 
-  const watchedShares = form.watch("shares");
-  const watchedPricePerShare = form.watch("pricePerShare");
-  const watchedFees = form.watch("fees");
+  const watchedShares = useWatch({ control: form.control, name: "shares" });
+  const watchedPricePerShare = useWatch({
+    control: form.control,
+    name: "pricePerShare",
+  });
+  const watchedFees = useWatch({ control: form.control, name: "fees" });
 
   // Auto-calculate total amount from shares * pricePerShare + fees
   useEffect(() => {
