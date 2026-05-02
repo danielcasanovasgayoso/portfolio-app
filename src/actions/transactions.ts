@@ -19,6 +19,7 @@ import type {
   PaginatedResult,
 } from "@/types/transaction";
 import { getUserId } from "@/lib/auth";
+import { toUtcMidnight } from "@/lib/utils";
 
 // Helper to serialize Decimal and Date fields for client components
 function serializeTransaction(tx: TransactionWithAsset): SerializedTransaction {
@@ -144,7 +145,7 @@ export async function createTransaction(
         userId,
         assetId,
         type: validated.type,
-        date: validated.date,
+        date: toUtcMidnight(validated.date),
         shares: new Decimal(validated.shares),
         pricePerShare: validated.pricePerShare
           ? new Decimal(validated.pricePerShare)
@@ -214,7 +215,7 @@ export async function updateTransaction(
       updateData.asset = { connect: { id: validated.assetId } };
     }
     if (validated.type) updateData.type = validated.type;
-    if (validated.date) updateData.date = validated.date;
+    if (validated.date) updateData.date = toUtcMidnight(validated.date);
     if (validated.shares) updateData.shares = new Decimal(validated.shares);
     if (validated.pricePerShare !== undefined) {
       updateData.pricePerShare = validated.pricePerShare
