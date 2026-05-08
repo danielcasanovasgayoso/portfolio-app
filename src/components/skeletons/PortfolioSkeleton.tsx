@@ -1,57 +1,22 @@
 import { Skeleton } from "@/components/ui/skeleton";
-
-export function PortfolioSummarySkeleton() {
-  return (
-    <div className="hero-card mx-4 p-6">
-      <div className="relative z-10">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-muted-foreground/30 animate-pulse" />
-            <Skeleton className="h-3 w-24" />
-          </div>
-          <Skeleton className="h-3 w-12" />
-        </div>
-
-        {/* Main value */}
-        <div className="mb-8">
-          <Skeleton className="h-14 w-64" />
-        </div>
-
-        {/* Stats grid */}
-        <div className="grid grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="space-y-2">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-6 w-24" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+import { SectionCard } from "@/components/pulse";
+import { getAvatarInitial } from "@/lib/avatarColor";
 
 export function HoldingCardSkeleton() {
   return (
-    <div className="bg-card rounded-xl shadow-sm px-4 py-3">
-      {/* Row 1: Name left, chevron right */}
-      <div className="flex items-center justify-between gap-1.5">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="w-4 h-4 rounded flex-shrink-0" />
-      </div>
-
-      {/* Row 2: Details left, value & performance right */}
-      <div className="flex items-end justify-between gap-3 mt-1">
-        <div className="space-y-1">
-          <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-3 w-20" />
-          <Skeleton className="h-3 w-18" />
-        </div>
-        <div className="text-right space-y-1">
-          <Skeleton className="h-3 w-20 ml-auto" />
-          <Skeleton className="h-3 w-16 ml-auto" />
-          <Skeleton className="h-3 w-14 ml-auto" />
+    <div className="rounded-2xl bg-card px-3.5 py-3 ghost-border shadow-sm">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-9 w-9 rounded-[10px]" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <Skeleton className="h-3.5 w-32" />
+            <Skeleton className="h-3.5 w-20" />
+          </div>
+          <div className="mt-1.5 flex items-center justify-between gap-3">
+            <Skeleton className="h-3 w-40" />
+            <Skeleton className="h-4 w-14 rounded-full" />
+          </div>
+          <Skeleton className="mt-2 h-1 w-full rounded-full" />
         </div>
       </div>
     </div>
@@ -60,37 +25,105 @@ export function HoldingCardSkeleton() {
 
 export function PortfolioSectionSkeleton() {
   return (
-    <div className="mt-8">
-      {/* Header */}
-      <div className="px-5 pb-4">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="h-2 w-16 mt-1" />
-          </div>
-          <Skeleton className="h-6 w-28" />
+    <section className="mt-6">
+      <header className="mb-2 flex items-baseline justify-between px-1">
+        <div>
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="mt-1.5 h-2 w-16" />
         </div>
-
-        {/* Stats bar */}
-        <div className="bg-card rounded-xl p-6 shadow-ambient">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="text-center space-y-1">
-                <Skeleton className="h-3 w-12 mx-auto" />
-                <Skeleton className="h-4 w-20 mx-auto" />
-              </div>
-            ))}
-          </div>
-        </div>
+        <Skeleton className="h-4 w-20" />
+      </header>
+      <div className="flex flex-col gap-2">
+        <HoldingCardSkeleton />
+        <HoldingCardSkeleton />
+        <HoldingCardSkeleton />
       </div>
-
-      {/* Holdings */}
-      <div className="mx-4 flex flex-col gap-3">
-        {[1, 2, 3].map((i) => (
-          <HoldingCardSkeleton key={i} />
-        ))}
-      </div>
-    </div>
+    </section>
   );
 }
 
+export function AllocationCardSkeleton() {
+  return (
+    <SectionCard>
+      <div className="mb-3 flex items-end justify-between">
+        <div>
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="mt-1.5 h-2 w-20" />
+        </div>
+      </div>
+      <div className="flex items-center gap-4">
+        <Skeleton className="h-[104px] w-[104px] rounded-full" />
+        <div className="flex flex-1 flex-col gap-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Skeleton className="h-4 w-1.5 shrink-0" />
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="ml-auto h-3 w-10" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+/**
+ * Skeleton mirroring the Pulse dashboard layout (hero header + hero number + delta + allocation).
+ * Renders inside the same MobileShell so the visible chrome (gradient backdrop, glass nav) keeps
+ * its position while data streams in.
+ */
+export function DashboardSkeleton({ email }: { email?: string }) {
+  const initials = email ? getAvatarInitial(email.split("@")[0] ?? email) : "·";
+  return (
+    <>
+      <div className="flex items-center justify-between gap-3 pt-2 pb-5 text-white">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.18] text-[12px] font-bold text-white/90">
+            {initials}
+          </span>
+          <div className="leading-tight">
+            <Skeleton className="h-2.5 w-16 bg-white/30" />
+            <Skeleton className="mt-1.5 h-3.5 w-20 bg-white/30" />
+          </div>
+        </div>
+        <div className="flex gap-1.5">
+          <Skeleton className="h-9 w-9 rounded-xl bg-white/20" />
+          <Skeleton className="h-9 w-9 rounded-xl bg-white/20" />
+        </div>
+      </div>
+      <div className="px-2 pb-2 text-center">
+        <Skeleton className="mx-auto h-2.5 w-32 bg-white/30" />
+        <Skeleton className="mx-auto mt-3 h-12 w-56 bg-white/30" />
+        <Skeleton className="mx-auto mt-3 h-5 w-44 rounded-full bg-white/30" />
+        <Skeleton className="mx-auto mt-4 h-7 w-44 rounded-full bg-white/30" />
+      </div>
+
+      <div className="mt-6">
+        <AllocationCardSkeleton />
+      </div>
+
+      <PortfolioSectionSkeleton />
+      <PortfolioSectionSkeleton />
+    </>
+  );
+}
+
+/**
+ * @deprecated kept for legacy callers (loading.tsx) — use DashboardSkeleton instead.
+ */
+export function PortfolioSummarySkeleton() {
+  return (
+    <SectionCard>
+      <Skeleton className="h-3 w-24" />
+      <Skeleton className="mt-4 h-12 w-48" />
+      <div className="mt-6 grid grid-cols-3 gap-4">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-2.5 w-16" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
