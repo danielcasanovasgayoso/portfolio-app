@@ -1,45 +1,38 @@
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
-import {
-  PortfolioSummaryCard,
-  PortfolioSection,
-} from "@/components/portfolio";
+import { HeroBackdrop, MobileShell } from "@/components/pulse";
+import { PortfolioSection } from "@/components/portfolio/PortfolioSection";
 import { PortfolioEmptyState } from "@/components/portfolio/PortfolioEmptyState";
-import { RefreshPricesButton } from "@/components/portfolio/RefreshPricesButton";
+import { DashboardHero } from "@/components/portfolio/DashboardHero";
+import { AllocationCard } from "@/components/portfolio/AllocationCard";
 import { getPortfolioData } from "@/services/portfolio.service";
 import { requireAuth } from "@/lib/auth";
-import {
-  PortfolioSummarySkeleton,
-  PortfolioSectionSkeleton,
-} from "@/components/skeletons";
+import { DashboardSkeleton } from "@/components/skeletons";
+
+const HERO_HEIGHT = 360;
 
 export default async function PortfolioPage() {
   const user = await requireAuth();
-  const t = await getTranslations("portfolio");
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="pt-[max(1.5rem,env(safe-area-inset-top))] pb-24 max-w-5xl mx-auto">
-        {/* Header renders instantly — no data dependency */}
-        <div className="flex justify-between items-center px-8 mb-8">
-          <div className="flex flex-col max-w-[60%]">
-             <h1 className="text-[1.75rem] font-bold tracking-tight">{t("title")}</h1>
-          </div>
-          <div>
-            <RefreshPricesButton />
-          </div>
-        </div>
-
-        {/* Data-dependent content streams in via Suspense */}
-        <Suspense fallback={<PortfolioContentSkeleton />}>
-          <PortfolioContent userId={user.id} />
+    <MobileShell>
+      <HeroBackdrop height={HERO_HEIGHT} orbits="right" />
+      <div className="relative px-4 pt-[max(0.5rem,env(safe-area-inset-top))]">
+        <Suspense fallback={<DashboardSkeleton email={user.email} />}>
+          <DashboardContent userId={user.id} email={user.email} />
         </Suspense>
-      </main>
-    </div>
+      </div>
+    </MobileShell>
   );
 }
 
-async function PortfolioContent({ userId }: { userId: string }) {
+async function DashboardContent({
+  userId,
+  email,
+}: {
+  userId: string;
+  email: string;
+}) {
   const data = await getPortfolioData(userId);
   const t = await getTranslations("portfolio");
 
@@ -49,59 +42,61 @@ async function PortfolioContent({ userId }: { userId: string }) {
     data.holdings.pp.length === 0 &&
     data.holdings.others.length === 0;
 
-  if (isEmpty) {
-    return <PortfolioEmptyState />;
-  }
+  const grand = data.totals.grand;
+  const reference = data.totals.invested ?? grand;
 
   return (
     <>
-      {/* Summary Card */}
-      <div className="px-4 md:px-8 mb-12">
-        <PortfolioSummaryCard
-          grand={data.totals.grand}
-          invested={data.totals.invested}
-        />
-      </div>
-
-      {/* Holdings by Category */}
-      <PortfolioSection
-        title={t("funds")}
-        holdings={data.holdings.funds}
-        totals={data.totals.funds}
-        totalPortfolioValue={data.totals.grand?.marketValue ?? 0}
-      />
-      <PortfolioSection
-        title={t("stocksEtfs")}
-        holdings={data.holdings.stocks}
-        totals={data.totals.stocks}
-        totalPortfolioValue={data.totals.grand?.marketValue ?? 0}
-      />
-      <PortfolioSection
-        title={t("pp")}
-        holdings={data.holdings.pp}
-        totals={data.totals.pp}
-        totalPortfolioValue={data.totals.grand?.marketValue ?? 0}
-      />
-      <PortfolioSection
-        title={t("others")}
-        holdings={data.holdings.others}
-        totals={data.totals.others}
-        totalPortfolioValue={data.totals.grand?.marketValue ?? 0}
-        isOther
+      <DashboardHero
+        email={email}
+        totalNetWorth={grand?.marketValue ?? null}
+        gainLoss={reference?.gainLoss ?? null}
+        gainLossPercent={reference?.gainLossPercent ?? null}
       />
 
+      {isEmpty ? (
+        <PortfolioEmptyState />
+      ) : (
+        <>
+          <div className="mt-5">
+            <AllocationCard summary={data} />
+          </div>
+
+          <div className="mt-5">
+            <h2 className="px-1 text-[15px] font-semibold tracking-tight text-foreground">
+              {t("holdings")}
+            </h2>
+          </div>
+
+          <div className="mt-3 space-y-6">
+            <PortfolioSection
+              title={t("funds")}
+              holdings={data.holdings.funds}
+              totals={data.totals.funds}
+              totalPortfolioValue={grand?.marketValue ?? 0}
+            />
+            <PortfolioSection
+              title={t("stocksEtfs")}
+              holdings={data.holdings.stocks}
+              totals={data.totals.stocks}
+              totalPortfolioValue={grand?.marketValue ?? 0}
+            />
+            <PortfolioSection
+              title={t("pp")}
+              holdings={data.holdings.pp}
+              totals={data.totals.pp}
+              totalPortfolioValue={grand?.marketValue ?? 0}
+            />
+            <PortfolioSection
+              title={t("others")}
+              holdings={data.holdings.others}
+              totals={data.totals.others}
+              totalPortfolioValue={grand?.marketValue ?? 0}
+              isOther
+            />
+          </div>
+        </>
+      )}
     </>
-  );
-}
-
-function PortfolioContentSkeleton() {
-  return (
-    <div className="space-y-6 pb-20">
-      <div className="px-4 md:px-8">
-        <PortfolioSummarySkeleton />
-      </div>
-      <PortfolioSectionSkeleton />
-      <PortfolioSectionSkeleton />
-    </div>
   );
 }

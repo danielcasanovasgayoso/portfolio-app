@@ -69,7 +69,16 @@
     "error": "Error",
     "marketValue": "Market Value",
     "profitLoss": "Profit/Loss",
-    "updatingCount": "{updated}/{total}"
+    "updatingCount": "{updated}/{total}",
+    "welcomeBack": "Welcome back",
+    "hideAmounts": "Hide amounts",
+    "showAmounts": "Show amounts",
+    "viewNetWorthDetails": "View net worth details",
+    "allocation": "Allocation",
+    "acrossClasses": "Across {count} classes",
+    "holdings": "Holdings",
+    "viewAll": "View all",
+    "noHoldings": "No holdings yet"
   },
   "assetDetail": {
     "backToPortfolio": "Back to portfolio",

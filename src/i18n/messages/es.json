@@ -69,7 +69,16 @@
     "error": "Error",
     "marketValue": "Valor de Mercado",
     "profitLoss": "Gan./Perd.",
-    "updatingCount": "{updated}/{total}"
+    "updatingCount": "{updated}/{total}",
+    "welcomeBack": "Hola de nuevo",
+    "hideAmounts": "Ocultar importes",
+    "showAmounts": "Mostrar importes",
+    "viewNetWorthDetails": "Ver detalle del patrimonio",
+    "allocation": "Distribución",
+    "acrossClasses": "En {count} categorías",
+    "holdings": "Posiciones",
+    "viewAll": "Ver todas",
+    "noHoldings": "Aún no hay posiciones"
   },
   "assetDetail": {
     "backToPortfolio": "Volver a la cartera",

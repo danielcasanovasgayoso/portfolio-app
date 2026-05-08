@@ -4,13 +4,19 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { GlassButton } from "@/components/pulse";
 import { RefreshCw, Check, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SSEEvent } from "@/types/price-refresh";
 
 type Status = "idle" | "syncing" | "success" | "error";
 
-export function RefreshPricesButton() {
+interface RefreshPricesButtonProps {
+  /** "default" = shadcn outline button (legacy);  "glass" = icon-only glass button for hero. */
+  variant?: "default" | "glass";
+}
+
+export function RefreshPricesButton({ variant = "default" }: RefreshPricesButtonProps) {
   const t = useTranslations("portfolio");
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
@@ -19,7 +25,6 @@ export function RefreshPricesButton() {
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Clean up EventSource and timers on unmount
   useEffect(() => {
     return () => {
       eventSourceRef.current?.close();
@@ -80,6 +85,36 @@ export function RefreshPricesButton() {
     };
   }, [status, router, debouncedRefresh]);
 
+  const ariaLabel =
+    status === "syncing"
+      ? progress.total > 0
+        ? t("updatingCount", { updated: progress.updated, total: progress.total })
+        : t("syncing")
+      : t("refresh");
+
+  if (variant === "glass") {
+    const Icon =
+      status === "success" ? Check : status === "error" ? AlertCircle : RefreshCw;
+    return (
+      <GlassButton
+        onClick={handleRefresh}
+        disabled={status === "syncing"}
+        aria-label={ariaLabel}
+        title={ariaLabel}
+      >
+        <Icon
+          aria-hidden
+          className={cn(
+            "h-4 w-4",
+            status === "syncing" && "animate-spin",
+            status === "success" && "text-[#7DFF9A]",
+            status === "error" && "text-[#FFB1AB]"
+          )}
+        />
+      </GlassButton>
+    );
+  }
+
   return (
     <div className="flex items-center gap-3">
       <Button
@@ -87,13 +122,7 @@ export function RefreshPricesButton() {
         size="sm"
         onClick={handleRefresh}
         disabled={status === "syncing"}
-        aria-label={
-          status === "syncing"
-            ? progress.total > 0
-              ? t("updatingCount", { updated: progress.updated, total: progress.total })
-              : t("syncing")
-            : t("refresh")
-        }
+        aria-label={ariaLabel}
         className={cn(
           "gap-2 h-8 px-3 rounded-lg border-border font-mono text-xs uppercase tracking-wider",
           "transition-all duration-300",
@@ -105,13 +134,7 @@ export function RefreshPricesButton() {
           aria-hidden="true"
           className={cn("h-3.5 w-3.5", status === "syncing" && "animate-spin")}
         />
-        <span className="hidden sm:inline">
-          {status === "syncing"
-            ? progress.total > 0
-              ? t("updatingCount", { updated: progress.updated, total: progress.total })
-              : t("syncing")
-            : t("refresh")}
-        </span>
+        <span className="hidden sm:inline">{ariaLabel}</span>
       </Button>
 
       {status === "success" && (
