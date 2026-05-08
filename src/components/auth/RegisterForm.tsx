@@ -3,11 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { ArrowRight, CheckCircle2, Loader2, Lock, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { GlassField } from "./GlassField";
 
 export function RegisterForm() {
   const t = useTranslations("auth");
@@ -24,14 +22,11 @@ export function RegisterForm() {
     setError(null);
     setIsLoading(true);
 
-    // Validate passwords match
     if (password !== confirmPassword) {
       setError(t("passwordsNoMatch"));
       setIsLoading(false);
       return;
     }
-
-    // Validate password strength
     if (password.length < 6) {
       setError(t("passwordMinLength"));
       setIsLoading(false);
@@ -40,20 +35,17 @@ export function RegisterForm() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signUp({
+      const { error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
-
-      if (error) {
-        setError(error.message);
+      if (authError) {
+        setError(authError.message);
         return;
       }
-
-      // Show success message (email confirmation may be required)
       setSuccess(true);
     } catch {
       setError(t("unexpectedError"));
@@ -64,86 +56,90 @@ export function RegisterForm() {
 
   if (success) {
     return (
-      <div className="text-center space-y-4 py-4">
-        <CheckCircle2 className="size-12 text-primary mx-auto" />
+      <div className="space-y-4 py-2 text-center text-white">
+        <CheckCircle2 className="mx-auto h-12 w-12" />
         <div>
           <h3 className="font-semibold">{t("checkEmail")}</h3>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mt-1 text-[13px] text-white/80">
             {t("confirmationSent")}{" "}
-            <span className="font-medium text-foreground">{email}</span>
+            <span className="font-mono font-semibold">{email}</span>
           </p>
         </div>
-        <Button
-          variant="outline"
+        <button
+          type="button"
           onClick={() => router.push("/login")}
-          className="w-full"
+          className="inline-flex w-full items-center justify-center rounded-xl border border-white/20 bg-white/[0.12] py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-white/20"
         >
           {t("backToLogin")}
-        </Button>
+        </button>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3">
       {error && (
-        <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-lg border border-destructive/20">
+        <div className="rounded-xl border border-white/20 bg-loss-muted px-3 py-2 text-[12px] font-medium text-white">
           {error}
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="email">{t("email")}</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder={t("emailPlaceholder")}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          disabled={isLoading}
-          autoComplete="email"
-        />
-      </div>
+      <GlassField
+        id="email"
+        label={t("email")}
+        icon={<Mail className="h-3.5 w-3.5" />}
+        type="email"
+        placeholder={t("emailPlaceholder")}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        disabled={isLoading}
+        autoComplete="email"
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="password">{t("password")}</Label>
-        <Input
-          id="password"
-          type="password"
-          placeholder={t("createPassword")}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          disabled={isLoading}
-          autoComplete="new-password"
-        />
-      </div>
+      <GlassField
+        id="password"
+        label={t("password")}
+        icon={<Lock className="h-3.5 w-3.5" />}
+        type="password"
+        placeholder={t("createPassword")}
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+        disabled={isLoading}
+        autoComplete="new-password"
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
-        <Input
-          id="confirmPassword"
-          type="password"
-          placeholder={t("confirmPasswordPlaceholder")}
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-          disabled={isLoading}
-          autoComplete="new-password"
-        />
-      </div>
+      <GlassField
+        id="confirmPassword"
+        label={t("confirmPassword")}
+        icon={<Lock className="h-3.5 w-3.5" />}
+        type="password"
+        placeholder={t("confirmPasswordPlaceholder")}
+        value={confirmPassword}
+        onChange={(e) => setConfirmPassword(e.target.value)}
+        required
+        disabled={isLoading}
+        autoComplete="new-password"
+      />
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[14px] font-bold text-primary transition-colors hover:bg-white/90 disabled:opacity-60"
+      >
         {isLoading ? (
           <>
-            <Loader2 className="size-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
             {t("creatingAccount")}
           </>
         ) : (
-          t("createAccountButton")
+          <>
+            {t("createAccountButton")}
+            <ArrowRight className="h-4 w-4" />
+          </>
         )}
-      </Button>
+      </button>
     </form>
   );
 }

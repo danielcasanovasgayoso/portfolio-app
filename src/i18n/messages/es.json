@@ -29,7 +29,12 @@
     "backToLogin": "Volver al inicio de sesión",
     "signOut": "Cerrar sesión",
     "signingOut": "Cerrando sesión...",
-    "signedIn": "Conectado"
+    "signedIn": "Conectado",
+    "marketingEyebrow": "Seguimiento personal de inversiones",
+    "marketingHeadline": "Cada euro,\ncada movimiento.",
+    "marketingBlurb": "Precios en tiempo real, coste FIFO e importación desde Gmail — para una cartera en la que sí puedes confiar.",
+    "newHere": "¿Eres nuevo aquí?",
+    "or": "O"
   },
   "nav": {
     "portfolio": "Cartera",

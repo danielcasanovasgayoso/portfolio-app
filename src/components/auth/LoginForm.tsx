@@ -3,11 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { ArrowRight, Loader2, Lock, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { GlassField } from "./GlassField";
 
 export function LoginForm() {
   const t = useTranslations("auth");
@@ -24,16 +22,14 @@ export function LoginForm() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-
-      if (error) {
-        setError(error.message);
+      if (authError) {
+        setError(authError.message);
         return;
       }
-
       router.push("/");
       router.refresh();
     } catch {
@@ -44,51 +40,56 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3">
       {error && (
-        <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-lg border border-destructive/20">
+        <div className="rounded-xl border border-white/20 bg-loss-muted px-3 py-2 text-[12px] font-medium text-white">
           {error}
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="email">{t("email")}</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder={t("emailPlaceholder")}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          disabled={isLoading}
-          autoComplete="email"
-        />
-      </div>
+      <GlassField
+        id="email"
+        label={t("email")}
+        icon={<Mail className="h-3.5 w-3.5" />}
+        type="email"
+        placeholder={t("emailPlaceholder")}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        disabled={isLoading}
+        autoComplete="email"
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="password">{t("password")}</Label>
-        <Input
-          id="password"
-          type="password"
-          placeholder={t("passwordPlaceholder")}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          disabled={isLoading}
-          autoComplete="current-password"
-        />
-      </div>
+      <GlassField
+        id="password"
+        label={t("password")}
+        icon={<Lock className="h-3.5 w-3.5" />}
+        type="password"
+        placeholder={t("passwordPlaceholder")}
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+        disabled={isLoading}
+        autoComplete="current-password"
+      />
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[14px] font-bold text-primary transition-colors hover:bg-white/90 disabled:opacity-60"
+      >
         {isLoading ? (
           <>
-            <Loader2 className="size-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
             {t("signingIn")}
           </>
         ) : (
-          t("signIn")
+          <>
+            {t("signIn")}
+            <ArrowRight className="h-4 w-4" />
+          </>
         )}
-      </Button>
+      </button>
     </form>
   );
 }

@@ -1,44 +1,35 @@
-import { LoginForm } from "@/components/auth/LoginForm";
-import { GoogleButton } from "@/components/auth/GoogleButton";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { LoginForm } from "@/components/auth/LoginForm";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 
 export default async function LoginPage() {
   const t = await getTranslations("auth");
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold">{t("welcomeBack")}</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          {t("signInToAccount")}
-        </p>
-      </div>
-
+    <AuthShell
+      showIntro
+      footerPrompt={
+        <>
+          {t("noAccount")}{" "}
+          <Link href="/register" className="font-semibold text-white underline-offset-2 hover:underline">
+            {t("signUp")}
+          </Link>
+        </>
+      }
+    >
       <LoginForm />
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">
-            {t("orContinueWith")}
-          </span>
-        </div>
+      <div className="my-3.5 flex items-center gap-2.5">
+        <span className="h-px flex-1 bg-white/20" aria-hidden />
+        <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-white/60">
+          {t("or")}
+        </span>
+        <span className="h-px flex-1 bg-white/20" aria-hidden />
       </div>
 
       <GoogleButton />
-
-      <p className="text-center text-sm text-muted-foreground">
-        {t("noAccount")}{" "}
-        <Link
-          href="/register"
-          className="font-medium text-primary hover:underline"
-        >
-          {t("signUp")}
-        </Link>
-      </p>
-    </div>
+    </AuthShell>
   );
 }

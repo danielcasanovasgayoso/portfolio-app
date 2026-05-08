@@ -29,7 +29,12 @@
     "backToLogin": "Back to login",
     "signOut": "Sign out",
     "signingOut": "Signing out...",
-    "signedIn": "Signed in"
+    "signedIn": "Signed in",
+    "marketingEyebrow": "Personal investment tracker",
+    "marketingHeadline": "Every euro,\nevery move.",
+    "marketingBlurb": "Real-time pricing, FIFO cost accounting and Gmail import — for one portfolio you can actually trust.",
+    "newHere": "New here?",
+    "or": "Or"
   },
   "nav": {
     "portfolio": "Portfolio",
