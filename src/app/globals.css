@@ -121,6 +121,9 @@
   --loss-muted: rgba(255, 59, 48, 0.1);
 
   --shadow-ambient: 0px 10px 40px -10px rgba(70, 72, 212, 0.15);
+
+  --pulse-hero:        linear-gradient(180deg, #4F46E5 0%, #6063EE 60%, var(--background) 100%);
+  --pulse-hero-login:  linear-gradient(180deg, #4F46E5 0%, #6063EE 50%, #8385F2 100%);
 }
 
 .dark {
@@ -169,6 +172,9 @@
   --loss-muted: rgba(255, 82, 82, 0.15);
 
   --shadow-ambient: 0px 10px 40px -10px rgba(96, 99, 238, 0.08); /* Indigo void glow */
+
+  --pulse-hero:       linear-gradient(180deg, #1A185C 0%, #06060C 100%);
+  --pulse-hero-login: linear-gradient(180deg, #1A185C 0%, #06060C 100%);
 }
 
 /* Base styling */
@@ -247,6 +253,21 @@
   }
   .bg-loss-muted {
     background-color: var(--loss-muted);
+  }
+
+  .bg-pulse-hero {
+    background-image: var(--pulse-hero);
+  }
+
+  .bg-pulse-hero-login {
+    background-image: var(--pulse-hero-login);
+  }
+
+  .glass-dock {
+    background-color: color-mix(in srgb, var(--background) 85%, transparent);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--outline-variant);
   }
 }
 

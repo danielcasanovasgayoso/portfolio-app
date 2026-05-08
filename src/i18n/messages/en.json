@@ -38,7 +38,8 @@
     "transactionsShort": "TRANSACTIONS",
     "settings": "Settings",
     "settingsShort": "CONFIG",
-    "addTransactions": "Add transactions"
+    "addTransactions": "Add transactions",
+    "search": "Search"
   },
   "portfolio": {
     "title": "Portfolio",

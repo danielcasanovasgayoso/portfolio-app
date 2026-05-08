@@ -2,84 +2,129 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { PieChart, FileText, Settings, Plus } from "lucide-react";
+import { Home, List, Plus, Search, Settings, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const navItems = [
+type NavLabelKey = "portfolio" | "transactions" | "search" | "settings";
+
+type NavSlot = {
+  href: string;
+  labelKey: NavLabelKey;
+  icon: LucideIcon;
+  isActive: (pathname: string, focus: string) => boolean;
+};
+
+const slots: NavSlot[] = [
   {
     href: "/",
-    labelKey: "portfolio" as const,
-    shortLabelKey: "home" as const,
-    icon: PieChart,
+    labelKey: "portfolio",
+    icon: Home,
+    isActive: (p) => p === "/" || p.startsWith("/portfolio/"),
   },
   {
     href: "/transactions",
-    labelKey: "transactions" as const,
-    shortLabelKey: "transactionsShort" as const,
-    icon: FileText,
+    labelKey: "transactions",
+    icon: List,
+    isActive: (p, focus) => p === "/transactions" && focus !== "search",
+  },
+  {
+    href: "/transactions?focus=search",
+    labelKey: "search",
+    icon: Search,
+    isActive: (p, focus) => p === "/transactions" && focus === "search",
   },
   {
     href: "/settings",
-    labelKey: "settings" as const,
-    shortLabelKey: "settingsShort" as const,
+    labelKey: "settings",
     icon: Settings,
+    isActive: (p) => p.startsWith("/settings"),
   },
 ];
 
 export function BottomNav() {
   const t = useTranslations("nav");
   const pathname = usePathname();
-  const isAddActive = pathname === "/add";
+  const [focus, setFocus] = useState("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sync = () =>
+      setFocus(new URLSearchParams(window.location.search).get("focus") ?? "");
+    sync();
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, [pathname]);
+
+  const isAddActive = pathname === "/add" || pathname.startsWith("/add/");
 
   return (
     <nav
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3"
-      style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+      aria-label={t("portfolio")}
+      className="glass-dock fixed left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[26rem] -translate-x-1/2 items-center justify-between gap-2 rounded-2xl px-2 py-2 shadow-lg"
+      style={{
+        bottom: "calc(0.875rem + env(safe-area-inset-bottom))",
+      }}
     >
-      <div className="flex items-center gap-1 bg-background/80 backdrop-blur-xl border border-border rounded-2xl px-2 py-2 shadow-lg shadow-black/10 dark:shadow-black/30">
-        {navItems.map((item) => {
-          const isActive =
-            item.href === "/"
-              ? pathname === "/" || pathname.startsWith("/portfolio/")
-              : pathname.startsWith(item.href);
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              prefetch={true}
-              className={cn(
-                "relative flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}
-            >
-              <item.icon className="h-[18px] w-[18px]" />
-              {isActive && (
-                <span className="text-[11px] font-semibold tracking-wide">
-                  {t(item.shortLabelKey)}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </div>
+      {slots.slice(0, 2).map((slot) => (
+        <NavTab
+          key={slot.labelKey}
+          slot={slot}
+          active={slot.isActive(pathname, focus)}
+          label={t(slot.labelKey)}
+        />
+      ))}
 
       <Link
         href="/add"
-        prefetch={true}
-        className={cn(
-          "flex items-center justify-center h-11 w-11 rounded-2xl shadow-lg shadow-black/10 dark:shadow-black/30 transition-all duration-200 active:scale-95",
-          isAddActive
-            ? "bg-primary text-primary-foreground"
-            : "bg-primary text-primary-foreground hover:bg-primary/90"
-        )}
+        prefetch
         aria-label={t("addTransactions")}
+        className={cn(
+          "flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground transition-transform duration-200 active:scale-95",
+          "shadow-[0_8px_20px_-6px_rgba(70,72,212,0.6)]",
+          isAddActive ? "ring-2 ring-primary/40" : "hover:bg-primary/90"
+        )}
       >
         <Plus className="h-5 w-5" />
       </Link>
+
+      {slots.slice(2).map((slot) => (
+        <NavTab
+          key={slot.labelKey}
+          slot={slot}
+          active={slot.isActive(pathname, focus)}
+          label={t(slot.labelKey)}
+        />
+      ))}
     </nav>
+  );
+}
+
+function NavTab({
+  slot,
+  active,
+  label,
+}: {
+  slot: NavSlot;
+  active: boolean;
+  label: string;
+}) {
+  const Icon = slot.icon;
+  return (
+    <Link
+      href={slot.href}
+      prefetch
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex flex-1 items-center justify-center rounded-xl py-2.5 transition-colors duration-200",
+        active
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+      )}
+    >
+      <Icon className="h-[18px] w-[18px]" />
+    </Link>
   );
 }

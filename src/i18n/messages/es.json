@@ -38,7 +38,8 @@
     "transactionsShort": "MOVIMIENTOS",
     "settings": "Ajustes",
     "settingsShort": "CONFIG",
-    "addTransactions": "Añadir transacciones"
+    "addTransactions": "Añadir transacciones",
+    "search": "Buscar"
   },
   "portfolio": {
     "title": "Cartera",
