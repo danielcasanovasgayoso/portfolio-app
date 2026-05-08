@@ -1,22 +1,29 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Check, AlertCircle } from "lucide-react";
+import { GlassButton } from "@/components/pulse";
+import { AlertCircle, Check, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Status = "idle" | "syncing" | "success" | "error";
 
 interface RefreshAssetButtonProps {
   assetId: string;
+  variant?: "default" | "glass";
 }
 
-export function RefreshAssetButton({ assetId }: RefreshAssetButtonProps) {
+export function RefreshAssetButton({ assetId, variant = "default" }: RefreshAssetButtonProps) {
   const t = useTranslations("assetDetail");
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+  }, []);
 
   const handleRefresh = useCallback(async () => {
     if (status === "syncing") return;
@@ -26,7 +33,6 @@ export function RefreshAssetButton({ assetId }: RefreshAssetButtonProps) {
     try {
       const res = await fetch(`/api/prices/${assetId}`, { method: "POST" });
       const data = await res.json();
-
       if (data.success) {
         router.refresh();
         setStatus("success");
@@ -37,8 +43,32 @@ export function RefreshAssetButton({ assetId }: RefreshAssetButtonProps) {
       setStatus("error");
     }
 
-    setTimeout(() => setStatus("idle"), 3000);
+    resetTimer.current = setTimeout(() => setStatus("idle"), 3000);
   }, [status, assetId, router]);
+
+  const ariaLabel = status === "syncing" ? t("synced") : t("refresh");
+
+  if (variant === "glass") {
+    const Icon = status === "success" ? Check : status === "error" ? AlertCircle : RefreshCw;
+    return (
+      <GlassButton
+        onClick={handleRefresh}
+        disabled={status === "syncing"}
+        aria-label={ariaLabel}
+        title={ariaLabel}
+      >
+        <Icon
+          aria-hidden
+          className={cn(
+            "h-4 w-4",
+            status === "syncing" && "animate-spin",
+            status === "success" && "text-[#7DFF9A]",
+            status === "error" && "text-[#FFB1AB]"
+          )}
+        />
+      </GlassButton>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2">
@@ -54,9 +84,7 @@ export function RefreshAssetButton({ assetId }: RefreshAssetButtonProps) {
           status === "syncing" && "border-primary bg-primary/10 text-primary"
         )}
       >
-        <RefreshCw
-          className={cn("h-3.5 w-3.5", status === "syncing" && "animate-spin")}
-        />
+        <RefreshCw className={cn("h-3.5 w-3.5", status === "syncing" && "animate-spin")} />
         {t("refresh")}
       </Button>
 

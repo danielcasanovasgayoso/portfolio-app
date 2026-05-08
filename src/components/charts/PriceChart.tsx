@@ -11,7 +11,6 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
 
@@ -119,12 +118,12 @@ export function PriceChart({
   return (
     <div className={cn("space-y-4", className)}>
       {showTimeframes && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-baseline gap-2">
             <span
               className={cn(
-                "text-lg font-semibold",
-                isPositive ? "text-green-600" : "text-red-600"
+                "font-mono text-[15px] font-bold tabular-nums",
+                isPositive ? "text-gain" : "text-loss"
               )}
             >
               {isPositive ? "+" : ""}
@@ -132,28 +131,40 @@ export function PriceChart({
             </span>
             <span
               className={cn(
-                "text-sm",
-                isPositive ? "text-green-600" : "text-red-600"
+                "font-mono text-[12px] font-semibold tabular-nums",
+                isPositive ? "text-gain" : "text-loss"
               )}
             >
               ({isPositive ? "+" : ""}
               {priceChangePercent.toFixed(2)}%)
             </span>
           </div>
-          <div role="group" aria-label="Timeframe" className="flex gap-1">
-            {(Object.keys(TIMEFRAME_DAYS) as Timeframe[]).map((tf) => (
-              <Button
-                key={tf}
-                variant={timeframe === tf ? "secondary" : "ghost"}
-                size="sm"
-                aria-label={TIMEFRAME_LABEL[tf]}
-                aria-pressed={timeframe === tf}
-                className="h-7 px-2 text-xs"
-                onClick={() => setTimeframe(tf)}
-              >
-                {tf}
-              </Button>
-            ))}
+          <div
+            role="tablist"
+            aria-label="Timeframe"
+            className="flex w-full gap-1 rounded-xl bg-muted p-1"
+          >
+            {(Object.keys(TIMEFRAME_DAYS) as Timeframe[]).map((tf) => {
+              const selected = timeframe === tf;
+              return (
+                <button
+                  key={tf}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  aria-label={TIMEFRAME_LABEL[tf]}
+                  onClick={() => setTimeframe(tf)}
+                  className={cn(
+                    "flex-1 rounded-lg border-0 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.03em] transition-colors",
+                    selected
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {tf}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

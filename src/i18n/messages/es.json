@@ -103,7 +103,11 @@
     "unrealized": "No realizado",
     "refresh": "Actualizar",
     "synced": "Actualizado",
-    "error": "Error"
+    "error": "Error",
+    "quantity": "Cantidad",
+    "avgCost": "Coste medio",
+    "recentActivity": "Actividad reciente",
+    "performanceTitle": "Rendimiento"
   },
   "portfolioChart": {
     "title": "Evolución del Patrimonio",

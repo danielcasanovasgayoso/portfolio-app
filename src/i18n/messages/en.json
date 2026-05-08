@@ -103,7 +103,11 @@
     "unrealized": "Unrealized",
     "refresh": "Refresh",
     "synced": "Synced",
-    "error": "Error"
+    "error": "Error",
+    "quantity": "Quantity",
+    "avgCost": "Avg cost",
+    "recentActivity": "Recent activity",
+    "performanceTitle": "Performance"
   },
   "portfolioChart": {
     "title": "Net Worth History",
