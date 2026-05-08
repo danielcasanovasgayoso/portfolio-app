@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -12,43 +12,47 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import {
-  TransactionTable,
   TransactionFilters,
   TransactionForm,
+  TransactionTable,
 } from "@/components/transactions";
-import type { SerializedTransaction, PaginatedResult } from "@/types/transaction";
+import { TransactionsHero } from "@/components/transactions/TransactionsHero";
+import type { PaginatedResult, SerializedTransaction } from "@/types/transaction";
 import type { Asset } from "@prisma/client";
 
 interface TransactionsContentProps {
   transactions: PaginatedResult<SerializedTransaction>;
   assets: Pick<Asset, "id" | "name" | "isin" | "ticker" | "category">[];
+  heroTotals: {
+    netCashFlow: number;
+    buyTotal: number;
+    dividendTotal: number;
+  };
 }
 
 export function TransactionsContent({
   transactions,
   assets,
+  heroTotals,
 }: TransactionsContentProps) {
   const t = useTranslations("transactions");
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const shouldOpenForm = searchParams.get("openForm") === "true";
   const [isFormOpen, setIsFormOpen] = useState(shouldOpenForm);
 
-  // Clean up the ?openForm=true query param after it triggered the form open
   useEffect(() => {
-    if (shouldOpenForm) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("openForm");
-      const newUrl = params.toString()
-        ? `/transactions?${params.toString()}`
-        : "/transactions";
-      router.replace(newUrl);
-    }
+    if (!shouldOpenForm) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("openForm");
+    const newUrl = params.toString()
+      ? `/transactions?${params.toString()}`
+      : "/transactions";
+    router.replace(newUrl);
   }, [shouldOpenForm, searchParams, router]);
 
-  const handleTransactionChange = () => {
-    router.refresh();
-  };
+  const handleTransactionChange = () => router.refresh();
 
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams(window.location.search);
@@ -57,34 +61,43 @@ export function TransactionsContent({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <p className="text-sm text-muted-foreground">
-          {t("count", { count: transactions.total })}
-        </p>
-      </div>
-
-      {/* Filters */}
-      <TransactionFilters assets={assets} />
-
-      {/* Table */}
-      <TransactionTable
-        transactions={transactions.data}
-        assets={assets}
-        onTransactionChange={handleTransactionChange}
+    <>
+      <TransactionsHero
+        netCashFlow={heroTotals.netCashFlow}
+        buyTotal={heroTotals.buyTotal}
+        dividendTotal={heroTotals.dividendTotal}
       />
 
-      {/* Pagination */}
+      <details className="mt-5 group">
+        <summary className="flex cursor-pointer items-center justify-between rounded-2xl bg-card px-3.5 py-2.5 ghost-border shadow-sm">
+          <span className="text-[13px] font-semibold text-foreground">
+            {t("more")}
+          </span>
+          <span className="label-sm">
+            {t("count", { count: transactions.total })}
+          </span>
+        </summary>
+        <div className="mt-3">
+          <TransactionFilters assets={assets} hideTypes />
+        </div>
+      </details>
+
+      <div className="mt-5">
+        <TransactionTable
+          transactions={transactions.data}
+          assets={assets}
+          onTransactionChange={handleTransactionChange}
+        />
+      </div>
+
       {transactions.totalPages > 1 && (
-        <div className="flex justify-center">
+        <div className="mt-5 flex justify-center">
           <Pagination>
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
                   onClick={() =>
-                    transactions.page > 1 &&
-                    handlePageChange(transactions.page - 1)
+                    transactions.page > 1 && handlePageChange(transactions.page - 1)
                   }
                   className={
                     transactions.page <= 1
@@ -94,23 +107,23 @@ export function TransactionsContent({
                 />
               </PaginationItem>
 
-              {Array.from({ length: transactions.totalPages }, (_, i) => i + 1)
-                .filter((page) => {
-                  return (
+              {Array.from(
+                { length: transactions.totalPages },
+                (_, i) => i + 1
+              )
+                .filter(
+                  (page) =>
                     page === 1 ||
                     page === transactions.totalPages ||
                     Math.abs(page - transactions.page) <= 1
-                  );
-                })
+                )
                 .map((page, index, arr) => {
-                  const showEllipsis =
-                    index > 0 && page - arr[index - 1] > 1;
-
+                  const showEllipsis = index > 0 && page - arr[index - 1] > 1;
                   return (
                     <span key={page} className="flex items-center">
                       {showEllipsis && (
                         <PaginationItem>
-                          <span className="px-2 text-muted-foreground">...</span>
+                          <span className="px-2 text-muted-foreground">…</span>
                         </PaginationItem>
                       )}
                       <PaginationItem>
@@ -144,13 +157,12 @@ export function TransactionsContent({
         </div>
       )}
 
-      {/* Add Transaction Form */}
       <TransactionForm
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         assets={assets}
         onSuccess={handleTransactionChange}
       />
-    </div>
+    </>
   );
 }

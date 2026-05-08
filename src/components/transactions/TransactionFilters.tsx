@@ -26,11 +26,22 @@ import type { TransactionType } from "@/types/transaction";
 
 interface TransactionFiltersProps {
   assets: Pick<Asset, "id" | "name" | "isin" | "ticker" | "category">[];
+  /** Hide the type-pills row (used when the type filter lives in the hero). */
+  hideTypes?: boolean;
 }
 
-const transactionTypeValues: TransactionType[] = ["BUY", "SELL", "DIVIDEND", "FEE", "TRANSFER"];
+const transactionTypeValues: TransactionType[] = [
+  "BUY",
+  "SELL",
+  "DIVIDEND",
+  "FEE",
+  "TRANSFER",
+];
 
-export function TransactionFilters({ assets }: TransactionFiltersProps) {
+export function TransactionFilters({
+  assets,
+  hideTypes = false,
+}: TransactionFiltersProps) {
   const t = useTranslations("transactions");
   const router = useRouter();
   const pathname = usePathname();
@@ -61,16 +72,11 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
       const params = new URLSearchParams(searchParams.toString());
 
       Object.entries(updates).forEach(([key, value]) => {
-        if (value) {
-          params.set(key, value);
-        } else {
-          params.delete(key);
-        }
+        if (value) params.set(key, value);
+        else params.delete(key);
       });
 
-      // Reset to page 1 when filters change
       params.delete("page");
-
       router.push(`${pathname}?${params.toString()}`);
     },
     [searchParams, pathname, router]
@@ -78,7 +84,7 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
 
   const toggleType = (type: TransactionType) => {
     const newTypes = currentTypes.includes(type)
-      ? currentTypes.filter((t) => t !== type)
+      ? currentTypes.filter((x) => x !== type)
       : [...currentTypes, type];
 
     updateFilters({
@@ -93,16 +99,12 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
 
   const handleDateFromChange = (date: Date | undefined) => {
     setDateFrom(date);
-    updateFilters({
-      dateFrom: date ? format(date, "yyyy-MM-dd") : undefined,
-    });
+    updateFilters({ dateFrom: date ? format(date, "yyyy-MM-dd") : undefined });
   };
 
   const handleDateToChange = (date: Date | undefined) => {
     setDateTo(date);
-    updateFilters({
-      dateTo: date ? format(date, "yyyy-MM-dd") : undefined,
-    });
+    updateFilters({ dateTo: date ? format(date, "yyyy-MM-dd") : undefined });
   };
 
   const clearAllFilters = () => {
@@ -112,38 +114,34 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
   };
 
   const hasFilters =
-    currentTypes.length > 0 ||
-    currentAssetId ||
-    currentDateFrom ||
-    currentDateTo;
+    currentTypes.length > 0 || currentAssetId || currentDateFrom || currentDateTo;
 
   const selectedAsset = assets.find((a) => a.id === currentAssetId);
 
   return (
-    <div className="space-y-4">
-      {/* Type filters */}
-      <div className="flex flex-wrap gap-2">
-        {transactionTypeValues.map((type) => (
-          <button
-            key={type}
-            onClick={() => toggleType(type)}
-            className={cn(
-              "px-3 py-1.5 text-sm font-medium rounded-full border transition-colors",
-              currentTypes.includes(type)
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-card text-foreground border-border hover:bg-accent"
-            )}
-          >
-            {typeLabels[type]}
-          </button>
-        ))}
-      </div>
+    <div className="space-y-3">
+      {!hideTypes && (
+        <div className="flex flex-wrap gap-2">
+          {transactionTypeValues.map((type) => (
+            <button
+              key={type}
+              onClick={() => toggleType(type)}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+                currentTypes.includes(type)
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-[var(--outline-variant)] bg-card text-foreground hover:bg-muted/40"
+              )}
+            >
+              {typeLabels[type]}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* Asset and Date filters */}
       <div className="flex flex-wrap gap-2">
-        {/* Asset Select */}
         <Select value={currentAssetId} onValueChange={handleAssetChange}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="h-9 w-[180px] rounded-lg ghost-border bg-card">
             <SelectValue placeholder={t("allAssets")}>
               {selectedAsset ? selectedAsset.name : t("allAssets")}
             </SelectValue>
@@ -158,11 +156,10 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
           </SelectContent>
         </Select>
 
-        {/* Date From */}
         <Popover>
           <PopoverTrigger
             className={cn(
-              "inline-flex items-center justify-start h-8 w-[140px] px-2.5 rounded-lg border border-input bg-transparent text-sm font-normal hover:bg-muted transition-colors",
+              "inline-flex h-9 w-[140px] items-center justify-start rounded-lg ghost-border bg-card px-3 text-sm font-normal transition-colors hover:bg-muted/40",
               !dateFrom && "text-muted-foreground"
             )}
           >
@@ -170,19 +167,14 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
             {dateFrom ? format(dateFrom, "dd/MM/yyyy") : t("fromDate")}
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={dateFrom}
-              onSelect={handleDateFromChange}
-            />
+            <Calendar mode="single" selected={dateFrom} onSelect={handleDateFromChange} />
           </PopoverContent>
         </Popover>
 
-        {/* Date To */}
         <Popover>
           <PopoverTrigger
             className={cn(
-              "inline-flex items-center justify-start h-8 w-[140px] px-2.5 rounded-lg border border-input bg-transparent text-sm font-normal hover:bg-muted transition-colors",
+              "inline-flex h-9 w-[140px] items-center justify-start rounded-lg ghost-border bg-card px-3 text-sm font-normal transition-colors hover:bg-muted/40",
               !dateTo && "text-muted-foreground"
             )}
           >
@@ -190,42 +182,37 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
             {dateTo ? format(dateTo, "dd/MM/yyyy") : t("toDate")}
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={dateTo}
-              onSelect={handleDateToChange}
-            />
+            <Calendar mode="single" selected={dateTo} onSelect={handleDateToChange} />
           </PopoverContent>
         </Popover>
 
-        {/* Clear filters */}
         {hasFilters && (
           <Button
             variant="ghost"
             size="sm"
             onClick={clearAllFilters}
-            className="h-8"
+            className="h-9 rounded-lg"
           >
-            <X className="h-4 w-4 mr-1" />
+            <X className="mr-1 h-4 w-4" />
             {t("clearFilters")}
           </Button>
         )}
       </div>
 
-      {/* Active filters summary */}
       {hasFilters && (
         <div className="flex flex-wrap gap-2">
-          {currentTypes.map((type) => (
-            <Badge
-              key={type}
-              variant="secondary"
-              className="cursor-pointer"
-              onClick={() => toggleType(type as TransactionType)}
-            >
-              {typeLabels[type] || type}
-              <X className="h-3 w-3 ml-1" />
-            </Badge>
-          ))}
+          {!hideTypes &&
+            currentTypes.map((type) => (
+              <Badge
+                key={type}
+                variant="secondary"
+                className="cursor-pointer"
+                onClick={() => toggleType(type as TransactionType)}
+              >
+                {typeLabels[type] || type}
+                <X className="ml-1 h-3 w-3" />
+              </Badge>
+            ))}
           {selectedAsset && (
             <Badge
               variant="secondary"
@@ -233,7 +220,7 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
               onClick={() => handleAssetChange("")}
             >
               {selectedAsset.name}
-              <X className="h-3 w-3 ml-1" />
+              <X className="ml-1 h-3 w-3" />
             </Badge>
           )}
           {dateFrom && (
@@ -243,7 +230,7 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
               onClick={() => handleDateFromChange(undefined)}
             >
               {t("fromDate")}: {format(dateFrom, "dd/MM/yyyy")}
-              <X className="h-3 w-3 ml-1" />
+              <X className="ml-1 h-3 w-3" />
             </Badge>
           )}
           {dateTo && (
@@ -253,7 +240,7 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
               onClick={() => handleDateToChange(undefined)}
             >
               {t("toDate")}: {format(dateTo, "dd/MM/yyyy")}
-              <X className="h-3 w-3 ml-1" />
+              <X className="ml-1 h-3 w-3" />
             </Badge>
           )}
         </div>
