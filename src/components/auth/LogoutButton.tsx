@@ -11,12 +11,14 @@ interface LogoutButtonProps {
   variant?: "default" | "outline" | "ghost" | "destructive";
   size?: "default" | "sm" | "lg" | "icon";
   showText?: boolean;
+  className?: string;
 }
 
 export function LogoutButton({
   variant = "ghost",
   size = "sm",
   showText = true,
+  className,
 }: LogoutButtonProps) {
   const t = useTranslations("auth");
   const router = useRouter();
@@ -42,6 +44,7 @@ export function LogoutButton({
       size={size}
       onClick={handleLogout}
       disabled={isLoading}
+      className={className}
     >
       {isLoading ? (
         <Loader2 className="size-4 animate-spin" />

@@ -250,7 +250,14 @@
     "resetConfirmText": "ELIMINAR TODOS LOS DATOS",
     "deleteEverything": "Eliminar Todo",
     "resetHelp": "Esto eliminará permanentemente todos los datos de tu cartera. Las claves API y la configuración de tema se conservarán.",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "preferences": "Preferencias",
+    "dataSources": "Fuentes de datos",
+    "dataExport": "Datos",
+    "verified": "Verificado",
+    "apiKeyConfigured": "Configurada",
+    "apiKeyEmpty": "Sin definir",
+    "buildStamp": "Portfolio Tracker · {version}"
   },
   "import": {
     "title": "Importar desde Gmail",

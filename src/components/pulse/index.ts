@@ -10,4 +10,5 @@ export { SegmentedControl } from "./SegmentedControl";
 export { SectionCard } from "./SectionCard";
 export { SettingsSection } from "./SettingsSection";
 export { SettingsRow } from "./SettingsRow";
+export { ExpandableSettingsRow } from "./ExpandableSettingsRow";
 export { Donut, type DonutSlice } from "./Donut";
