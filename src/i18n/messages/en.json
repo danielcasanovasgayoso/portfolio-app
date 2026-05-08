@@ -186,7 +186,7 @@
   "settings": {
     "title": "Settings",
     "backToPortfolio": "Back to portfolio",
-    "apiConfig": "API Configuration",
+    "apiConfig": "EODHD Configuration",
     "apiConfigDesc": "Configure your EODHD API key for price updates",
     "apiKey": "API Key",
     "apiKeyGetFrom": "Get your API key from",
