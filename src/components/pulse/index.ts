@@ -1,6 +1,7 @@
 export { MobileShell } from "./MobileShell";
 export { HeroBackdrop } from "./HeroBackdrop";
 export { HeroHeader } from "./HeroHeader";
+export { PageHeader } from "./PageHeader";
 export { HeroStat } from "./HeroStat";
 export { GlassButton, GlassLink } from "./GlassButton";
 export { Pill, type PillVariant } from "./Pill";

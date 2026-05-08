@@ -1,22 +1,28 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
-  Plus,
-  Mail,
-  Upload,
-  Loader2,
-  Check,
   AlertCircle,
+  Check,
+  ChevronRight,
+  Loader2,
+  Mail,
+  Plus,
+  Upload,
+  type LucideIcon,
 } from "lucide-react";
-import { BackButton } from "@/components/ui/back-button";
+import {
+  HeroBackdrop,
+  MobileShell,
+  PageHeader,
+  SettingsRow,
+  SettingsSection,
+} from "@/components/pulse";
 import { importPortfolioData } from "@/actions/settings";
 
 export default function AddPage() {
   const t = useTranslations("add");
-  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
@@ -24,9 +30,7 @@ export default function AddPage() {
     message: string;
   } | null>(null);
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleImportClick = () => fileInputRef.current?.click();
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -44,12 +48,14 @@ export default function AddPage() {
     try {
       const text = await file.text();
       const response = await importPortfolioData(text);
-
       if (response.success && response.data) {
         const { assetsImported, transactionsImported } = response.data;
         setImportResult({
           success: true,
-          message: t("importSuccess", { assets: assetsImported, transactions: transactionsImported }),
+          message: t("importSuccess", {
+            assets: assetsImported,
+            transactions: transactionsImported,
+          }),
         });
       } else {
         setImportResult({
@@ -64,65 +70,17 @@ export default function AddPage() {
       });
     } finally {
       setIsImporting(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
       setTimeout(() => setImportResult(null), 5000);
     }
   };
 
-  const sections = [
-    {
-      title: t("addItems"),
-      items: [
-        {
-          icon: Plus,
-          label: t("addTransaction"),
-          description: t("addTransactionDesc"),
-          onClick: () => router.push("/add/transaction"),
-          key: "addTransaction",
-        },
-      ],
-    },
-    {
-      title: t("addFromMyInvestor"),
-      items: [
-        {
-          icon: Mail,
-          label: t("importFromGmail"),
-          description: t("importFromGmailDesc"),
-          onClick: () => router.push("/import"),
-          key: "importGmail",
-        },
-      ],
-    },
-    {
-      title: t("addFromBackup"),
-      items: [
-        {
-          icon: Upload,
-          label: t("importFromJson"),
-          description: t("importFromJsonDesc"),
-          onClick: handleImportClick,
-          key: "importJson",
-        },
-      ],
-    },
-  ];
-
   return (
-    <div className="min-h-screen pb-20">
-      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center gap-3">
-          <BackButton label={t("goBack")} />
-          <h1 className="text-lg font-bold tracking-tight text-foreground">
-            {t("title")}
-          </h1>
-        </div>
-      </header>
+    <MobileShell>
+      <HeroBackdrop height={160} orbits="right" />
+      <div className="relative px-4 pt-[max(0.5rem,env(safe-area-inset-top))]">
+        <PageHeader title={t("title")} backLabel={t("goBack")} backHref="/" />
 
-      <main className="p-4 space-y-6">
-        {/* Hidden file input for JSON import */}
         <input
           type="file"
           accept=".json"
@@ -131,54 +89,90 @@ export default function AddPage() {
           className="hidden"
         />
 
-        {/* Import result feedback */}
         {importResult && (
           <div
-            className={`flex items-center gap-2 text-sm p-3 rounded-lg ${
+            className={`mt-3 flex items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] ${
               importResult.success
-                ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
-                : "bg-destructive/10 text-destructive"
+                ? "bg-gain-muted text-gain"
+                : "bg-loss-muted text-loss"
             }`}
+            role="status"
           >
             {importResult.success ? (
-              <Check className="h-4 w-4 flex-shrink-0" />
+              <Check className="h-4 w-4 shrink-0" />
             ) : (
-              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <AlertCircle className="h-4 w-4 shrink-0" />
             )}
-            {importResult.message}
+            <span>{importResult.message}</span>
           </div>
         )}
 
-        {sections.map((section) => (
-          <div key={section.title} className="space-y-3">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">
-              {section.title}
-            </h2>
-            {section.items.map((item) => (
-              <button
-                key={item.key}
-                onClick={item.onClick}
-                disabled={isImporting && item.key === "importJson"}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-border bg-card hover:bg-muted/50 active:scale-[0.98] transition-all text-left"
-              >
-                <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/10 text-primary flex-shrink-0">
-                  {isImporting && item.key === "importJson" ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <item.icon className="h-5 w-5" />
-                  )}
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">{item.label}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {item.description}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-        ))}
-      </main>
-    </div>
+        <SettingsSection title={t("addItems")}>
+          <SettingsRow
+            icon={Plus}
+            title={t("addTransaction")}
+            sub={t("addTransactionDesc")}
+            href="/add/transaction"
+            last
+          />
+        </SettingsSection>
+
+        <SettingsSection title={t("addFromMyInvestor")}>
+          <SettingsRow
+            icon={Mail}
+            title={t("importFromGmail")}
+            sub={t("importFromGmailDesc")}
+            href="/import"
+            last
+          />
+        </SettingsSection>
+
+        <SettingsSection title={t("addFromBackup")}>
+          <ImportFromJsonRow
+            label={t("importFromJson")}
+            description={t("importFromJsonDesc")}
+            isImporting={isImporting}
+            onClick={handleImportClick}
+          />
+        </SettingsSection>
+      </div>
+    </MobileShell>
+  );
+}
+
+function ImportFromJsonRow({
+  label,
+  description,
+  isImporting,
+  onClick,
+}: {
+  label: string;
+  description: string;
+  isImporting: boolean;
+  onClick: () => void;
+}) {
+  const Icon: LucideIcon = isImporting ? Loader2 : Upload;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={isImporting}
+      className="block w-full text-left transition-colors hover:bg-muted/40 active:bg-muted/60 disabled:opacity-60"
+    >
+      <div className="flex items-center gap-3 px-3.5 py-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-primary/[0.12] text-primary">
+          <Icon className={`h-4 w-4 ${isImporting ? "animate-spin" : ""}`} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[13px] font-semibold text-foreground">
+            {label}
+          </span>
+          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+            {description}
+          </span>
+        </span>
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+      </div>
+    </button>
   );
 }

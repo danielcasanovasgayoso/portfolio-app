@@ -5,9 +5,15 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
+import {
+  HeroBackdrop,
+  MobileShell,
+  PageHeader,
+  SectionCard,
+} from "@/components/pulse";
 import {
   TransactionCreateSchema,
   type TransactionCreateInput,
@@ -50,7 +56,6 @@ export default function AddTransactionPage() {
   });
   const watchedFees = useWatch({ control: form.control, name: "fees" });
 
-  // Auto-calculate total amount from shares * pricePerShare + fees
   useEffect(() => {
     const shares = parseFloat(watchedShares);
     const price = parseFloat(watchedPricePerShare || "");
@@ -80,57 +85,56 @@ export default function AddTransactionPage() {
   };
 
   return (
-    <div className="min-h-screen pb-20">
-      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            aria-label={tAdd("goBack")}
-            className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <h1 className="text-lg font-bold tracking-tight text-foreground">
-            {t("addTransaction")}
-          </h1>
+    <MobileShell>
+      <HeroBackdrop height={160} orbits="right" />
+      <div className="relative px-4 pt-[max(0.5rem,env(safe-area-inset-top))]">
+        <PageHeader
+          title={t("addTransaction")}
+          backLabel={tAdd("goBack")}
+          onBack={() => router.back()}
+        />
+
+        <div className="mt-4">
+          <SectionCard ambient={false}>
+            {loading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-14 animate-pulse rounded-xl bg-muted"
+                  />
+                ))}
+              </div>
+            ) : (
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-4"
+                >
+                  <TransactionFormFields form={form} assets={assets} />
+
+                  {form.formState.errors.root && (
+                    <p className="text-[12px] text-destructive">
+                      {form.formState.errors.root.message}
+                    </p>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={isPending}
+                    className="w-full rounded-xl"
+                  >
+                    {isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {t("addTransaction")}
+                  </Button>
+                </form>
+              </Form>
+            )}
+          </SectionCard>
         </div>
-      </header>
-
-      <main className="p-4 max-w-lg mx-auto">
-        {loading ? (
-          <div className="space-y-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-16 animate-pulse rounded-lg bg-muted"
-              />
-            ))}
-          </div>
-        ) : (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <TransactionFormFields form={form} assets={assets} />
-
-              {form.formState.errors.root && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.root.message}
-                </p>
-              )}
-
-              <Button
-                type="submit"
-                disabled={isPending}
-                className="w-full"
-              >
-                {isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {t("addTransaction")}
-              </Button>
-            </form>
-          </Form>
-        )}
-      </main>
-    </div>
+      </div>
+    </MobileShell>
   );
 }

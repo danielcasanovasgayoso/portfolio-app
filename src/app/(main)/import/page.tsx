@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { BackButton } from "@/components/ui/back-button";
 import { getTranslations } from "next-intl/server";
+import { HeroBackdrop, MobileShell, PageHeader } from "@/components/pulse";
 import { GmailConnectCard, ImportWizard } from "@/components/import";
 import { checkGmailConnection } from "@/actions/import";
 import { requireAuth } from "@/lib/auth";
@@ -23,38 +23,33 @@ export default async function ImportPage({
   const t = await getTranslations("import");
 
   return (
-    <div className="min-h-screen pb-20">
-      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center gap-3">
-          <BackButton label={t("goBack")} />
-          <h1 className="text-lg font-bold tracking-tight text-foreground">
-            {t("title")}
-          </h1>
+    <MobileShell>
+      <HeroBackdrop height={160} orbits="right" />
+      <div className="relative px-4 pt-[max(0.5rem,env(safe-area-inset-top))]">
+        <PageHeader title={t("title")} backLabel={t("goBack")} backHref="/add" />
+
+        <div className="mt-4 space-y-4">
+          {error && (
+            <div className="rounded-xl bg-loss-muted px-3 py-2.5 text-[12px] text-loss">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="rounded-xl bg-gain-muted px-3 py-2.5 text-[12px] text-gain">
+              {success}
+            </div>
+          )}
+
+          <Suspense
+            fallback={
+              <div className="h-48 animate-pulse rounded-2xl bg-card" />
+            }
+          >
+            <ImportContent />
+          </Suspense>
         </div>
-      </header>
-
-      <main className="p-4 space-y-6">
-        {/* Status messages */}
-        {error && (
-          <div className="rounded-md bg-destructive/10 p-4 text-destructive">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="rounded-md bg-green-50 p-4 text-green-800 dark:bg-green-900/20 dark:text-green-200">
-            {success}
-          </div>
-        )}
-
-        <Suspense
-          fallback={
-            <div className="h-48 animate-pulse rounded-lg bg-muted" />
-          }
-        >
-          <ImportContent />
-        </Suspense>
-      </main>
-    </div>
+      </div>
+    </MobileShell>
   );
 }
 
@@ -71,7 +66,6 @@ async function ImportContent() {
   return (
     <>
       <GmailConnectCard isConnected={isConnected} canFetch={canFetch} />
-
       {isConnected && <ImportWizard canFetch={canFetch} />}
     </>
   );
