@@ -1,27 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { formatCurrency, formatShares, formatDate } from "@/lib/formatters";
-import { cn } from "@/lib/utils";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { TransactionRow } from "./TransactionRow";
 import { TransactionForm } from "./TransactionForm";
 import { DeleteTransactionDialog } from "./DeleteTransactionDialog";
+import { SectionCard } from "@/components/pulse";
 import type { SerializedTransaction } from "@/types/transaction";
 import type { Asset } from "@prisma/client";
 
@@ -31,202 +15,95 @@ interface TransactionTableProps {
   onTransactionChange?: () => void;
 }
 
-const typeColors: Record<string, string> = {
-  BUY: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-  SELL: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
-  DIVIDEND: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-  FEE: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
-  TRANSFER: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
-};
-
-const typeLabels: Record<string, string> = {
-  BUY: "Buy",
-  SELL: "Sell",
-  DIVIDEND: "Dividend",
-  FEE: "Fee",
-  TRANSFER: "Transfer",
-};
+interface MonthGroup {
+  key: string;
+  label: string;
+  rows: SerializedTransaction[];
+}
 
 export function TransactionTable({
   transactions,
   assets,
   onTransactionChange,
 }: TransactionTableProps) {
-  const [editingTransaction, setEditingTransaction] =
-    useState<SerializedTransaction | null>(null);
-  const [deletingTransaction, setDeletingTransaction] =
-    useState<SerializedTransaction | null>(null);
+  const t = useTranslations("transactions");
+  const locale = useLocale();
+  const [editing, setEditing] = useState<SerializedTransaction | null>(null);
+  const [deleting, setDeleting] = useState<SerializedTransaction | null>(null);
 
-  const handleEdit = (transaction: SerializedTransaction) => {
-    setEditingTransaction(transaction);
-  };
-
-  const handleDelete = (transaction: SerializedTransaction) => {
-    setDeletingTransaction(transaction);
-  };
-
-  const handleEditClose = () => {
-    setEditingTransaction(null);
-  };
-
-  const handleDeleteClose = () => {
-    setDeletingTransaction(null);
-  };
-
-  const handleSuccess = () => {
-    onTransactionChange?.();
-  };
+  const groups = useMemo<MonthGroup[]>(() => {
+    const monthFormatter = new Intl.DateTimeFormat(locale, {
+      month: "long",
+      year: "numeric",
+    });
+    const map = new Map<string, MonthGroup>();
+    for (const tx of transactions) {
+      const date = new Date(tx.date);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      let group = map.get(key);
+      if (!group) {
+        const label = monthFormatter.format(date);
+        group = {
+          key,
+          label: label.charAt(0).toUpperCase() + label.slice(1),
+          rows: [],
+        };
+        map.set(key, group);
+      }
+      group.rows.push(tx);
+    }
+    return Array.from(map.values()).sort((a, b) => (a.key < b.key ? 1 : -1));
+  }, [locale, transactions]);
 
   if (transactions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-          <svg
-            className="h-8 w-8 text-muted-foreground"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-            />
-          </svg>
-        </div>
-        <h3 className="text-lg font-semibold mb-2">No transactions found</h3>
-        <p className="text-muted-foreground max-w-sm">
-          No transactions match your current filters. Try adjusting your filters
-          or add a new transaction.
-        </p>
-      </div>
+      <SectionCard ambient={false} className="text-center">
+        <p className="text-sm text-muted-foreground">{t("noResults")}</p>
+      </SectionCard>
     );
   }
 
   return (
     <>
-      {/* Mobile view - Cards */}
-      <div className="md:hidden space-y-3">
-        {transactions.map((transaction) => (
-          <TransactionRow
-            key={transaction.id}
-            transaction={transaction}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+      <div className="space-y-5">
+        {groups.map((group) => (
+          <section key={group.key}>
+            <header className="mb-2 flex items-baseline justify-between px-1">
+              <span className="text-[13px] font-semibold text-foreground">
+                {group.label}
+              </span>
+              <span className="label-sm">
+                {t("count", { count: group.rows.length })}
+              </span>
+            </header>
+            <div className="overflow-hidden rounded-2xl bg-card ghost-border shadow-sm">
+              {group.rows.map((tx, idx) => (
+                <TransactionRow
+                  key={tx.id}
+                  transaction={tx}
+                  onEdit={setEditing}
+                  onDelete={setDeleting}
+                  last={idx === group.rows.length - 1}
+                />
+              ))}
+            </div>
+          </section>
         ))}
       </div>
 
-      {/* Desktop view - Table */}
-      <div className="hidden md:block rounded-lg border border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-[100px]">Date</TableHead>
-              <TableHead className="w-[100px]">Type</TableHead>
-              <TableHead>Asset</TableHead>
-              <TableHead className="text-right">Shares</TableHead>
-              <TableHead className="text-right">Price</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead className="text-right">Fees</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactions.map((transaction) => {
-              const typeColor =
-                typeColors[transaction.type] || typeColors.BUY;
-              const typeLabel =
-                typeLabels[transaction.type] || transaction.type;
-              const transferSuffix =
-                transaction.type === "TRANSFER" && transaction.transferType
-                  ? ` ${transaction.transferType === "IN" ? "In" : "Out"}`
-                  : "";
-
-              return (
-                <TableRow key={transaction.id}>
-                  <TableCell className="font-medium tabular-nums">
-                    {formatDate(transaction.date)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={cn("text-[11px] font-medium border", typeColor)}
-                    >
-                      {typeLabel}
-                      {transferSuffix}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-[200px]">
-                      <p className="font-medium truncate">
-                        {transaction.asset.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {transaction.asset.ticker || transaction.asset.isin}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatShares(Number(transaction.shares))}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {transaction.pricePerShare
-                      ? formatCurrency(Number(transaction.pricePerShare))
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="text-right font-medium tabular-nums">
-                    {formatCurrency(Number(transaction.totalAmount))}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums text-muted-foreground">
-                    {Number(transaction.fees) > 0
-                      ? formatCurrency(Number(transaction.fees))
-                      : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-lg hover:bg-muted transition-colors">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Actions</span>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(transaction)}>
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(transaction)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Edit Dialog */}
       <TransactionForm
-        open={!!editingTransaction}
-        onOpenChange={(open) => !open && handleEditClose()}
-        transaction={editingTransaction}
+        open={!!editing}
+        onOpenChange={(open) => !open && setEditing(null)}
+        transaction={editing}
         assets={assets}
-        onSuccess={handleSuccess}
+        onSuccess={() => onTransactionChange?.()}
       />
 
-      {/* Delete Dialog */}
       <DeleteTransactionDialog
-        open={!!deletingTransaction}
-        onOpenChange={(open) => !open && handleDeleteClose()}
-        transaction={deletingTransaction}
-        onSuccess={handleSuccess}
+        open={!!deleting}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        transaction={deleting}
+        onSuccess={() => onTransactionChange?.()}
       />
     </>
   );

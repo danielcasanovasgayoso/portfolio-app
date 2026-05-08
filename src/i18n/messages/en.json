@@ -157,7 +157,13 @@
     "actions": "Actions",
     "deleteTitle": "Delete Transaction",
     "deleteConfirm": "Are you sure you want to delete this transaction? This action cannot be undone.",
-    "total": "Total"
+    "total": "Total",
+    "netCashFlow": "Net cash flow · 30 days",
+    "buyTotal": "Buy {amount}",
+    "divTotal": "Div {amount}",
+    "filterAll": "All",
+    "more": "More filters",
+    "noResults": "No transactions match your filters."
   },
   "add": {
     "title": "Add",

@@ -157,7 +157,13 @@
     "actions": "Acciones",
     "deleteTitle": "Eliminar Transacción",
     "deleteConfirm": "¿Estás seguro de que quieres eliminar esta transacción? Esta acción no se puede deshacer.",
-    "total": "Total"
+    "total": "Total",
+    "netCashFlow": "Flujo neto · 30 días",
+    "buyTotal": "Compra {amount}",
+    "divTotal": "Div {amount}",
+    "filterAll": "Todas",
+    "more": "Más filtros",
+    "noResults": "Ninguna transacción coincide con tus filtros."
   },
   "add": {
     "title": "Añadir",
