@@ -139,11 +139,11 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
         ))}
       </div>
 
-      {/* Asset and Date filters */}
-      <div className="flex flex-wrap gap-2">
-        {/* Asset Select */}
+      {/* Asset and Date filters: stacked on mobile, inline from sm */}
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
+        {/* Asset Select — full width on mobile */}
         <Select value={currentAssetId} onValueChange={handleAssetChange}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[220px] h-9">
             <SelectValue placeholder={t("allAssets")}>
               {selectedAsset ? selectedAsset.name : t("allAssets")}
             </SelectValue>
@@ -158,45 +158,50 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
           </SelectContent>
         </Select>
 
-        {/* Date From */}
-        <Popover>
-          <PopoverTrigger
-            className={cn(
-              "inline-flex items-center justify-start h-8 w-[140px] px-2.5 rounded-lg border border-input bg-transparent text-sm font-normal hover:bg-muted transition-colors",
-              !dateFrom && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {dateFrom ? format(dateFrom, "dd/MM/yyyy") : t("fromDate")}
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={dateFrom}
-              onSelect={handleDateFromChange}
-            />
-          </PopoverContent>
-        </Popover>
+        {/* Dates — 50/50 grid on mobile, inline from sm */}
+        <div className="grid grid-cols-2 gap-2 sm:contents">
+          <Popover>
+            <PopoverTrigger
+              className={cn(
+                "inline-flex items-center justify-start h-9 w-full sm:w-[150px] px-2.5 rounded-lg border border-input bg-transparent text-sm font-normal hover:bg-muted transition-colors",
+                !dateFrom && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+              <span className="truncate">
+                {dateFrom ? format(dateFrom, "dd/MM/yyyy") : t("fromDate")}
+              </span>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={dateFrom}
+                onSelect={handleDateFromChange}
+              />
+            </PopoverContent>
+          </Popover>
 
-        {/* Date To */}
-        <Popover>
-          <PopoverTrigger
-            className={cn(
-              "inline-flex items-center justify-start h-8 w-[140px] px-2.5 rounded-lg border border-input bg-transparent text-sm font-normal hover:bg-muted transition-colors",
-              !dateTo && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {dateTo ? format(dateTo, "dd/MM/yyyy") : t("toDate")}
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={dateTo}
-              onSelect={handleDateToChange}
-            />
-          </PopoverContent>
-        </Popover>
+          <Popover>
+            <PopoverTrigger
+              className={cn(
+                "inline-flex items-center justify-start h-9 w-full sm:w-[150px] px-2.5 rounded-lg border border-input bg-transparent text-sm font-normal hover:bg-muted transition-colors",
+                !dateTo && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+              <span className="truncate">
+                {dateTo ? format(dateTo, "dd/MM/yyyy") : t("toDate")}
+              </span>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={dateTo}
+                onSelect={handleDateToChange}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
 
         {/* Clear filters */}
         {hasFilters && (
@@ -204,7 +209,7 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
             variant="ghost"
             size="sm"
             onClick={clearAllFilters}
-            className="h-8"
+            className="h-9 self-start sm:self-auto"
           >
             <X className="h-4 w-4 mr-1" />
             {t("clearFilters")}
