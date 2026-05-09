@@ -1,5 +1,5 @@
 // Bump this on each deploy to clear stale caches
-const CACHE_VERSION = "2026-05-08a";
+const CACHE_VERSION = "2026-05-09a";
 const STATIC_CACHE = `portfolio-static-${CACHE_VERSION}`;
 const APP_CACHE = `portfolio-app-${CACHE_VERSION}`;
 
@@ -63,12 +63,13 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Cache-first for app shell assets (icons, manifest)
+  // Network-first for icons and manifest — ensures icon updates propagate
+  // immediately after deploys; falls back to cache if offline
   if (
     url.pathname.startsWith("/icons/") ||
     url.pathname === "/manifest.json"
   ) {
-    event.respondWith(cacheFirst(request, APP_CACHE));
+    event.respondWith(networkFirstWithCache(request, APP_CACHE));
     return;
   }
 
@@ -92,6 +93,20 @@ async function cacheFirst(request, cacheName) {
     return response;
   } catch {
     return new Response("Offline", { status: 503 });
+  }
+}
+
+async function networkFirstWithCache(request, cacheName) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await caches.match(request);
+    return cached || new Response("Offline", { status: 503 });
   }
 }
 
