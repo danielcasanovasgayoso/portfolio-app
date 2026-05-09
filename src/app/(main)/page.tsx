@@ -19,7 +19,7 @@ export default async function PortfolioPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="pt-[max(1.5rem,env(safe-area-inset-top))] pb-24 max-w-5xl mx-auto">
+      <main className="pt-[max(1.5rem,env(safe-area-inset-top))] pb-nav max-w-5xl mx-auto">
         {/* Header renders instantly — no data dependency */}
         <div className="flex justify-between items-center px-8 mb-8">
           <div className="flex flex-col max-w-[60%]">
@@ -96,7 +96,7 @@ async function PortfolioContent({ userId }: { userId: string }) {
 
 function PortfolioContentSkeleton() {
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6">
       <div className="px-4 md:px-8">
         <PortfolioSummarySkeleton />
       </div>

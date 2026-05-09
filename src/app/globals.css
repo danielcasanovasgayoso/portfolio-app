@@ -248,5 +248,10 @@
   .bg-loss-muted {
     background-color: var(--loss-muted);
   }
+
+  /* Reserves space for the floating BottomNav: nav height + bottom-4 offset + iOS home-indicator inset */
+  .pb-nav {
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+  }
 }
 

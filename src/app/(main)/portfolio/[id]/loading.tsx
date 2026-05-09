@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function AssetDetailLoading() {
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-nav">
       {/* Sticky header skeleton */}
       <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 pt-[env(safe-area-inset-top)]">
         <div className="flex items-center gap-3">
