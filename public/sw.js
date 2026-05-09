@@ -6,7 +6,7 @@ const APP_CACHE = `portfolio-app-${CACHE_VERSION}`;
 const PRECACHE_URLS = [
   "/offline.html",
   "/manifest.json",
-  "/icons/icon-192x192-v2.png",
+  "/icons/icon-192x192-v3.png",
 ];
 
 // Install: precache critical app shell assets
