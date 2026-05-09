@@ -74,7 +74,10 @@ export async function refreshAssetPrice(
     }
 
     const latestPrice = prices[prices.length - 1];
-    const priceDate = parseEODHDDate(latestPrice.date);
+    // Funds: NAV date is meaningful (typically T-1). Stocks falling back to EOD
+    // are using a stale close in lieu of real-time — tag as today to match the
+    // batch path and keep "current price" consistent with the dashboard.
+    const priceDate = isFund ? parseEODHDDate(latestPrice.date) : todayDate();
 
     await persistAssetPrice(
       {
@@ -264,7 +267,11 @@ export async function refreshAllPrices(
           }
 
           const latestPrice = prices[prices.length - 1];
-          const priceDate = parseEODHDDate(latestPrice.date);
+          // Funds publish NAVs T-1; preserve the real date. Stock EOD fallbacks
+          // stand in for real-time — tag as today to match the primary path.
+          const priceDate = fundTickerSet.has(ticker)
+            ? parseEODHDDate(latestPrice.date)
+            : today;
 
           await persistAssetPrice(
             {

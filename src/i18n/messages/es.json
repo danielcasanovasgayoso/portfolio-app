@@ -300,5 +300,28 @@
     "description": "Sigue tu cartera de inversiones con precisión y claridad",
     "importTitle": "Importar Transacciones | Portfolio Tracker",
     "importDescription": "Importar transacciones desde Gmail"
+  },
+  "errors": {
+    "ASSET_NOT_FOUND": "Activo no encontrado",
+    "MANUAL_ASSET_NOT_FOUND": "Activo manual no encontrado",
+    "ASSET_NO_EXTERNAL_PRICING": "El activo no tiene precio externo",
+    "TRANSACTION_NOT_FOUND": "Transacción no encontrada",
+    "GMAIL_NOT_CONNECTED": "Gmail no conectado",
+    "INVALID_API_KEY": "Clave API no válida",
+    "INVALID_JSON": "Formato JSON no válido",
+    "IMPORT_BATCH_NOT_FOUND": "Lote de importación no encontrado",
+    "IMPORT_NOT_PREVIEW": "El lote no está en estado de vista previa",
+    "PRICE_SERVICE_ERROR": "Error al actualizar el precio",
+    "VALIDATION_ERROR": "Datos no válidos",
+    "OPERATION_FAILED": "La operación ha fallado",
+    "UNAUTHORIZED": "No autorizado",
+    "FORBIDDEN": "Acceso denegado",
+    "NOT_FOUND": "No encontrado",
+    "GMAIL_ERROR": "Error de Gmail",
+    "DATABASE_ERROR": "Error de base de datos",
+    "EXTERNAL_API_ERROR": "Error de API externa",
+    "CONFIGURATION_ERROR": "Error de configuración",
+    "IMPORT_ERROR": "Error de importación",
+    "UNKNOWN_ERROR": "Ha ocurrido un error inesperado"
   }
 }

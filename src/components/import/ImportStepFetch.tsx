@@ -23,6 +23,7 @@ import {
   fetchGmailTransactions,
   getImportPreview,
 } from "@/actions/import";
+import { useActionError } from "@/lib/use-action-error";
 import type { ImportBatchSummary, ImportPreviewItem } from "@/types/import";
 
 interface ImportStepFetchProps {
@@ -36,6 +37,7 @@ interface ImportStepFetchProps {
 
 export function ImportStepFetch({ canFetch, onComplete }: ImportStepFetchProps) {
   const t = useTranslations("import");
+  const translateError = useActionError();
   const [afterDate, setAfterDate] = useState<Date | undefined>(
     subMonths(new Date(), 3)
   );
@@ -52,7 +54,7 @@ export function ImportStepFetch({ canFetch, onComplete }: ImportStepFetchProps) 
     });
 
     if (!result.success) {
-      setError(result.error);
+      setError(translateError(result));
       setIsFetching(false);
       return;
     }
@@ -61,7 +63,7 @@ export function ImportStepFetch({ canFetch, onComplete }: ImportStepFetchProps) 
     const previewResult = await getImportPreview(result.data.batchId);
 
     if (!previewResult.success) {
-      setError(previewResult.error);
+      setError(translateError(previewResult));
       setIsFetching(false);
       return;
     }

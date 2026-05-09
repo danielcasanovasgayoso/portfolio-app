@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { confirmImport } from "@/actions/import";
+import { useActionError } from "@/lib/use-action-error";
 import type { ImportPreviewItem, ImportResult } from "@/types/import";
 
 interface ImportStepConfirmProps {
@@ -32,6 +33,7 @@ export function ImportStepConfirm({
   onReset,
 }: ImportStepConfirmProps) {
   const t = useTranslations("import");
+  const translateError = useActionError();
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +47,7 @@ export function ImportStepConfirm({
     );
 
     if (!importResult.success) {
-      setError(importResult.error);
+      setError(translateError(importResult));
       setIsImporting(false);
       return;
     }

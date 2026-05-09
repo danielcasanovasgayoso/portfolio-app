@@ -123,30 +123,31 @@ export async function recalculateHolding(userId: string, assetId: string): Promi
     ? totalCostBasis.div(totalShares)
     : new Decimal(0);
 
-  // Upsert the holding record
-  await db.holding.upsert({
-    where: { assetId },
-    update: {
-      shares: totalShares,
-      costBasis: totalCostBasis,
-      avgPrice,
-      lastCalculatedAt: new Date(),
-    },
-    create: {
-      userId,
-      assetId,
-      shares: totalShares,
-      costBasis: totalCostBasis,
-      avgPrice,
-    },
-  });
+  // Upsert + zero-shares cleanup must be atomic so the holding never lingers
+  // momentarily as a zero-shares row visible to concurrent readers.
+  await db.$transaction(async (tx) => {
+    if (totalShares.equals(0)) {
+      await tx.holding.deleteMany({ where: { assetId } });
+      return;
+    }
 
-  // Delete holding if no shares remaining
-  if (totalShares.equals(0)) {
-    await db.holding.delete({ where: { assetId } }).catch(() => {
-      // Ignore if holding doesn't exist
+    await tx.holding.upsert({
+      where: { assetId },
+      update: {
+        shares: totalShares,
+        costBasis: totalCostBasis,
+        avgPrice,
+        lastCalculatedAt: new Date(),
+      },
+      create: {
+        userId,
+        assetId,
+        shares: totalShares,
+        costBasis: totalCostBasis,
+        avgPrice,
+      },
     });
-  }
+  });
 }
 
 /**

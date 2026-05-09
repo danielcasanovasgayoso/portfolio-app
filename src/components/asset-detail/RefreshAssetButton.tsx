@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Check, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { refreshSingleAssetPrice } from "@/actions/assets";
 
 type Status = "idle" | "syncing" | "success" | "error";
 
@@ -24,10 +25,9 @@ export function RefreshAssetButton({ assetId }: RefreshAssetButtonProps) {
     setStatus("syncing");
 
     try {
-      const res = await fetch(`/api/prices/${assetId}`, { method: "POST" });
-      const data = await res.json();
+      const result = await refreshSingleAssetPrice(assetId);
 
-      if (data.success) {
+      if (result.success) {
         router.refresh();
         setStatus("success");
       } else {

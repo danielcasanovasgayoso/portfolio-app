@@ -32,7 +32,7 @@ export {
 /**
  * Full refresh orchestrator. Runs a price refresh (with ISIN resolution),
  * revalidates portfolio surfaces, then backfills historical prices in the
- * background. Invoked from the `/api/prices/refresh` route via `after()`.
+ * background. Invoked from the SSE stream route via `after()`.
  */
 export async function refreshAllData(
   userId: string,

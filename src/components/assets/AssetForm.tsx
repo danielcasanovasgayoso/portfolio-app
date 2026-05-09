@@ -34,6 +34,7 @@ import {
   updateManualAsset,
   deleteManualAsset,
 } from "@/actions/assets";
+import { useActionError } from "@/lib/use-action-error";
 
 interface AssetFormValues {
   name: string;
@@ -63,6 +64,7 @@ export function AssetForm({
 }: AssetFormProps) {
   const t = useTranslations("assets");
   const tCommon = useTranslations("common");
+  const translateError = useActionError();
   const [isPending, startTransition] = useTransition();
   const isEditing = !!editAsset;
 
@@ -118,7 +120,7 @@ export function AssetForm({
         onOpenChange(false);
         onSuccess?.();
       } else {
-        form.setError("root", { message: result.error });
+        form.setError("root", { message: translateError(result) });
       }
     });
   };
@@ -131,7 +133,7 @@ export function AssetForm({
         onOpenChange(false);
         onSuccess?.();
       } else {
-        form.setError("root", { message: result.error });
+        form.setError("root", { message: translateError(result) });
       }
     });
   };

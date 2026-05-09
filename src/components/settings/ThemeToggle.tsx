@@ -30,12 +30,19 @@ export function ThemeToggle({ currentTheme }: ThemeToggleProps) {
   const handleThemeChange = async (newTheme: Theme) => {
     if (newTheme === theme || isLoading) return;
 
+    const previousTheme = theme;
     setIsLoading(true);
     setTheme(newTheme);
     localStorage.setItem(THEME_STORAGE_KEY, newTheme);
     window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
 
-    await updateTheme(newTheme);
+    const result = await updateTheme(newTheme);
+    if (!result.success) {
+      // Roll back optimistic state on failure so DB and UI stay in sync.
+      setTheme(previousTheme);
+      localStorage.setItem(THEME_STORAGE_KEY, previousTheme);
+      window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
+    }
     setIsLoading(false);
   };
 

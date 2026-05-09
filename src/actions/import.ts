@@ -56,6 +56,7 @@ export async function disconnectGmail(): Promise<ActionResult<void>> {
       data: {
         gmailConnected: false,
         gmailRefreshToken: null,
+        lastGmailImport: null,
       },
     });
 
@@ -82,7 +83,7 @@ export async function fetchGmailTransactions(options?: {
     const settings = await getGmailSettings(userId);
 
     if (!settings.refreshToken) {
-      return { success: false, error: "Gmail not connected" };
+      return { success: false, error: "Gmail not connected", code: "GMAIL_NOT_CONNECTED" };
     }
 
     // Fetch emails from Gmail
@@ -175,7 +176,10 @@ export async function fetchGmailTransactions(options?: {
     revalidatePath("/import");
     return { success: true, data: { batchId: batch.id, summary } };
   } catch (error) {
-    console.error("Failed to fetch Gmail transactions:", error);
+    console.error(
+      "Failed to fetch Gmail transactions:",
+      error instanceof Error ? error.message : String(error)
+    );
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to fetch transactions",
@@ -197,7 +201,7 @@ export async function getImportPreview(
     });
 
     if (!batch) {
-      return { success: false, error: "Import batch not found" };
+      return { success: false, error: "Import batch not found", code: "IMPORT_BATCH_NOT_FOUND" };
     }
 
     const preview = batch.preview as unknown as ImportPreviewItem[];
@@ -225,11 +229,11 @@ export async function confirmImport(
     });
 
     if (!batch) {
-      return { success: false, error: "Import batch not found" };
+      return { success: false, error: "Import batch not found", code: "IMPORT_BATCH_NOT_FOUND" };
     }
 
     if (batch.status !== "PREVIEWING") {
-      return { success: false, error: "Import batch is not in preview state" };
+      return { success: false, error: "Import batch is not in preview state", code: "IMPORT_NOT_PREVIEW" };
     }
 
     // Update batch status
@@ -319,7 +323,10 @@ export async function confirmImport(
       try {
         await recalculateHolding(userId, assetId);
       } catch (error) {
-        console.error(`Failed to recalculate holding for ${assetId}:`, error);
+        console.error(
+          `Failed to recalculate holding for ${assetId}:`,
+          error instanceof Error ? error.message : String(error)
+        );
       }
     }
 
@@ -383,7 +390,7 @@ export async function cancelImport(batchId: string): Promise<ActionResult<void>>
     });
 
     if (!batch) {
-      return { success: false, error: "Import batch not found" };
+      return { success: false, error: "Import batch not found", code: "IMPORT_BATCH_NOT_FOUND" };
     }
 
     await db.importBatch.delete({

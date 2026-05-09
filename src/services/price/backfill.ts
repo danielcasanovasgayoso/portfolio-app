@@ -88,11 +88,13 @@ export async function backfillHistoricalPrices(
 export async function backfillAllHistoricalPrices(userId: string): Promise<void> {
   const assets = await getActiveTradedAssets(userId);
 
-  for (const { assetId, ticker } of assets) {
-    try {
-      await backfillHistoricalPrices(userId, assetId, ticker);
-    } catch {
-      // Best-effort; continue with remaining assets
-    }
+  const CONCURRENCY = 5;
+  for (let i = 0; i < assets.length; i += CONCURRENCY) {
+    const batch = assets.slice(i, i + CONCURRENCY);
+    await Promise.allSettled(
+      batch.map(({ assetId, ticker }) =>
+        backfillHistoricalPrices(userId, assetId, ticker)
+      )
+    );
   }
 }

@@ -13,12 +13,14 @@ import {
   type TransactionCreateInput,
 } from "@/lib/validators";
 import { createTransaction, getAssets } from "@/actions/transactions";
+import { useActionError } from "@/lib/use-action-error";
 import { TransactionFormFields } from "@/components/transactions/TransactionFormFields";
 import type { Asset } from "@prisma/client";
 
 export default function AddTransactionPage() {
   const t = useTranslations("transactions");
   const tAdd = useTranslations("add");
+  const translateError = useActionError();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [assets, setAssets] = useState<
@@ -74,7 +76,7 @@ export default function AddTransactionPage() {
       if (result.success) {
         router.push("/");
       } else {
-        form.setError("root", { message: result.error });
+        form.setError("root", { message: translateError(result) });
       }
     });
   };

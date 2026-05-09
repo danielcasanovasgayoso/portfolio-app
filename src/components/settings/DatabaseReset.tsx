@@ -15,11 +15,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { resetDatabase } from "@/actions/settings";
+import { useActionError } from "@/lib/use-action-error";
 import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export function DatabaseReset() {
   const t = useTranslations("settings");
+  const translateError = useActionError();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -43,7 +45,7 @@ export function DatabaseReset() {
       router.push("/");
       router.refresh();
     } else {
-      setError(result.error || "Failed to reset database");
+      setError(translateError({ error: result.error ?? "", code: result.code }));
     }
 
     setIsLoading(false);

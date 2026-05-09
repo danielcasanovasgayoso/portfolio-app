@@ -60,13 +60,15 @@ export function todayDate(): Date {
  */
 export async function getActiveTradedAssets(userId: string): Promise<TradedAsset[]> {
   const holdings = await db.holding.findMany({
-    where: { userId, shares: { gt: 0 } },
-    include: { asset: true },
+    where: {
+      userId,
+      shares: { gt: 0 },
+      asset: { manualPricing: false, ticker: { not: null } },
+    },
+    select: { assetId: true, asset: { select: { ticker: true } } },
   });
 
-  return holdings
-    .filter((h) => h.asset.ticker && !h.asset.manualPricing)
-    .map((h) => ({ assetId: h.assetId, ticker: h.asset.ticker! }));
+  return holdings.map((h) => ({ assetId: h.assetId, ticker: h.asset.ticker! }));
 }
 
 /**

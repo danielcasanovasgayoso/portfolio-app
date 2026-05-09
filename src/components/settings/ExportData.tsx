@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { exportPortfolioData } from "@/actions/settings";
+import { useActionError } from "@/lib/use-action-error";
 import { Download, Loader2, Check } from "lucide-react";
 
 export function ExportData() {
   const t = useTranslations("settings");
+  const translateError = useActionError();
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export function ExportData() {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } else {
-      setError(result.error || "Failed to export data");
+      setError(translateError({ error: result.error ?? "", code: result.code }));
       setTimeout(() => setError(null), 5000);
     }
 

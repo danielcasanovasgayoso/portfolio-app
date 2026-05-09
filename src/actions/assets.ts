@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import type { ActionResult } from "@/lib/action-utils";
 import type { AssetCategory } from "@prisma/client";
 import { getUserId } from "@/lib/auth";
+import { refreshAssetPrice } from "@/services/price.service";
 
 /**
  * Update a single asset's category
@@ -22,7 +23,7 @@ export async function updateAssetCategory(
       where: { id: assetId, userId },
     });
     if (!asset) {
-      return { success: false, error: "Asset not found" };
+      return { success: false, error: "Asset not found", code: "ASSET_NOT_FOUND" };
     }
 
     await db.asset.update({
@@ -100,7 +101,7 @@ export async function updateManualAsset(
       where: { id: assetId, userId, manualPricing: true },
     });
     if (!asset) {
-      return { success: false, error: "Manual asset not found" };
+      return { success: false, error: "Manual asset not found", code: "MANUAL_ASSET_NOT_FOUND" };
     }
 
     // Update asset fields
@@ -153,7 +154,7 @@ export async function deleteManualAsset(
       where: { id: assetId, userId, manualPricing: true },
     });
     if (!asset) {
-      return { success: false, error: "Manual asset not found" };
+      return { success: false, error: "Manual asset not found", code: "MANUAL_ASSET_NOT_FOUND" };
     }
 
     // Cascade delete will remove the holding too
@@ -166,6 +167,46 @@ export async function deleteManualAsset(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to delete manual asset",
+    };
+  }
+}
+
+/**
+ * Refresh the latest price for a single externally-priced asset.
+ */
+export async function refreshSingleAssetPrice(
+  assetId: string
+): Promise<ActionResult<{ price?: number }>> {
+  try {
+    const userId = await getUserId();
+
+    const asset = await db.asset.findFirst({
+      where: { id: assetId, userId },
+      select: { id: true, ticker: true, manualPricing: true },
+    });
+
+    if (!asset) {
+      return { success: false, error: "Asset not found", code: "ASSET_NOT_FOUND" };
+    }
+
+    if (asset.manualPricing || !asset.ticker) {
+      return { success: false, error: "Asset has no external pricing", code: "ASSET_NO_EXTERNAL_PRICING" };
+    }
+
+    const result = await refreshAssetPrice(userId, assetId, asset.ticker);
+
+    if (!result.success) {
+      return { success: false, error: result.error ?? "Failed to refresh price", code: "PRICE_SERVICE_ERROR" };
+    }
+
+    revalidatePath(`/portfolio/${assetId}`);
+    revalidatePath("/");
+
+    return { success: true, data: { price: result.price } };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to refresh asset price",
     };
   }
 }

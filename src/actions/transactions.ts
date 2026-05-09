@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import Decimal from "decimal.js";
+import { Decimal } from "@prisma/client/runtime/client";
 import { db } from "@/lib/db";
 import {
   TransactionCreateSchema,
@@ -136,9 +136,10 @@ export async function createTransaction(
         where: { id: assetId, userId },
       });
       if (!asset) {
-        return { success: false, error: "Asset not found" };
+        return { success: false, error: "Asset not found", code: "ASSET_NOT_FOUND" };
       }
     }
+
 
     const transaction = await db.transaction.create({
       data: {
@@ -178,9 +179,9 @@ export async function createTransaction(
   } catch (error) {
     console.error("Failed to create transaction:", error);
     if (error instanceof Error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, code: "OPERATION_FAILED" };
     }
-    return { success: false, error: "Failed to create transaction" };
+    return { success: false, error: "Failed to create transaction", code: "OPERATION_FAILED" };
   }
 }
 
@@ -199,7 +200,7 @@ export async function updateTransaction(
       select: { assetId: true },
     });
     if (!existingTx) {
-      return { success: false, error: "Transaction not found" };
+      return { success: false, error: "Transaction not found", code: "TRANSACTION_NOT_FOUND" };
     }
 
     const updateData: Prisma.TransactionUpdateInput = {};
@@ -210,7 +211,7 @@ export async function updateTransaction(
         where: { id: validated.assetId, userId },
       });
       if (!asset) {
-        return { success: false, error: "Asset not found" };
+        return { success: false, error: "Asset not found", code: "ASSET_NOT_FOUND" };
       }
       updateData.asset = { connect: { id: validated.assetId } };
     }
@@ -260,9 +261,9 @@ export async function updateTransaction(
   } catch (error) {
     console.error("Failed to update transaction:", error);
     if (error instanceof Error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, code: "OPERATION_FAILED" };
     }
-    return { success: false, error: "Failed to update transaction" };
+    return { success: false, error: "Failed to update transaction", code: "OPERATION_FAILED" };
   }
 }
 
@@ -280,7 +281,7 @@ export async function deleteTransaction(
     });
 
     if (!transaction) {
-      return { success: false, error: "Transaction not found" };
+      return { success: false, error: "Transaction not found", code: "TRANSACTION_NOT_FOUND" };
     }
 
     await db.transaction.delete({ where: { id } });
@@ -296,9 +297,9 @@ export async function deleteTransaction(
   } catch (error) {
     console.error("Failed to delete transaction:", error);
     if (error instanceof Error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, code: "OPERATION_FAILED" };
     }
-    return { success: false, error: "Failed to delete transaction" };
+    return { success: false, error: "Failed to delete transaction", code: "OPERATION_FAILED" };
   }
 }
 

@@ -20,6 +20,7 @@ import {
   type TransactionCreateInput,
 } from "@/lib/validators";
 import { createTransaction, updateTransaction } from "@/actions/transactions";
+import { useActionError } from "@/lib/use-action-error";
 import { TransactionFormFields } from "./TransactionFormFields";
 import type { SerializedTransaction } from "@/types/transaction";
 import type { Asset } from "@prisma/client";
@@ -54,6 +55,7 @@ export function TransactionForm({
   onSuccess,
 }: TransactionFormProps) {
   const t = useTranslations("transactions");
+  const translateError = useActionError();
   const [isPending, startTransition] = useTransition();
   const isEditing = !!transaction;
 
@@ -113,7 +115,7 @@ export function TransactionForm({
         onOpenChange(false);
         onSuccess?.();
       } else {
-        form.setError("root", { message: result.error });
+        form.setError("root", { message: translateError(result) });
       }
     });
   };

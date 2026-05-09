@@ -8,6 +8,7 @@ import { setUserLocale } from "@/i18n/locale";
 import type { Locale } from "@/i18n/config";
 import { z } from "zod";
 import { encryptIfConfigured, decryptIfEncrypted } from "@/lib/crypto";
+import type { ErrorCode } from "@/lib/errors";
 
 export interface SettingsData {
   eodhdApiKey: string | null;
@@ -67,14 +68,14 @@ export async function getSettings(): Promise<SettingsData> {
 export async function updateApiKey(
   type: "primary",
   apiKey: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; code?: ErrorCode }> {
   try {
     const userId = await getUserId();
 
     // Test the API key before saving
     const isValid = await testApiKey(apiKey);
     if (!isValid) {
-      return { success: false, error: "Invalid API key" };
+      return { success: false, error: "Invalid API key", code: "INVALID_API_KEY" };
     }
 
     await db.settings.upsert({
@@ -119,7 +120,7 @@ export async function removeApiKey(): Promise<{
 
 export async function updateTheme(
   theme: "light" | "dark" | "system"
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; code?: ErrorCode }> {
   try {
     const userId = await getUserId();
 
@@ -142,7 +143,7 @@ export async function updateTheme(
 
 export async function updateLocale(
   locale: Locale
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; code?: ErrorCode }> {
   try {
     await setUserLocale(locale);
     revalidatePath("/");
@@ -162,7 +163,7 @@ const CACHE_DURATION_MAX = 1440; // 24 hours
 export async function updatePriceSettings(
   enabled: boolean,
   cacheDurationMin: number
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; code?: ErrorCode }> {
   if (
     !Number.isInteger(cacheDurationMin) ||
     cacheDurationMin < CACHE_DURATION_MIN ||
@@ -204,45 +205,45 @@ export async function updatePriceSettings(
 export async function resetDatabase(): Promise<{
   success: boolean;
   error?: string;
+  code?: ErrorCode;
 }> {
   try {
     const userId = await getUserId();
 
-    await db.$transaction(async (tx) => {
-      // Get user's assets before deleting (needed for price/cache cleanup)
-      const userAssets = await tx.asset.findMany({
-        where: { userId },
-        select: { id: true, ticker: true },
-      });
-      const assetIds = userAssets.map((a) => a.id);
-      const tickers = userAssets.map((a) => a.ticker).filter(Boolean) as string[];
+    // Each deleteMany runs independently to avoid Supabase pooler's
+    // idle_in_transaction_session_timeout on accounts with many rows.
+    // Order respects foreign keys; on partial failure the user can retry.
+    const userAssets = await db.asset.findMany({
+      where: { userId },
+      select: { id: true, ticker: true },
+    });
+    const assetIds = userAssets.map((a) => a.id);
+    const tickers = userAssets.map((a) => a.ticker).filter(Boolean) as string[];
 
-      // Delete in order respecting foreign keys:
-      // 1. Transactions (reference assets and importBatches)
-      await tx.transaction.deleteMany({ where: { userId } });
-      // 2. Holdings (reference assets)
-      await tx.holding.deleteMany({ where: { userId } });
-      // 3. Prices and PriceCache (reference assets/tickers)
-      if (assetIds.length > 0) {
-        await tx.price.deleteMany({ where: { assetId: { in: assetIds } } });
-      }
-      if (tickers.length > 0) {
-        await tx.priceCache.deleteMany({ where: { ticker: { in: tickers } } });
-      }
-      // 4. Assets
-      await tx.asset.deleteMany({ where: { userId } });
-      // 5. Import batches (now safe since transactions are deleted)
-      await tx.importBatch.deleteMany({ where: { userId } });
+    // 1. Transactions (reference assets and importBatches)
+    await db.transaction.deleteMany({ where: { userId } });
+    // 2. Holdings (reference assets)
+    await db.holding.deleteMany({ where: { userId } });
+    // 3. Prices and PriceCache (reference assets/tickers)
+    if (assetIds.length > 0) {
+      await db.price.deleteMany({ where: { assetId: { in: assetIds } } });
+    }
+    if (tickers.length > 0) {
+      await db.priceCache.deleteMany({ where: { ticker: { in: tickers } } });
+    }
+    // 4. Assets
+    await db.asset.deleteMany({ where: { userId } });
+    // 5. Import batches (now safe since transactions are deleted)
+    await db.importBatch.deleteMany({ where: { userId } });
 
-      // Reset Gmail connection in settings
-      await tx.settings.update({
-        where: { userId },
-        data: {
-          gmailConnected: false,
-          gmailRefreshToken: null,
-          lastGmailImport: null,
-        },
-      });
+    // Reset Gmail connection in settings
+    await db.settings.update({
+      where: { userId },
+      data: {
+        gmailConnected: false,
+        gmailRefreshToken: null,
+        lastGmailImport: null,
+      },
     });
 
     revalidatePath("/");
@@ -256,6 +257,7 @@ export async function resetDatabase(): Promise<{
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to reset database",
+      code: "OPERATION_FAILED",
     };
   }
 }
@@ -264,6 +266,7 @@ export async function exportPortfolioData(): Promise<{
   success: boolean;
   data?: string;
   error?: string;
+  code?: ErrorCode;
 }> {
   try {
     const userId = await getUserId();
@@ -314,6 +317,7 @@ export async function exportPortfolioData(): Promise<{
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to export data",
+      code: "OPERATION_FAILED",
     };
   }
 }
@@ -359,6 +363,7 @@ export async function importPortfolioData(jsonData: string): Promise<{
     transactionsSkipped: number;
   };
   error?: string;
+  code?: ErrorCode;
 }> {
   try {
     const userId = await getUserId();
@@ -368,7 +373,7 @@ export async function importPortfolioData(jsonData: string): Promise<{
     try {
       raw = JSON.parse(jsonData);
     } catch {
-      return { success: false, error: "Invalid JSON format" };
+      return { success: false, error: "Invalid JSON format", code: "INVALID_JSON" };
     }
 
     // Validate structure with Zod
