@@ -1,12 +1,12 @@
 // Bump this on each deploy to clear stale caches
-const CACHE_VERSION = "2026-05-09a";
+const CACHE_VERSION = "2026-05-09c";
 const STATIC_CACHE = `portfolio-static-${CACHE_VERSION}`;
 const APP_CACHE = `portfolio-app-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
   "/offline.html",
   "/manifest.json",
-  "/icons/icon-192x192-v3.png",
+  "/icons/icon-192x192-v5.png",
 ];
 
 // Install: precache critical app shell assets
