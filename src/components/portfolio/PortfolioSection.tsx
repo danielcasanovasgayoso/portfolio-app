@@ -11,6 +11,7 @@ interface PortfolioSectionProps {
   totals: CategoryTotal | null;
   totalPortfolioValue: number;
   isOther?: boolean;
+  accentColors?: Map<string, string>;
 }
 
 export function PortfolioSection({
@@ -19,6 +20,7 @@ export function PortfolioSection({
   totals,
   totalPortfolioValue,
   isOther = false,
+  accentColors,
 }: PortfolioSectionProps) {
   const t = useTranslations("portfolio");
 
@@ -130,6 +132,7 @@ export function PortfolioSection({
             holding={holding}
             totalPortfolioValue={totalPortfolioValue}
             isOther={isOther}
+            accentColor={accentColors?.get(holding.id)}
           />
         ))}
       </div>

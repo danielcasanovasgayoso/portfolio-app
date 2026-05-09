@@ -8,6 +8,7 @@ import { PortfolioEmptyState } from "@/components/portfolio/PortfolioEmptyState"
 import { RefreshPricesButton } from "@/components/portfolio/RefreshPricesButton";
 import { getPortfolioData } from "@/services/portfolio.service";
 import { requireAuth } from "@/lib/auth";
+import { assignAssetAccentColors } from "@/lib/asset-colors";
 import {
   PortfolioSummarySkeleton,
   PortfolioSectionSkeleton,
@@ -53,6 +54,13 @@ async function PortfolioContent({ userId }: { userId: string }) {
     return <PortfolioEmptyState />;
   }
 
+  const accentColors = assignAssetAccentColors([
+    ...data.holdings.funds,
+    ...data.holdings.stocks,
+    ...data.holdings.pp,
+    ...data.holdings.others,
+  ].map((h) => h.id));
+
   return (
     <>
       {/* Summary Card */}
@@ -69,18 +77,21 @@ async function PortfolioContent({ userId }: { userId: string }) {
         holdings={data.holdings.funds}
         totals={data.totals.funds}
         totalPortfolioValue={data.totals.grand?.marketValue ?? 0}
+        accentColors={accentColors}
       />
       <PortfolioSection
         title={t("stocksEtfs")}
         holdings={data.holdings.stocks}
         totals={data.totals.stocks}
         totalPortfolioValue={data.totals.grand?.marketValue ?? 0}
+        accentColors={accentColors}
       />
       <PortfolioSection
         title={t("pp")}
         holdings={data.holdings.pp}
         totals={data.totals.pp}
         totalPortfolioValue={data.totals.grand?.marketValue ?? 0}
+        accentColors={accentColors}
       />
       <PortfolioSection
         title={t("others")}
@@ -88,6 +99,7 @@ async function PortfolioContent({ userId }: { userId: string }) {
         totals={data.totals.others}
         totalPortfolioValue={data.totals.grand?.marketValue ?? 0}
         isOther
+        accentColors={accentColors}
       />
 
     </>

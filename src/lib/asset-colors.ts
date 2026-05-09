@@ -13,11 +13,44 @@ const ACCENT_PALETTE = [
   "#6366f1", // indigo
 ];
 
-export function getAssetAccentColor(seed: string): string {
+function hashIndex(seed: string): number {
   let hash = 5381;
   for (let i = 0; i < seed.length; i++) {
     hash = ((hash << 5) + hash + seed.charCodeAt(i)) | 0;
   }
-  const index = Math.abs(hash) % ACCENT_PALETTE.length;
-  return ACCENT_PALETTE[index];
+  return Math.abs(hash) % ACCENT_PALETTE.length;
+}
+
+export function getAssetAccentColor(seed: string): string {
+  return ACCENT_PALETTE[hashIndex(seed)];
+}
+
+/**
+ * Assigns a unique color per id when possible. Each id starts at its hash-preferred
+ * color and walks the palette to find the first unused one. With more ids than palette
+ * entries, later ids reuse colors starting from their preferred slot.
+ */
+export function assignAssetAccentColors(ids: string[]): Map<string, string> {
+  const used = new Set<string>();
+  const map = new Map<string, string>();
+
+  for (const id of ids) {
+    const start = hashIndex(id);
+    let chosen: string | null = null;
+    for (let offset = 0; offset < ACCENT_PALETTE.length; offset++) {
+      const candidate = ACCENT_PALETTE[(start + offset) % ACCENT_PALETTE.length];
+      if (!used.has(candidate)) {
+        chosen = candidate;
+        break;
+      }
+    }
+    if (chosen === null) {
+      chosen = ACCENT_PALETTE[start];
+    } else {
+      used.add(chosen);
+    }
+    map.set(id, chosen);
+  }
+
+  return map;
 }

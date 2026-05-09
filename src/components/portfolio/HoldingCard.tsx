@@ -17,12 +17,14 @@ interface HoldingCardProps {
   holding: Holding;
   totalPortfolioValue: number;
   isOther?: boolean;
+  accentColor?: string;
 }
 
 export function HoldingCard({
   holding,
   totalPortfolioValue,
   isOther = false,
+  accentColor,
 }: HoldingCardProps) {
   const t = useTranslations("portfolio");
 
@@ -33,7 +35,7 @@ export function HoldingCard({
 
   const gainClass = getGainClass(holding.gainLoss);
   const isPositive = gainClass === "positive";
-  const accentColor = getAssetAccentColor(holding.id);
+  const stripeColor = accentColor ?? getAssetAccentColor(holding.id);
 
   if (isOther) {
     return (
@@ -41,7 +43,7 @@ export function HoldingCard({
         <article className="relative bg-card rounded-xl shadow-sm p-5 pl-6 border-0 overflow-hidden transition-transform duration-150 active:scale-[0.98]">
           <div
             className="absolute left-0 top-0 bottom-0 w-[3px]"
-            style={{ backgroundColor: accentColor }}
+            style={{ backgroundColor: stripeColor }}
           />
           <div className="flex justify-between items-center gap-3">
             <div className="flex-1 min-w-0">
@@ -71,7 +73,7 @@ export function HoldingCard({
       <article className="relative bg-card rounded-xl shadow-sm px-4 py-3 pl-5 border-0 overflow-hidden transition-transform duration-150 active:scale-[0.98]">
         <div
           className="absolute left-0 top-0 bottom-0 w-[3px]"
-          style={{ backgroundColor: accentColor }}
+          style={{ backgroundColor: stripeColor }}
         />
         {/* Row 1: Name left, chevron right */}
         <div className="flex items-center justify-between gap-1.5">
