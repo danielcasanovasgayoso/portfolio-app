@@ -10,6 +10,7 @@ import {
 } from "@/lib/formatters";
 import type { Holding } from "@/types/portfolio";
 import { cn } from "@/lib/utils";
+import { getAssetAccentColor } from "@/lib/asset-colors";
 import { ChevronRight } from "lucide-react";
 
 interface HoldingCardProps {
@@ -32,11 +33,16 @@ export function HoldingCard({
 
   const gainClass = getGainClass(holding.gainLoss);
   const isPositive = gainClass === "positive";
+  const accentColor = getAssetAccentColor(holding.id);
 
   if (isOther) {
     return (
       <Link href={`/portfolio/${holding.id}`} className="block group">
-        <article className="bg-card rounded-xl shadow-sm p-5 border-0 transition-transform duration-150 active:scale-[0.98]">
+        <article className="relative bg-card rounded-xl shadow-sm p-5 pl-6 border-0 overflow-hidden transition-transform duration-150 active:scale-[0.98]">
+          <div
+            className="absolute left-0 top-0 bottom-0 w-[3px]"
+            style={{ backgroundColor: accentColor }}
+          />
           <div className="flex justify-between items-center gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -62,7 +68,11 @@ export function HoldingCard({
 
   return (
     <Link href={`/portfolio/${holding.id}`} className="block group">
-      <article className="bg-card rounded-xl shadow-sm px-4 py-3 border-0 transition-transform duration-150 active:scale-[0.98]">
+      <article className="relative bg-card rounded-xl shadow-sm px-4 py-3 pl-5 border-0 overflow-hidden transition-transform duration-150 active:scale-[0.98]">
+        <div
+          className="absolute left-0 top-0 bottom-0 w-[3px]"
+          style={{ backgroundColor: accentColor }}
+        />
         {/* Row 1: Name left, chevron right */}
         <div className="flex items-center justify-between gap-1.5">
           <h3 className="text-[15px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
