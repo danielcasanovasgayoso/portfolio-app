@@ -104,7 +104,6 @@ async function SettingsContent() {
         <SettingRow
           icon={Download}
           label={t("exportData")}
-          description={t("exportDataDesc")}
           right={<ExportData />}
         />
       </SettingSection>
@@ -113,7 +112,6 @@ async function SettingsContent() {
         <SettingRow
           icon={Database}
           label={t("resetDatabase")}
-          description={t("resetHelp")}
           destructive
           right={<DatabaseReset />}
         />

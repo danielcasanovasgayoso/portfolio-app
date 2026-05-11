@@ -43,14 +43,14 @@ export function SettingRow({
         <div className="flex-1 min-w-0">
           <p
             className={cn(
-              "text-[15px] font-semibold leading-tight",
+              "text-[15px] font-semibold leading-tight truncate",
               destructive ? "text-destructive" : "text-foreground"
             )}
           >
             {label}
           </p>
           {description && (
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">
               {description}
             </p>
           )}
