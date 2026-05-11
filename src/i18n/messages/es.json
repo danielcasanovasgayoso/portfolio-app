@@ -186,6 +186,10 @@
   "settings": {
     "title": "Ajustes",
     "backToPortfolio": "Volver a la cartera",
+    "account": "Cuenta",
+    "dataSources": "Orígenes de datos",
+    "preferences": "Preferencias",
+    "data": "Datos",
     "apiConfig": "Configuración API",
     "apiConfigDesc": "Configura tu clave API de EODHD para actualizaciones de precios",
     "apiKey": "Clave API",

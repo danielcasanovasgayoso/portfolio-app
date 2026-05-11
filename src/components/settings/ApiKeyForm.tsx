@@ -4,9 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { updateApiKey, removeApiKey } from "@/actions/settings";
-import { Check, Loader2, Trash2, Eye, EyeOff } from "lucide-react";
+import { Check, Loader2, Trash2 } from "lucide-react";
 
 interface ApiKeyFormProps {
   type: "primary";
@@ -16,7 +15,6 @@ interface ApiKeyFormProps {
 export function ApiKeyForm({ type, currentKey }: ApiKeyFormProps) {
   const t = useTranslations("settings");
   const [apiKey, setApiKey] = useState("");
-  const [showKey, setShowKey] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [message, setMessage] = useState<{
@@ -60,68 +58,50 @@ export function ApiKeyForm({ type, currentKey }: ApiKeyFormProps) {
     setTimeout(() => setMessage(null), 3000);
   };
 
+  const placeholder = currentKey
+    ? `•••••••••• ${currentKey.slice(-4)}`
+    : t("apiKeyEnter");
+
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Label htmlFor={`api-key-${type}`}>{t("apiKey")}</Label>
-        {currentKey && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleRemove}
-            disabled={isRemoving}
-            className="h-7 px-2 text-destructive hover:text-destructive"
-          >
-            {isRemoving ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Trash2 className="h-3 w-3" />
-            )}
-          </Button>
-        )}
-      </div>
-
-      {currentKey && (
-        <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
-          <code className="text-sm flex-1 font-mono">
-            {showKey ? currentKey : "••••••••••••••••••••••••"}
-          </code>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowKey(!showKey)}
-            className="h-7 w-7 p-0"
-          >
-            {showKey ? (
-              <EyeOff className="h-3 w-3" />
-            ) : (
-              <Eye className="h-3 w-3" />
-            )}
-          </Button>
-        </div>
-      )}
-
+    <div className="space-y-2">
       <form onSubmit={handleSubmit} className="flex gap-2">
         <Input
           id={`api-key-${type}`}
           type="password"
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
-          placeholder={currentKey ? t("apiKeyReplace") : t("apiKeyEnter")}
-          className="flex-1"
+          placeholder={placeholder}
+          className="flex-1 h-9 font-mono placeholder:font-mono"
         />
-        <Button type="submit" disabled={isLoading || !apiKey.trim()}>
+        <Button type="submit" size="sm" disabled={isLoading || !apiKey.trim()}>
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Check className="h-4 w-4" />
           )}
         </Button>
+        {currentKey && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleRemove}
+            disabled={isRemoving}
+            className="h-9 w-9 p-0 text-destructive hover:text-destructive"
+            aria-label={t("apiKeyRemoved")}
+          >
+            {isRemoving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+          </Button>
+        )}
       </form>
 
       {message && (
         <p
-          className={`text-sm ${
+          className={`text-xs ${
             message.type === "success" ? "text-green-600" : "text-destructive"
           }`}
         >

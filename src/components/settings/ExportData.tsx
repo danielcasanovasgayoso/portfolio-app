@@ -44,9 +44,10 @@ export function ExportData() {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col items-end gap-1">
       <Button
         variant="outline"
+        size="sm"
         onClick={handleExport}
         disabled={isLoading}
         className="gap-2"
@@ -62,18 +63,10 @@ export function ExportData() {
       </Button>
 
       {success && (
-        <p className="text-sm text-green-600">
-          {t("exportSuccess")}
-        </p>
+        <p className="text-xs text-green-600">{t("exportSuccess")}</p>
       )}
 
-      {error && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
-
-      <p className="text-xs text-muted-foreground">
-        {t("exportHelp")}
-      </p>
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

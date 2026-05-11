@@ -47,34 +47,27 @@ export function ThemeToggle({ currentTheme }: ThemeToggleProps) {
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex gap-2">
-        {themes.map(({ value, icon: Icon, labelKey }) => (
-          <Button
-            key={value}
-            variant={theme === value ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleThemeChange(value)}
-            disabled={isLoading}
-            className={cn(
-              "flex-1 gap-2",
-              theme === value && "pointer-events-none"
-            )}
-          >
-            {isLoading && theme === value ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Icon className="h-4 w-4" />
-            )}
-            <span className="hidden sm:inline">{t(labelKey)}</span>
-          </Button>
-        ))}
-      </div>
-      <p className="text-xs text-muted-foreground">
-        {theme === "system"
-          ? t("themeFollowing")
-          : t("themeUsing", { theme: t(theme === "light" ? "themeLight" : "themeDark").toLowerCase() })}
-      </p>
+    <div className="flex gap-2">
+      {themes.map(({ value, icon: Icon, labelKey }) => (
+        <Button
+          key={value}
+          variant={theme === value ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleThemeChange(value)}
+          disabled={isLoading}
+          className={cn(
+            "flex-1 gap-2",
+            theme === value && "pointer-events-none"
+          )}
+        >
+          {isLoading && theme === value ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Icon className="h-4 w-4" />
+          )}
+          <span className="hidden sm:inline">{t(labelKey)}</span>
+        </Button>
+      ))}
     </div>
   );
 }
