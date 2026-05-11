@@ -16,14 +16,12 @@ import { ChevronRight } from "lucide-react";
 interface HoldingCardProps {
   holding: Holding;
   totalPortfolioValue: number;
-  isOther?: boolean;
   accentColor?: string;
 }
 
 export function HoldingCard({
   holding,
   totalPortfolioValue,
-  isOther = false,
   accentColor,
 }: HoldingCardProps) {
   const t = useTranslations("portfolio");
@@ -33,40 +31,9 @@ export function HoldingCard({
       ? ((holding.marketValue / totalPortfolioValue) * 100).toFixed(1)
       : "0";
 
-  const gainClass = getGainClass(holding.gainLoss);
-  const isPositive = gainClass === "positive";
+  const hasPrice = holding.currentPrice !== null;
+  const isPositive = getGainClass(holding.gainLoss) === "positive";
   const stripeColor = accentColor ?? getAssetAccentColor(holding.id);
-
-  if (isOther) {
-    return (
-      <Link href={`/portfolio/${holding.id}`} className="block group">
-        <article className="relative bg-card rounded-xl shadow-sm p-5 pl-6 border-0 overflow-hidden transition-transform duration-150 active:scale-[0.98]">
-          <div
-            className="absolute left-0 top-0 bottom-0 w-[3px]"
-            style={{ backgroundColor: stripeColor }}
-          />
-          <div className="flex justify-between items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-[15px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                  {holding.name}
-                </h3>
-              </div>
-              <p className="text-[12px] font-mono text-muted-foreground mt-1">
-                {holding.manualPricing ? t("manual") : t("avail")} · {portfolioPercent}%
-              </p>
-            </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <p className="text-lg font-mono font-semibold text-foreground tabular-nums">
-                {formatCurrency(holding.marketValue)}
-              </p>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </div>
-          </div>
-        </article>
-      </Link>
-    );
-  }
 
   return (
     <Link href={`/portfolio/${holding.id}`} className="block group">
@@ -86,40 +53,38 @@ export function HoldingCard({
         {/* Row 2: Details left, value & performance right */}
         <div className="flex items-end justify-between gap-3 mt-1">
           <div className="text-[12px] font-mono text-muted-foreground space-y-0.5">
-            <p>
-              {holding.currentPrice
-                ? formatCurrency(holding.currentPrice)
-                : "—"}
-            </p>
+            {hasPrice && <p>{formatCurrency(holding.currentPrice!)}</p>}
             <p>
               {portfolioPercent}% {t("weight").toLowerCase()}
             </p>
-            {holding.priceDate && (
-              <p>{formatDate(holding.priceDate)}</p>
-            )}
+            {holding.priceDate && <p>{formatDate(holding.priceDate)}</p>}
           </div>
 
           <div className="text-right flex-shrink-0 text-[12px] font-mono space-y-0.5">
             <p className="font-bold text-foreground tabular-nums">
               {formatCurrency(holding.marketValue)}
             </p>
-            <p
-              className={cn(
-                "font-medium tabular-nums",
-                isPositive ? "text-gain" : "text-loss"
-              )}
-            >
-              {holding.gainLoss >= 0 ? "+" : ""}
-              {formatCurrency(holding.gainLoss)}
-            </p>
-            <p
-              className={cn(
-                "font-medium tabular-nums",
-                isPositive ? "text-gain" : "text-loss"
-              )}
-            >
-              {formatPercent(holding.gainLossPercent)}
-            </p>
+            {hasPrice && (
+              <>
+                <p
+                  className={cn(
+                    "font-medium tabular-nums",
+                    isPositive ? "text-gain" : "text-loss"
+                  )}
+                >
+                  {holding.gainLoss >= 0 ? "+" : ""}
+                  {formatCurrency(holding.gainLoss)}
+                </p>
+                <p
+                  className={cn(
+                    "font-medium tabular-nums",
+                    isPositive ? "text-gain" : "text-loss"
+                  )}
+                >
+                  {formatPercent(holding.gainLossPercent)}
+                </p>
+              </>
+            )}
           </div>
         </div>
       </article>

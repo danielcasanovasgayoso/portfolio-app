@@ -131,7 +131,6 @@ export function PortfolioSection({
             key={holding.id}
             holding={holding}
             totalPortfolioValue={totalPortfolioValue}
-            isOther={isOther}
             accentColor={accentColors?.get(holding.id)}
           />
         ))}
