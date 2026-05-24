@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { PieChart, FileText, Settings, Plus } from "lucide-react";
+import { PieChart, FileText, Settings, Plus, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -18,6 +18,12 @@ const navItems = [
     labelKey: "transactions" as const,
     shortLabelKey: "transactionsShort" as const,
     icon: FileText,
+  },
+  {
+    href: "/real-estate",
+    labelKey: "realEstate" as const,
+    shortLabelKey: "realEstateShort" as const,
+    icon: Home,
   },
   {
     href: "/settings",
