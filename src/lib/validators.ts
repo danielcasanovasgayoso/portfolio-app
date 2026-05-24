@@ -75,6 +75,55 @@ export const TransactionUpdateSchema = TransactionBaseSchema.partial().refine(
 
 export type TransactionUpdateInput = z.infer<typeof TransactionUpdateSchema>;
 
+// ---------------------------------------------------------------------------
+// Real Estate
+// ---------------------------------------------------------------------------
+
+export const MortgageTypeEnum = z.enum(["FIXED", "VARIABLE"]);
+export const AmortizationModeEnum = z.enum(["REDUCE_TERM", "REDUCE_INSTALLMENT"]);
+
+export const PropertyOwnerSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  sharePct: z.coerce.number().min(0).max(100),
+});
+
+// Rates are stored as fractions (e.g. 0.10 for 10%).
+export const PropertyInputSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  purchaseDate: z.coerce.date(),
+  currency: z.string().default("EUR"),
+  purchasePrice: z.coerce.number().nonnegative(),
+  vatRate: z.coerce.number().min(0).max(1),
+  transferTaxRate: z.coerce.number().min(0).max(1),
+  purchaseCosts: z.coerce.number().nonnegative(),
+  owners: z.array(PropertyOwnerSchema).default([]),
+});
+
+export type PropertyInput = z.infer<typeof PropertyInputSchema>;
+
+export const MortgageInputSchema = z.object({
+  loanAmount: z.coerce.number().positive(),
+  downPayment: z.coerce.number().nonnegative(),
+  termMonths: z.coerce.number().int().positive(),
+  annualInterestRate: z.coerce.number().min(0).max(1),
+  type: MortgageTypeEnum.default("FIXED"),
+  startDate: z.coerce.date(),
+});
+
+export type MortgageInputForm = z.infer<typeof MortgageInputSchema>;
+
+export const ValuationInputSchema = z.object({
+  date: z.coerce.date(),
+  value: z.coerce.number().nonnegative(),
+  note: z.string().optional(),
+});
+
+export const PartialAmortizationInputSchema = z.object({
+  date: z.coerce.date(),
+  amount: z.coerce.number().positive(),
+  mode: AmortizationModeEnum.default("REDUCE_TERM"),
+});
+
 // Transaction filters schema
 export const TransactionFiltersSchema = z.object({
   types: z.array(TransactionTypeEnum).optional(),
