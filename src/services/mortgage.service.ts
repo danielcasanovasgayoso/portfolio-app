@@ -8,6 +8,9 @@ export type MortgageInput = {
   termMonths: number;
   startDate: Date; // date of the first regular payment
   downPayment?: number;
+  // Optional interest-only "stub" payment charged before the regular schedule
+  // (broken first period). Added as an extra row 0; does not consume a term month.
+  initialInterest?: { date: Date; amount: number };
 };
 
 export type PartialAmortizationInput = {
@@ -158,6 +161,26 @@ export function computeSchedule(
     rows[i].remainingYears = Math.ceil(pending / 12);
   }
 
+  // Prepend the interest-only stub row (index 0). It charges interest only for
+  // the broken first period and leaves the balance untouched; the regular
+  // installments above keep their numbering and quota counts.
+  if (mortgage.initialInterest && mortgage.initialInterest.amount > 0) {
+    const stubDate = mortgage.initialInterest.date;
+    const stubAmount = round2(mortgage.initialInterest.amount);
+    rows.unshift({
+      index: 0,
+      paymentDate: toISODate(stubDate),
+      payment: stubAmount,
+      interest: stubAmount,
+      principal: 0,
+      balance: round2(mortgage.loanAmount),
+      pendingQuotas: total,
+      remainingYears: Math.ceil(total / 12),
+      status: stubDate.getTime() <= todayTime ? "PAID" : "PENDING",
+      partialAmortization: 0,
+    });
+  }
+
   return rows;
 }
 
@@ -189,7 +212,8 @@ export function summarize(
   const totalPaid = round2(
     paidRows.reduce((sum, row) => sum + row.payment, 0)
   );
-  const pendingQuotas = pendingRows.length;
+  // Count only regular installments (index >= 1); the stub row never counts.
+  const pendingQuotas = pendingRows.filter((row) => row.index >= 1).length;
 
   return {
     monthlyPayment: basePayment,

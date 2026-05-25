@@ -294,6 +294,10 @@ model Mortgage {
   annualInterestRate Decimal      @db.Decimal(9, 6)
   type               MortgageType @default(FIXED)
   startDate          DateTime // date of the first regular payment
+  // Optional interest-only "stub" payment before the regular schedule begins,
+  // covering the broken period between disbursement and the first installment.
+  initialInterestAmount Decimal?  @db.Decimal(18, 4)
+  initialInterestDate   DateTime?
 
   partialAmortizations PartialAmortization[]
 

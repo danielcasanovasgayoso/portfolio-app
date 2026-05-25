@@ -67,6 +67,13 @@ function toMortgageInput(property: DbProperty): {
       termMonths: m.termMonths,
       annualInterestRate: Number(m.annualInterestRate),
       startDate: m.startDate,
+      initialInterest:
+        m.initialInterestAmount != null && m.initialInterestDate != null
+          ? {
+              date: m.initialInterestDate,
+              amount: Number(m.initialInterestAmount),
+            }
+          : undefined,
     },
     partials: m.partialAmortizations.map((p) => ({
       date: p.date,
@@ -183,6 +190,14 @@ export async function getPropertyDetail(
           annualInterestRate: Number(property.mortgage.annualInterestRate),
           type: property.mortgage.type,
           startDate: property.mortgage.startDate.toISOString().split("T")[0],
+          initialInterestAmount:
+            property.mortgage.initialInterestAmount != null
+              ? Number(property.mortgage.initialInterestAmount)
+              : null,
+          initialInterestDate:
+            property.mortgage.initialInterestDate != null
+              ? property.mortgage.initialInterestDate.toISOString().split("T")[0]
+              : null,
           partialAmortizations: property.mortgage.partialAmortizations.map((p) => ({
             id: p.id,
             date: p.date.toISOString().split("T")[0],

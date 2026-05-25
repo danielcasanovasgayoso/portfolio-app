@@ -101,14 +101,26 @@ export const PropertyInputSchema = z.object({
 
 export type PropertyInput = z.infer<typeof PropertyInputSchema>;
 
-export const MortgageInputSchema = z.object({
-  loanAmount: z.coerce.number().positive(),
-  downPayment: z.coerce.number().nonnegative(),
-  termMonths: z.coerce.number().int().positive(),
-  annualInterestRate: z.coerce.number().min(0).max(1),
-  type: MortgageTypeEnum.default("FIXED"),
-  startDate: z.coerce.date(),
-});
+export const MortgageInputSchema = z
+  .object({
+    loanAmount: z.coerce.number().positive(),
+    downPayment: z.coerce.number().nonnegative(),
+    termMonths: z.coerce.number().int().positive(),
+    annualInterestRate: z.coerce.number().min(0).max(1),
+    type: MortgageTypeEnum.default("FIXED"),
+    startDate: z.coerce.date(),
+    // Optional interest-only first payment (broken first period).
+    initialInterestAmount: z.coerce.number().nonnegative().optional(),
+    initialInterestDate: z.coerce.date().optional(),
+  })
+  .refine(
+    (d) => !!d.initialInterestAmount === !!d.initialInterestDate,
+    {
+      message:
+        "Interest-only first payment needs both an amount and a date",
+      path: ["initialInterestAmount"],
+    }
+  );
 
 export type MortgageInputForm = z.infer<typeof MortgageInputSchema>;
 

@@ -140,6 +140,11 @@ export async function upsertMortgage(
       annualInterestRate: new Decimal(data.annualInterestRate),
       type: data.type,
       startDate: data.startDate,
+      initialInterestAmount:
+        data.initialInterestAmount != null
+          ? new Decimal(data.initialInterestAmount)
+          : null,
+      initialInterestDate: data.initialInterestDate ?? null,
     };
 
     await db.mortgage.upsert({

@@ -53,6 +53,8 @@ interface PropertyFormValues {
   annualInterestRatePct: string;
   mortgageType: "FIXED" | "VARIABLE";
   startDate: string;
+  initialInterestAmount: string;
+  initialInterestDate: string;
 }
 
 const num = (v: string) => parseFloat(v.replace(",", ".")) || 0;
@@ -75,6 +77,8 @@ function buildDefaults(property?: PropertyDetail): PropertyFormValues {
       annualInterestRatePct: "",
       mortgageType: "FIXED",
       startDate: today(),
+      initialInterestAmount: "",
+      initialInterestDate: "",
     };
   }
   return {
@@ -97,6 +101,9 @@ function buildDefaults(property?: PropertyDetail): PropertyFormValues {
       : "",
     mortgageType: property.mortgage?.type ?? "FIXED",
     startDate: property.mortgage?.startDate ?? today(),
+    initialInterestAmount:
+      property.mortgage?.initialInterestAmount?.toString() ?? "",
+    initialInterestDate: property.mortgage?.initialInterestDate ?? "",
   };
 }
 
@@ -151,6 +158,12 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
           annualInterestRate: num(data.annualInterestRatePct) / 100,
           type: data.mortgageType,
           startDate: new Date(data.startDate),
+          initialInterestAmount: data.initialInterestAmount.trim()
+            ? num(data.initialInterestAmount)
+            : undefined,
+          initialInterestDate: data.initialInterestDate
+            ? new Date(data.initialInterestDate)
+            : undefined,
         });
         if (!mResult.success) {
           form.setError("root", { message: translateError(mResult) });
@@ -399,6 +412,35 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("firstPaymentDate")}</FormLabel>
+                      <FormControl>
+                        <DatePicker value={field.value} onChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="initialInterestAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("initialInterestAmount")} (€)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          placeholder={t("optional")}
+                          {...field}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="initialInterestDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("initialInterestDate")}</FormLabel>
                       <FormControl>
                         <DatePicker value={field.value} onChange={field.onChange} />
                       </FormControl>

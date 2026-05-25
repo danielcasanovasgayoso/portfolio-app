@@ -31,6 +31,8 @@ export interface MortgageDto {
   annualInterestRate: number;
   type: MortgageType;
   startDate: string;
+  initialInterestAmount: number | null;
+  initialInterestDate: string | null;
   partialAmortizations: PartialAmortizationDto[];
 }
 
