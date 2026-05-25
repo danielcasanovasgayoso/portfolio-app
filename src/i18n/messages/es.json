@@ -95,7 +95,7 @@
     "paidToDate": "Pagado hasta hoy",
     "invested": "Invertido",
     "acquisitionCost": "Coste de adquisición",
-    "marketValue": "Mercado",
+    "marketValue": "Valor de mercado",
     "mortgageBalance": "Saldo hipoteca",
     "equity": "Patrimonio neto",
     "valueOverTime": "Valor en el tiempo",
@@ -149,7 +149,7 @@
     "syncing": "Sincronizando",
     "synced": "Sincronizado",
     "error": "Error",
-    "marketValue": "Valor de Mercado",
+    "marketValue": "Mercado",
     "profitLoss": "Gan./Perd.",
     "updatingCount": "{updated}/{total}"
   },
