@@ -55,14 +55,14 @@ export function PortfolioSummaryCard({
 
       {/* Stats Grid */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        {/* Invested */}
+        {/* Market Value */}
         <div className="space-y-1 sm:space-y-2">
           <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
             <Wallet className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            <span className="label-sm text-muted-foreground">{t("invested")}</span>
+            <span className="label-sm text-muted-foreground">{t("marketValue")}</span>
           </div>
           <p className="text-sm sm:text-lg md:text-xl font-mono font-semibold text-foreground tabular-nums">
-            {formatCurrency(displayTotals?.costBasis ?? 0)}
+            {formatCurrency(displayTotals?.marketValue ?? 0)}
           </p>
         </div>
 
