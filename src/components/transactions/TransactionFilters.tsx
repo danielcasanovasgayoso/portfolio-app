@@ -176,6 +176,7 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
               <Calendar
                 mode="single"
                 selected={dateFrom}
+                defaultMonth={dateFrom}
                 onSelect={handleDateFromChange}
               />
             </PopoverContent>
@@ -197,6 +198,7 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
               <Calendar
                 mode="single"
                 selected={dateTo}
+                defaultMonth={dateTo}
                 onSelect={handleDateToChange}
               />
             </PopoverContent>
