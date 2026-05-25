@@ -85,6 +85,7 @@ export const AmortizationModeEnum = z.enum(["REDUCE_TERM", "REDUCE_INSTALLMENT"]
 export const PropertyOwnerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   sharePct: z.coerce.number().min(0).max(100),
+  isSelf: z.coerce.boolean().default(false),
 });
 
 // Rates are stored as fractions (e.g. 0.10 for 10%).

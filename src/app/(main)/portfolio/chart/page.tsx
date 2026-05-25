@@ -2,7 +2,15 @@ import Link from "next/link";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPortfolioData, getPortfolioValueHistory } from "@/services/portfolio.service";
+import {
+  getPortfolioData,
+  getPortfolioValueHistory,
+  mergeSeries,
+} from "@/services/portfolio.service";
+import {
+  getRealEstateEquityHistory,
+  getRealEstateSummary,
+} from "@/services/real-estate.service";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { PriceChart } from "@/components/charts";
@@ -73,12 +81,22 @@ export default async function PortfolioChartPage() {
   const user = await requireAuth();
   const t = await getTranslations("portfolioChart");
 
-  const [data, chartData] = await Promise.all([
-    getPortfolioData(user.id),
-    getPortfolioValueHistory(user.id),
-  ]);
+  const [data, investmentHistory, realEstateHistory, realEstateSummary] =
+    await Promise.all([
+      getPortfolioData(user.id),
+      getPortfolioValueHistory(user.id),
+      getRealEstateEquityHistory(user.id),
+      getRealEstateSummary(user.id),
+    ]);
 
-  const netWorth = data.totals.grand?.marketValue ?? 0;
+  // Fold real-estate equity into the historical net-worth line.
+  const chartData =
+    realEstateHistory.length > 0
+      ? mergeSeries(investmentHistory, realEstateHistory)
+      : investmentHistory;
+
+  const netWorth =
+    (data.totals.grand?.marketValue ?? 0) + realEstateSummary.userEquity;
   const monthlyChanges = computeMonthlyChanges(chartData).reverse(); // Most recent first
 
   return (

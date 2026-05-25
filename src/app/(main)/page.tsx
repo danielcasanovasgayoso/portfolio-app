@@ -7,7 +7,11 @@ import {
 import { PortfolioEmptyState } from "@/components/portfolio/PortfolioEmptyState";
 import { RefreshPricesButton } from "@/components/portfolio/RefreshPricesButton";
 import { getPortfolioData } from "@/services/portfolio.service";
+import { getRealEstateSummary } from "@/services/real-estate.service";
 import { requireAuth } from "@/lib/auth";
+import { formatCurrency } from "@/lib/formatters";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { assignAssetAccentColors } from "@/lib/asset-colors";
 import {
   PortfolioSummarySkeleton,
@@ -41,14 +45,19 @@ export default async function PortfolioPage() {
 }
 
 async function PortfolioContent({ userId }: { userId: string }) {
-  const data = await getPortfolioData(userId);
+  const [data, realEstate] = await Promise.all([
+    getPortfolioData(userId),
+    getRealEstateSummary(userId),
+  ]);
   const t = await getTranslations("portfolio");
 
+  const hasRealEstate = realEstate.userEquity !== 0;
   const isEmpty =
     data.holdings.funds.length === 0 &&
     data.holdings.stocks.length === 0 &&
     data.holdings.pp.length === 0 &&
-    data.holdings.others.length === 0;
+    data.holdings.others.length === 0 &&
+    !hasRealEstate;
 
   if (isEmpty) {
     return <PortfolioEmptyState />;
@@ -68,6 +77,7 @@ async function PortfolioContent({ userId }: { userId: string }) {
         <PortfolioSummaryCard
           grand={data.totals.grand}
           invested={data.totals.invested}
+          realEstateEquity={realEstate.userEquity}
         />
       </div>
 
@@ -102,6 +112,39 @@ async function PortfolioContent({ userId }: { userId: string }) {
         accentColors={accentColors}
       />
 
+      {hasRealEstate && (
+        <section className="mt-8">
+          <header className="px-5 pb-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-foreground tracking-tight">
+                {t("realEstate")}
+              </h2>
+              <p className="text-xl font-mono font-bold text-foreground tabular-nums">
+                {formatCurrency(realEstate.userEquity)}
+              </p>
+            </div>
+          </header>
+
+          <div className="mx-4 flex flex-col gap-3">
+            <Link href="/real-estate" className="block group">
+              <article className="relative bg-card rounded-xl shadow-sm px-4 py-3 pl-5 border-0 overflow-hidden transition-transform duration-150 active:scale-[0.98]">
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary" />
+                <div className="flex items-center justify-between gap-1.5">
+                  <h3 className="text-[15px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                    {t("realEstateEquity")}
+                  </h3>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                </div>
+                <div className="flex items-end justify-end gap-3 mt-1">
+                  <p className="text-[12px] font-mono font-bold text-foreground tabular-nums">
+                    {formatCurrency(realEstate.userEquity)}
+                  </p>
+                </div>
+              </article>
+            </Link>
+          </div>
+        </section>
+      )}
     </>
   );
 }

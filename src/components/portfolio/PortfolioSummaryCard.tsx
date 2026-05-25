@@ -8,16 +8,19 @@ import { TrendingUp, TrendingDown, Wallet, Percent, ChevronRight } from "lucide-
 interface PortfolioSummaryCardProps {
   grand: CategoryTotal | null;
   invested: CategoryTotal | null;
+  /** User-share real-estate equity, folded into the headline net worth. */
+  realEstateEquity?: number;
 }
 
 export function PortfolioSummaryCard({
   grand,
   invested,
+  realEstateEquity = 0,
 }: PortfolioSummaryCardProps) {
   const t = useTranslations("portfolio");
   const displayTotals = invested || grand;
 
-  if (!grand) {
+  if (!grand && realEstateEquity === 0) {
     return (
       <article className="dark bg-hero-gradient rounded-xl border-0 shadow-ambient p-8 h-full flex flex-col justify-center">
         <div className="flex items-center gap-2 mb-4">
@@ -32,6 +35,7 @@ export function PortfolioSummaryCard({
 
   const gainClass = getGainClass(displayTotals?.gainLoss ?? 0);
   const isPositive = gainClass === "positive";
+  const netWorth = (grand?.marketValue ?? 0) + realEstateEquity;
 
   return (
     <Link href="/portfolio/chart" className="block group">
@@ -45,7 +49,7 @@ export function PortfolioSummaryCard({
       {/* Main Value */}
       <div className="mb-4 sm:mb-8">
         <p className="text-4xl sm:text-5xl md:text-6xl font-mono font-bold tracking-tighter text-foreground">
-          {formatCurrency(grand.marketValue)}
+          {formatCurrency(netWorth)}
         </p>
       </div>
 

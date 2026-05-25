@@ -7,6 +7,7 @@ export interface PropertyOwnerDto {
   id: string;
   name: string;
   sharePct: number;
+  isSelf: boolean;
 }
 
 export interface PropertyValuationDto {
@@ -66,6 +67,17 @@ export interface PropertyListItem {
   marketValue: number | null;
   mortgageBalance: number | null;
   equity: number | null;
+  /** Net equity attributable to the app user (equity × their ownership share). */
+  userEquity: number | null;
+}
+
+/** Aggregate real-estate figures across all of a user's properties. */
+export interface RealEstateSummary {
+  marketValue: number;
+  mortgageBalance: number;
+  equity: number;
+  /** Sum of each property's user-share equity — the figure folded into net worth. */
+  userEquity: number;
 }
 
 export interface PropertyDetail {

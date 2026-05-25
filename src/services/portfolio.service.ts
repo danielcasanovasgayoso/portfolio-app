@@ -149,6 +149,35 @@ export async function getAssetTransactions(userId: string, assetId: string) {
 }
 
 /**
+ * Merges two { date, close }[] series into one by summing them over the union
+ * of their dates. Each series is forward-filled (its last known value carries
+ * forward) so a date present in one series but not the other still sums
+ * correctly. Used to fold real-estate equity into the investment net-worth line.
+ */
+export function mergeSeries(
+  a: { date: string; close: number }[],
+  b: { date: string; close: number }[]
+): { date: string; close: number }[] {
+  const dates = Array.from(
+    new Set([...a.map((p) => p.date), ...b.map((p) => p.date)])
+  ).sort();
+
+  const stepValue = (series: { date: string; close: number }[], d: string) => {
+    let value = 0;
+    for (const p of series) {
+      if (p.date <= d) value = p.close;
+      else break;
+    }
+    return value;
+  };
+
+  return dates.map((d) => ({
+    date: d,
+    close: Math.round((stepValue(a, d) + stepValue(b, d)) * 100) / 100,
+  }));
+}
+
+/**
  * Computes historical portfolio net worth from transaction history + price history.
  * Returns data points compatible with PriceChart: { date: string, close: number }[]
  */
