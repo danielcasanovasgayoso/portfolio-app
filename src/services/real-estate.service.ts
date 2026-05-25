@@ -186,12 +186,29 @@ export async function getRealEstateSummary(
   };
 }
 
+/** First day of each month from `start` up to and including `end` (YYYY-MM-DD). */
+function monthlyDates(start: string, end: string): string[] {
+  if (start > end) return [];
+  const out: string[] = [];
+  const d = new Date(start + "T00:00:00Z");
+  d.setUTCDate(1);
+  const endDate = new Date(end + "T00:00:00Z");
+  while (d <= endDate) {
+    out.push(d.toISOString().split("T")[0]);
+    d.setUTCMonth(d.getUTCMonth() + 1);
+  }
+  return out;
+}
+
 /**
  * User-share real-estate equity over time, as a { date, close }[] series
- * compatible with PriceChart. For each property we build step functions for
- * market value (latest valuation on/before a date) and outstanding mortgage
- * balance (latest schedule row on/before a date), take the difference, scale by
- * the user's ownership share, and sum across properties on the union of dates.
+ * compatible with PriceChart. Per property we interpolate market value linearly
+ * between an acquisition-cost anchor at the purchase date and each subsequent
+ * valuation (flat after the last), subtract the outstanding mortgage balance
+ * (a step function from the amortization schedule), scale by the user's
+ * ownership share, and sum across properties on the union of dates. The market
+ * value is interpolated — not stepped — so adding a single recent valuation
+ * shows gradual appreciation rather than a vertical spike on the valuation date.
  */
 export async function getRealEstateEquityHistory(
   userId: string
@@ -209,7 +226,6 @@ export async function getRealEstateEquityHistory(
   const today = new Date().toISOString().split("T")[0];
 
   for (const property of properties) {
-    // Market value step points: each valuation date.
     const valuations = property.valuations
       .map((v) => ({
         date: v.date.toISOString().split("T")[0],
@@ -218,23 +234,48 @@ export async function getRealEstateEquityHistory(
       .sort((a, b) => a.date.localeCompare(b.date));
     if (valuations.length === 0) continue; // no valuation → no contribution
 
+    // Anchor the value series at the purchase date with the acquisition cost,
+    // so appreciation ramps up from what was actually paid. Skip the anchor if a
+    // real valuation already sits on/before the purchase date.
+    const purchaseDate = property.purchaseDate.toISOString().split("T")[0];
+    const anchors =
+      valuations[0].date <= purchaseDate
+        ? valuations
+        : [
+            { date: purchaseDate, value: computeAcquisition(property).total },
+            ...valuations,
+          ];
+    const firstDate = anchors[0].date;
+    const last = anchors[anchors.length - 1];
+
     // Mortgage outstanding step points from the amortization schedule.
     const mi = toMortgageInput(property);
     const schedule = mi ? computeSchedule(mi.input, mi.partials) : [];
     const loanAmount = mi ? mi.input.loanAmount : 0;
     const fraction = userShareFraction(property);
 
-    const valueAt = (d: string): number => {
-      // Market value: latest valuation on/before d (none yet → 0, skip below).
-      let mv = 0;
-      let hasMv = false;
-      for (const v of valuations) {
-        if (v.date <= d) {
-          mv = v.value;
-          hasMv = true;
-        } else break;
+    // Linearly interpolated market value: none before the property exists,
+    // flat at the last valuation afterward, linear between surrounding anchors.
+    const marketValueAt = (d: string): number | null => {
+      if (d < firstDate) return null;
+      if (d >= last.date) return last.value;
+      for (let i = 0; i < anchors.length - 1; i++) {
+        const a = anchors[i];
+        const b = anchors[i + 1];
+        if (d >= a.date && d <= b.date) {
+          const ta = new Date(a.date).getTime();
+          const tb = new Date(b.date).getTime();
+          const td = new Date(d).getTime();
+          const frac = tb === ta ? 0 : (td - ta) / (tb - ta);
+          return a.value + (b.value - a.value) * frac;
+        }
       }
-      if (!hasMv) return 0;
+      return null;
+    };
+
+    const valueAt = (d: string): number => {
+      const mv = marketValueAt(d);
+      if (mv == null) return 0; // property does not exist yet at d
 
       // Outstanding mortgage: latest schedule balance on/before d.
       let balance = 0;
@@ -250,13 +291,21 @@ export async function getRealEstateEquityHistory(
       return (mv - balance) * fraction;
     };
 
-    // Step points for this property: valuation dates + past schedule payment
-    // dates. Future installments are skipped so the chart stops at today.
+    // Date grid for this property: purchase anchor + valuation dates + past
+    // schedule payment dates (monthly granularity for mortgaged props). Future
+    // installments are skipped so the chart stops at today. Without a mortgage
+    // there are no schedule dates, so sample monthly between purchase and today
+    // to render the ramp gradually instead of a single purchase→valuation step.
+    if (firstDate <= today) allDates.add(firstDate);
     for (const v of valuations) {
       if (v.date <= today) allDates.add(v.date);
     }
-    for (const row of schedule) {
-      if (row.paymentDate <= today) allDates.add(row.paymentDate);
+    if (mi) {
+      for (const row of schedule) {
+        if (row.paymentDate <= today) allDates.add(row.paymentDate);
+      }
+    } else {
+      for (const d of monthlyDates(firstDate, today)) allDates.add(d);
     }
     propertySeries.push({ value: valueAt });
   }
