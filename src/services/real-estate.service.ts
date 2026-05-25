@@ -10,6 +10,7 @@ import type {
   OwnerSplit,
   PropertyDetail,
   PropertyListItem,
+  RealEstateSummary,
 } from "@/types/real-estate";
 import type { Prisma } from "@prisma/client";
 
@@ -89,6 +90,29 @@ function latestValuation(property: DbProperty): number | null {
   return Number(property.valuations[property.valuations.length - 1].value);
 }
 
+/**
+ * Fraction of a property's equity attributable to the app user.
+ * - No owners listed → 1.0 (sole implied owner).
+ * - One+ owners marked `isSelf` → sum of their shares / 100.
+ * - Owners listed but none marked `isSelf` → 1.0 (back-compat default, so
+ *   existing properties keep counting fully until the user marks co-owners).
+ */
+function userShareFraction(property: DbProperty): number {
+  if (property.owners.length === 0) return 1;
+  const selfOwners = property.owners.filter((o) => o.isSelf);
+  if (selfOwners.length === 0) return 1;
+  const pct = selfOwners.reduce((sum, o) => sum + Number(o.sharePct), 0);
+  return pct / 100;
+}
+
+/** Outstanding mortgage balance for a property today, or null if no mortgage. */
+function mortgageBalanceOf(property: DbProperty): number | null {
+  const mi = toMortgageInput(property);
+  if (!mi) return null;
+  const schedule = computeSchedule(mi.input, mi.partials);
+  return summarize(mi.input, schedule).remainingBalance;
+}
+
 export async function getProperties(userId: string): Promise<PropertyListItem[]> {
   const properties = await db.property.findMany({
     where: { userId },
@@ -99,18 +123,14 @@ export async function getProperties(userId: string): Promise<PropertyListItem[]>
   return properties.map((property) => {
     const acquisition = computeAcquisition(property);
     const marketValue = latestValuation(property);
-
-    let mortgageBalance: number | null = null;
-    const mi = toMortgageInput(property);
-    if (mi) {
-      const schedule = computeSchedule(mi.input, mi.partials);
-      mortgageBalance = summarize(mi.input, schedule).remainingBalance;
-    }
+    const mortgageBalance = mortgageBalanceOf(property);
 
     const equity =
       marketValue != null
         ? round2(marketValue - (mortgageBalance ?? 0))
         : null;
+    const userEquity =
+      equity != null ? round2(equity * userShareFraction(property)) : null;
 
     return {
       id: property.id,
@@ -121,7 +141,138 @@ export async function getProperties(userId: string): Promise<PropertyListItem[]>
       marketValue,
       mortgageBalance,
       equity,
+      userEquity,
     };
+  });
+}
+
+/**
+ * Aggregate real-estate figures across all of a user's properties.
+ * `userEquity` is the figure folded into the dashboard Total Net Worth.
+ */
+export async function getRealEstateSummary(
+  userId: string
+): Promise<RealEstateSummary> {
+  const properties = await db.property.findMany({
+    where: { userId },
+    include: propertyInclude,
+  });
+
+  const summary: RealEstateSummary = {
+    marketValue: 0,
+    mortgageBalance: 0,
+    equity: 0,
+    userEquity: 0,
+  };
+
+  for (const property of properties) {
+    const marketValue = latestValuation(property);
+    if (marketValue == null) continue; // no valuation → no contribution
+    const mortgageBalance = mortgageBalanceOf(property) ?? 0;
+    const equity = marketValue - mortgageBalance;
+    const fraction = userShareFraction(property);
+
+    summary.marketValue += marketValue;
+    summary.mortgageBalance += mortgageBalance;
+    summary.equity += equity;
+    summary.userEquity += equity * fraction;
+  }
+
+  return {
+    marketValue: round2(summary.marketValue),
+    mortgageBalance: round2(summary.mortgageBalance),
+    equity: round2(summary.equity),
+    userEquity: round2(summary.userEquity),
+  };
+}
+
+/**
+ * User-share real-estate equity over time, as a { date, close }[] series
+ * compatible with PriceChart. For each property we build step functions for
+ * market value (latest valuation on/before a date) and outstanding mortgage
+ * balance (latest schedule row on/before a date), take the difference, scale by
+ * the user's ownership share, and sum across properties on the union of dates.
+ */
+export async function getRealEstateEquityHistory(
+  userId: string
+): Promise<{ date: string; close: number }[]> {
+  const properties = await db.property.findMany({
+    where: { userId },
+    include: propertyInclude,
+  });
+
+  type Series = { value: (d: string) => number };
+  const propertySeries: Series[] = [];
+  const allDates = new Set<string>();
+  // Cap the series to today — the amortization schedule extends years into the
+  // future, but the historical net-worth chart must stop at the present.
+  const today = new Date().toISOString().split("T")[0];
+
+  for (const property of properties) {
+    // Market value step points: each valuation date.
+    const valuations = property.valuations
+      .map((v) => ({
+        date: v.date.toISOString().split("T")[0],
+        value: Number(v.value),
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    if (valuations.length === 0) continue; // no valuation → no contribution
+
+    // Mortgage outstanding step points from the amortization schedule.
+    const mi = toMortgageInput(property);
+    const schedule = mi ? computeSchedule(mi.input, mi.partials) : [];
+    const loanAmount = mi ? mi.input.loanAmount : 0;
+    const fraction = userShareFraction(property);
+
+    const valueAt = (d: string): number => {
+      // Market value: latest valuation on/before d (none yet → 0, skip below).
+      let mv = 0;
+      let hasMv = false;
+      for (const v of valuations) {
+        if (v.date <= d) {
+          mv = v.value;
+          hasMv = true;
+        } else break;
+      }
+      if (!hasMv) return 0;
+
+      // Outstanding mortgage: latest schedule balance on/before d.
+      let balance = 0;
+      if (mi) {
+        // Before the first installment the full loan is outstanding.
+        balance = loanAmount;
+        for (const row of schedule) {
+          if (row.paymentDate <= d) {
+            balance = row.balance;
+          } else break;
+        }
+      }
+      return (mv - balance) * fraction;
+    };
+
+    // Step points for this property: valuation dates + past schedule payment
+    // dates. Future installments are skipped so the chart stops at today.
+    for (const v of valuations) {
+      if (v.date <= today) allDates.add(v.date);
+    }
+    for (const row of schedule) {
+      if (row.paymentDate <= today) allDates.add(row.paymentDate);
+    }
+    propertySeries.push({ value: valueAt });
+  }
+
+  if (propertySeries.length === 0) return [];
+
+  // Always include a point at today so the equity line reaches the present
+  // (reflecting the current outstanding balance between installments).
+  allDates.add(today);
+
+  const sortedDates = Array.from(allDates)
+    .filter((d) => d <= today)
+    .sort();
+  return sortedDates.map((d) => {
+    const total = propertySeries.reduce((sum, s) => sum + s.value(d), 0);
+    return { date: d, close: round2(total) };
   });
 }
 
@@ -174,6 +325,7 @@ export async function getPropertyDetail(
       id: o.id,
       name: o.name,
       sharePct: Number(o.sharePct),
+      isSelf: o.isSelf,
     })),
     valuations: property.valuations.map((v) => ({
       id: v.id,

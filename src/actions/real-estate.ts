@@ -55,6 +55,7 @@ export async function createProperty(
             userId,
             name: o.name,
             sharePct: new Decimal(o.sharePct),
+            isSelf: o.isSelf,
           })),
         },
       },
@@ -97,6 +98,7 @@ export async function updateProperty(
           propertyId,
           name: o.name,
           sharePct: new Decimal(o.sharePct),
+          isSelf: o.isSelf,
         })),
       }),
     ]);

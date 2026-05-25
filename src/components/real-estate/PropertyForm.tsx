@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray, useWatch } from "react-hook-form";
+import { useForm, useFieldArray, useWatch, Controller } from "react-hook-form";
 import { useTranslations } from "next-intl";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/real-estate/DatePicker";
 import {
   createProperty,
@@ -37,6 +38,7 @@ import type { PropertyDetail } from "@/types/real-estate";
 interface OwnerValue {
   name: string;
   sharePct: string;
+  isSelf: boolean;
 }
 interface PropertyFormValues {
   name: string;
@@ -91,6 +93,7 @@ function buildDefaults(property?: PropertyDetail): PropertyFormValues {
     owners: property.owners.map((o) => ({
       name: o.name,
       sharePct: o.sharePct.toString(),
+      isSelf: o.isSelf,
     })),
     hasMortgage: !!property.mortgage,
     loanAmount: property.mortgage?.loanAmount.toString() ?? "",
@@ -134,7 +137,7 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
         purchaseCosts: num(data.purchaseCosts),
         owners: data.owners
           .filter((o) => o.name.trim() !== "")
-          .map((o) => ({ name: o.name, sharePct: num(o.sharePct) })),
+          .map((o) => ({ name: o.name, sharePct: num(o.sharePct), isSelf: !!o.isSelf })),
       };
 
       const result = isEditing
@@ -278,39 +281,60 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
           </CardHeader>
           <CardContent className="space-y-3">
             {owners.fields.map((field, idx) => (
-              <div key={field.id} className="flex items-end gap-2">
-                <div className="flex-1">
-                  <Label className="text-xs">{t("ownerName")}</Label>
-                  <Input
-                    placeholder={t("ownerNamePlaceholder")}
-                    {...form.register(`owners.${idx}.name`)}
-                  />
+              <div key={field.id} className="space-y-2">
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Label className="text-xs">{t("ownerName")}</Label>
+                    <Input
+                      placeholder={t("ownerNamePlaceholder")}
+                      {...form.register(`owners.${idx}.name`)}
+                    />
+                  </div>
+                  <div className="w-28">
+                    <Label className="text-xs">{t("share")} (%)</Label>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="50"
+                      {...form.register(`owners.${idx}.sharePct`)}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => owners.remove(idx)}
+                    aria-label={tCommon("delete")}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div className="w-28">
-                  <Label className="text-xs">{t("share")} (%)</Label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="50"
-                    {...form.register(`owners.${idx}.sharePct`)}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => owners.remove(idx)}
-                  aria-label={tCommon("delete")}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <Controller
+                  control={form.control}
+                  name={`owners.${idx}.isSelf`}
+                  render={({ field: f }) => (
+                    <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                      <Checkbox
+                        checked={!!f.value}
+                        onCheckedChange={(checked) => f.onChange(checked === true)}
+                      />
+                      {t("ownerIsSelf")}
+                    </label>
+                  )}
+                />
               </div>
             ))}
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => owners.append({ name: "", sharePct: "" })}
+              onClick={() =>
+                owners.append({
+                  name: "",
+                  sharePct: "",
+                  isSelf: owners.fields.length === 0,
+                })
+              }
             >
               <Plus className="mr-2 h-4 w-4" />
               {t("addOwner")}

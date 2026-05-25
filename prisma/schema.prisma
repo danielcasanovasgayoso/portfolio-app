@@ -256,6 +256,7 @@ model PropertyOwner {
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   name       String
   sharePct   Decimal  @db.Decimal(9, 4) // e.g. 50.0000
+  isSelf     Boolean  @default(false) // marks the owner that represents the app user
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
