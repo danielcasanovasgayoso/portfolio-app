@@ -225,13 +225,16 @@ export async function getPortfolioValueHistory(
     priceMap.get(dateStr)!.set(p.assetId, Number(p.close));
   }
 
-  const sortedDates = Array.from(dateSet).sort();
-
-  // 4. Pre-process transactions into a date-indexed structure
+  // 4. Pre-process transactions into a date-indexed structure. Transaction
+  // dates are also folded into the date grid so the series starts at the first
+  // transaction rather than the first price date — holdings held before any
+  // price exists are valued at cost basis (handled in step 5), which avoids a
+  // phantom vertical jump on the first day with price data.
   type TxnEntry = { assetId: string; type: TransactionType; shares: number; transferType: TransferType | null; totalAmount: number };
   const txnsByDate = new Map<string, TxnEntry[]>();
   for (const t of transactions) {
     const dateStr = t.date.toISOString().split("T")[0];
+    dateSet.add(dateStr);
     if (!txnsByDate.has(dateStr)) {
       txnsByDate.set(dateStr, []);
     }
@@ -243,6 +246,8 @@ export async function getPortfolioValueHistory(
       totalAmount: Number(t.totalAmount),
     });
   }
+
+  const sortedDates = Array.from(dateSet).sort();
 
   // 5. Walk through dates computing portfolio value
   const sharesMap = new Map<string, number>(); // assetId → cumulative shares
