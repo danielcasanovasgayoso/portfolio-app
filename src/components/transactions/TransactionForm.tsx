@@ -106,10 +106,18 @@ export function TransactionForm({
   }, [transaction, form]);
 
   const onSubmit = (data: TransactionCreateInput) => {
+    // The calendar yields a Date at the user's local midnight. Pin it to UTC
+    // midnight of the same calendar day here (client side, where the getters
+    // read the user's timezone) so the server doesn't shift it a day back.
+    const d = data.date;
+    const payload = {
+      ...data,
+      date: new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())),
+    };
     startTransition(async () => {
       const result = isEditing
-        ? await updateTransaction(transaction.id, data)
-        : await createTransaction(data);
+        ? await updateTransaction(transaction.id, payload)
+        : await createTransaction(payload);
 
       if (result.success) {
         onOpenChange(false);
