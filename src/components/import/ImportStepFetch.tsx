@@ -105,6 +105,7 @@ export function ImportStepFetch({ canFetch, onComplete }: ImportStepFetchProps) 
                   <Calendar
                     mode="single"
                     selected={afterDate}
+                    defaultMonth={afterDate}
                     onSelect={setAfterDate}
                     initialFocus
                   />

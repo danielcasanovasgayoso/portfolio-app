@@ -200,6 +200,7 @@ export function TransactionFormFields({ form, assets }: TransactionFormFieldsPro
                   <Calendar
                     mode="single"
                     selected={field.value}
+                    defaultMonth={field.value}
                     onSelect={field.onChange}
                     disabled={false}
                   />

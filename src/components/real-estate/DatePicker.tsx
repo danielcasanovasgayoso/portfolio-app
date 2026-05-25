@@ -34,6 +34,7 @@ export function DatePicker({ value, onChange, placeholder }: DatePickerProps) {
         <Calendar
           mode="single"
           selected={date}
+          defaultMonth={date}
           onSelect={(d) => {
             if (d) onChange(format(d, "yyyy-MM-dd"));
           }}
