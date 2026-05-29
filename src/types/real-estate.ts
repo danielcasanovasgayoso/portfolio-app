@@ -78,9 +78,18 @@ export interface RealEstateSummary {
   equity: number;
   /** Sum of each property's user-share equity — the figure folded into net worth. */
   userEquity: number;
-  /** Sum of each property's user-share acquisition cost (price + taxes + fees). */
+  /**
+   * Cash the user has actually invested (user-share), i.e. acquisition cost
+   * minus the outstanding mortgage balance: down payment + taxes/fees +
+   * principal repaid. Compared against equity on a like-for-like (net-of-debt)
+   * basis, mirroring invested → market on the Funds card.
+   */
   userCost: number;
-  /** Net equity gain attributable to the user: userEquity − userCost. */
+  /**
+   * Net equity gain attributable to the user: userEquity − userCost. Equals the
+   * property's appreciation (marketValue − acquisitionTotal) scaled by the
+   * user's ownership share.
+   */
   userGain: number;
   /** userGain as a fraction of userCost (0.15 = +15%). */
   userGainPercent: number;
