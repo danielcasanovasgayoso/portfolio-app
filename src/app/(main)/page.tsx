@@ -77,7 +77,12 @@ async function PortfolioContent({ userId }: { userId: string }) {
         <PortfolioSummaryCard
           grand={data.totals.grand}
           invested={data.totals.invested}
-          realEstateEquity={realEstate.userEquity}
+          other={data.totals.others}
+          realEstate={{
+            value: realEstate.userEquity,
+            gainLoss: realEstate.userGain,
+            gainLossPercent: realEstate.userGainPercent,
+          }}
         />
       </div>
 

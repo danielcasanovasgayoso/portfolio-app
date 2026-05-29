@@ -78,6 +78,12 @@ export interface RealEstateSummary {
   equity: number;
   /** Sum of each property's user-share equity — the figure folded into net worth. */
   userEquity: number;
+  /** Sum of each property's user-share acquisition cost (price + taxes + fees). */
+  userCost: number;
+  /** Net equity gain attributable to the user: userEquity − userCost. */
+  userGain: number;
+  /** userGain as a fraction of userCost (0.15 = +15%). */
+  userGainPercent: number;
 }
 
 export interface PropertyDetail {

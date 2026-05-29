@@ -163,6 +163,9 @@ export async function getRealEstateSummary(
     mortgageBalance: 0,
     equity: 0,
     userEquity: 0,
+    userCost: 0,
+    userGain: 0,
+    userGainPercent: 0,
   };
 
   for (const property of properties) {
@@ -176,13 +179,21 @@ export async function getRealEstateSummary(
     summary.mortgageBalance += mortgageBalance;
     summary.equity += equity;
     summary.userEquity += equity * fraction;
+    summary.userCost += computeAcquisition(property).total * fraction;
   }
+
+  const userGain = summary.userEquity - summary.userCost;
+  const userGainPercent =
+    summary.userCost > 0 ? userGain / summary.userCost : 0;
 
   return {
     marketValue: round2(summary.marketValue),
     mortgageBalance: round2(summary.mortgageBalance),
     equity: round2(summary.equity),
     userEquity: round2(summary.userEquity),
+    userCost: round2(summary.userCost),
+    userGain: round2(userGain),
+    userGainPercent,
   };
 }
 
