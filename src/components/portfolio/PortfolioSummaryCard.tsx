@@ -100,10 +100,46 @@ export function PortfolioSummaryCard({
           </p>
         </div>
 
-        {/* Breakdown table: one row per group, columns = value / gain / return */}
-        <div className="space-y-2 sm:space-y-3">
+        {/* Mobile: one stacked block per group. The 4-column table below packs
+            wide monospace figures too tightly for narrow screens (columns
+            collide), so on mobile we lay each group out vertically instead. */}
+        <div className="space-y-3 sm:hidden">
+          {rows.map((row) => {
+            const isPositive = row.data.gainLoss >= 0;
+            const gainColor = isPositive ? "text-gain" : "text-loss";
+            return (
+              <div
+                key={row.key}
+                className="flex items-start justify-between gap-3"
+              >
+                <span className="label-sm text-foreground pt-0.5">
+                  {row.label}
+                </span>
+                <div className="flex flex-col items-end min-w-0">
+                  <span className="text-base font-mono font-semibold text-foreground tabular-nums">
+                    {formatCurrency(row.data.value)}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs font-mono font-medium tabular-nums",
+                      gainColor
+                    )}
+                  >
+                    {isPositive ? "+" : ""}
+                    {formatCurrency(row.data.gainLoss)} ·{" "}
+                    {formatPercent(row.data.gainLossPercent)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop / tablet: breakdown table — one row per group,
+            columns = value / gain / return */}
+        <div className="hidden sm:block space-y-3">
           {/* Column headers */}
-          <div className="grid grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,1fr))] gap-2 sm:gap-4">
+          <div className="grid grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,1fr))] gap-4">
             <span />
             <span className="label-sm text-muted-foreground text-right">
               {t("marketValue")}
@@ -122,17 +158,17 @@ export function PortfolioSummaryCard({
             return (
               <div
                 key={row.key}
-                className="grid grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,1fr))] gap-2 sm:gap-4 items-baseline"
+                className="grid grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,1fr))] gap-4 items-baseline"
               >
                 <span className="label-sm text-foreground truncate">
                   {row.label}
                 </span>
-                <span className="text-sm sm:text-base md:text-lg font-mono font-semibold text-foreground tabular-nums text-right">
+                <span className="text-base md:text-lg font-mono font-semibold text-foreground tabular-nums text-right">
                   {formatCurrency(row.data.value)}
                 </span>
                 <span
                   className={cn(
-                    "text-sm sm:text-base md:text-lg font-mono font-semibold tabular-nums text-right",
+                    "text-base md:text-lg font-mono font-semibold tabular-nums text-right",
                     gainColor
                   )}
                 >
@@ -141,7 +177,7 @@ export function PortfolioSummaryCard({
                 </span>
                 <span
                   className={cn(
-                    "text-sm sm:text-base md:text-lg font-mono font-semibold tabular-nums text-right",
+                    "text-base md:text-lg font-mono font-semibold tabular-nums text-right",
                     gainColor
                   )}
                 >

@@ -174,14 +174,27 @@ export async function getRealEstateSummary(
     const mortgageBalance = mortgageBalanceOf(property) ?? 0;
     const equity = marketValue - mortgageBalance;
     const fraction = userShareFraction(property);
+    const acquisitionTotal = computeAcquisition(property).total;
+
+    // Cash actually invested so far = acquisition cost minus whatever is still
+    // owed to the bank (i.e. down payment + fees/taxes + principal repaid). This
+    // is the right cost basis to compare against equity: both are net of the
+    // outstanding loan, mirroring how the Funds card relates invested → market.
+    const investedCapital = acquisitionTotal - mortgageBalance;
 
     summary.marketValue += marketValue;
     summary.mortgageBalance += mortgageBalance;
     summary.equity += equity;
     summary.userEquity += equity * fraction;
-    summary.userCost += computeAcquisition(property).total * fraction;
+    summary.userCost += investedCapital * fraction;
   }
 
+  // Equity gain = current equity − cash invested. Equivalently this is the pure
+  // asset appreciation (marketValue − acquisitionTotal) scaled by the user's
+  // share, since the outstanding-loan term cancels out. The previous formula
+  // subtracted the outstanding debt from equity but compared it against the
+  // full (gross) acquisition cost, which double-counted the mortgage and showed
+  // a phantom loss on properties that had actually appreciated.
   const userGain = summary.userEquity - summary.userCost;
   const userGainPercent =
     summary.userCost > 0 ? userGain / summary.userCost : 0;
