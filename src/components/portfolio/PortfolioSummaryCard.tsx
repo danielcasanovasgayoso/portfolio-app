@@ -111,7 +111,7 @@ export function PortfolioSummaryCard({
             return (
               <div key={row.key} className="space-y-1">
                 <span className="label-sm text-foreground">{row.label}</span>
-                <div className="flex items-baseline justify-between gap-2">
+                <div className="flex items-baseline justify-start gap-3">
                   <span className="text-sm font-mono font-semibold text-foreground tabular-nums">
                     {formatCurrency(row.data.value)}
                   </span>
