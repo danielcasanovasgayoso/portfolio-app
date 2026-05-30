@@ -100,13 +100,49 @@ export function PortfolioSummaryCard({
           </p>
         </div>
 
-        {/* Breakdown table — one row per group, columns = value / gain / return.
-            Unified across breakpoints: the same single-line grid renders on
-            mobile and desktop, with tighter spacing and smaller monospace
-            figures on narrow screens so the three columns still fit. */}
-        <div className="space-y-2 sm:space-y-3">
-          {/* Column headers — hidden on mobile to keep narrow rows compact */}
-          <div className="hidden sm:grid grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,1fr))] gap-4">
+        {/* Mobile: section title on its own line, then value / gain / return
+            together on a single row below it. Giving the figures the full row
+            width (instead of sharing it with the label) keeps the three wide
+            monospace numbers on one line without colliding. */}
+        <div className="space-y-3 sm:hidden">
+          {rows.map((row) => {
+            const isPositive = row.data.gainLoss >= 0;
+            const gainColor = isPositive ? "text-gain" : "text-loss";
+            return (
+              <div key={row.key} className="space-y-1">
+                <span className="label-sm text-foreground">{row.label}</span>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-mono font-semibold text-foreground tabular-nums">
+                    {formatCurrency(row.data.value)}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-sm font-mono font-semibold tabular-nums",
+                      gainColor
+                    )}
+                  >
+                    {isPositive ? "+" : ""}
+                    {formatCurrency(row.data.gainLoss)}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-sm font-mono font-semibold tabular-nums",
+                      gainColor
+                    )}
+                  >
+                    {formatPercent(row.data.gainLossPercent)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop / tablet: breakdown table — one row per group,
+            columns = value / gain / return */}
+        <div className="hidden sm:block space-y-3">
+          {/* Column headers */}
+          <div className="grid grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,1fr))] gap-4">
             <span />
             <span className="label-sm text-muted-foreground text-right">
               {t("marketValue")}
@@ -125,17 +161,17 @@ export function PortfolioSummaryCard({
             return (
               <div
                 key={row.key}
-                className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,1fr))] gap-1.5 sm:gap-4 items-baseline"
+                className="grid grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,1fr))] gap-4 items-baseline"
               >
                 <span className="label-sm text-foreground truncate">
                   {row.label}
                 </span>
-                <span className="text-xs sm:text-base md:text-lg font-mono font-semibold text-foreground tabular-nums text-right">
+                <span className="text-base md:text-lg font-mono font-semibold text-foreground tabular-nums text-right">
                   {formatCurrency(row.data.value)}
                 </span>
                 <span
                   className={cn(
-                    "text-xs sm:text-base md:text-lg font-mono font-semibold tabular-nums text-right",
+                    "text-base md:text-lg font-mono font-semibold tabular-nums text-right",
                     gainColor
                   )}
                 >
@@ -144,7 +180,7 @@ export function PortfolioSummaryCard({
                 </span>
                 <span
                   className={cn(
-                    "text-xs sm:text-base md:text-lg font-mono font-semibold tabular-nums text-right",
+                    "text-base md:text-lg font-mono font-semibold tabular-nums text-right",
                     gainColor
                   )}
                 >
