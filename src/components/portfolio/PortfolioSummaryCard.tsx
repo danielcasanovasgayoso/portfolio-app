@@ -109,15 +109,17 @@ export function PortfolioSummaryCard({
             const isPositive = row.data.gainLoss >= 0;
             const gainColor = isPositive ? "text-gain" : "text-loss";
             return (
-              <div key={row.key} className="space-y-1">
-                <span className="label-sm text-foreground">{row.label}</span>
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-mono font-semibold text-foreground tabular-nums">
+              <div key={row.key} className="space-y-1 text-left">
+                <span className="label-sm text-foreground text-left">
+                  {row.label}
+                </span>
+                <div className="flex items-baseline justify-start gap-3">
+                  <span className="text-sm font-mono font-semibold text-foreground tabular-nums text-left">
                     {formatCurrency(row.data.value)}
                   </span>
                   <span
                     className={cn(
-                      "text-sm font-mono font-semibold tabular-nums",
+                      "text-sm font-mono font-semibold tabular-nums text-left",
                       gainColor
                     )}
                   >
@@ -126,7 +128,7 @@ export function PortfolioSummaryCard({
                   </span>
                   <span
                     className={cn(
-                      "text-sm font-mono font-semibold tabular-nums",
+                      "text-sm font-mono font-semibold tabular-nums text-left",
                       gainColor
                     )}
                   >
