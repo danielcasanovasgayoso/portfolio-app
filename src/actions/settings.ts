@@ -272,12 +272,23 @@ export async function exportPortfolioData(): Promise<{
     const userId = await getUserId();
 
     // Fetch all user's data
-    const [assets, transactions] = await Promise.all([
+    const [assets, transactions, properties] = await Promise.all([
       db.asset.findMany({ where: { userId }, orderBy: { name: "asc" } }),
       db.transaction.findMany({
         where: { userId },
         orderBy: { date: "desc" },
         include: { asset: { select: { name: true, isin: true } } },
+      }),
+      db.property.findMany({
+        where: { userId },
+        orderBy: { name: "asc" },
+        include: {
+          owners: true,
+          valuations: { orderBy: { date: "asc" } },
+          mortgage: {
+            include: { partialAmortizations: { orderBy: { date: "asc" } } },
+          },
+        },
       }),
     ]);
 
@@ -286,6 +297,7 @@ export async function exportPortfolioData(): Promise<{
       summary: {
         totalAssets: assets.length,
         totalTransactions: transactions.length,
+        totalProperties: properties.length,
       },
       assets: assets.map((a) => ({
         isin: a.isin,
@@ -305,6 +317,48 @@ export async function exportPortfolioData(): Promise<{
         pricePerShare: t.pricePerShare ? Number(t.pricePerShare) : null,
         totalAmount: Number(t.totalAmount),
         fees: t.fees ? Number(t.fees) : 0,
+      })),
+      properties: properties.map((p) => ({
+        name: p.name,
+        purchaseDate: p.purchaseDate.toISOString().split("T")[0],
+        currency: p.currency,
+        purchasePrice: Number(p.purchasePrice),
+        vatRate: Number(p.vatRate),
+        transferTaxRate: Number(p.transferTaxRate),
+        purchaseCosts: Number(p.purchaseCosts),
+        owners: p.owners.map((o) => ({
+          name: o.name,
+          sharePct: Number(o.sharePct),
+          isSelf: o.isSelf,
+        })),
+        valuations: p.valuations.map((v) => ({
+          date: v.date.toISOString().split("T")[0],
+          value: Number(v.value),
+          note: v.note,
+        })),
+        mortgage: p.mortgage
+          ? {
+              loanAmount: Number(p.mortgage.loanAmount),
+              downPayment: Number(p.mortgage.downPayment),
+              termMonths: p.mortgage.termMonths,
+              annualInterestRate: Number(p.mortgage.annualInterestRate),
+              type: p.mortgage.type,
+              startDate: p.mortgage.startDate.toISOString().split("T")[0],
+              initialInterestAmount:
+                p.mortgage.initialInterestAmount != null
+                  ? Number(p.mortgage.initialInterestAmount)
+                  : null,
+              initialInterestDate:
+                p.mortgage.initialInterestDate
+                  ? p.mortgage.initialInterestDate.toISOString().split("T")[0]
+                  : null,
+              partialAmortizations: p.mortgage.partialAmortizations.map((a) => ({
+                date: a.date.toISOString().split("T")[0],
+                amount: Number(a.amount),
+                mode: a.mode,
+              })),
+            }
+          : null,
       })),
     };
 
@@ -346,10 +400,56 @@ const ImportTransactionSchema = z.object({
   fees: z.number().finite().min(0).optional(),
 });
 
+const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD");
+
+const ImportPropertyOwnerSchema = z.object({
+  name: z.string().min(1).max(200),
+  sharePct: z.number().finite().min(0).max(100),
+  isSelf: z.boolean().optional(),
+});
+
+const ImportPropertyValuationSchema = z.object({
+  date: dateOnly,
+  value: z.number().finite(),
+  note: z.string().max(2000).nullable().optional(),
+});
+
+const ImportPartialAmortizationSchema = z.object({
+  date: dateOnly,
+  amount: z.number().finite(),
+  mode: z.enum(["REDUCE_TERM", "REDUCE_INSTALLMENT"]).optional(),
+});
+
+const ImportMortgageSchema = z.object({
+  loanAmount: z.number().finite(),
+  downPayment: z.number().finite(),
+  termMonths: z.number().int().positive(),
+  annualInterestRate: z.number().finite(),
+  type: z.enum(["FIXED", "VARIABLE"]).optional(),
+  startDate: dateOnly,
+  initialInterestAmount: z.number().finite().nullable().optional(),
+  initialInterestDate: dateOnly.nullable().optional(),
+  partialAmortizations: z.array(ImportPartialAmortizationSchema).max(1000).optional(),
+});
+
+const ImportPropertySchema = z.object({
+  name: z.string().min(1).max(200),
+  purchaseDate: dateOnly,
+  currency: z.string().length(3).optional(),
+  purchasePrice: z.number().finite().optional(),
+  vatRate: z.number().finite().optional(),
+  transferTaxRate: z.number().finite().optional(),
+  purchaseCosts: z.number().finite().optional(),
+  owners: z.array(ImportPropertyOwnerSchema).max(50).optional(),
+  valuations: z.array(ImportPropertyValuationSchema).max(5000).optional(),
+  mortgage: ImportMortgageSchema.nullable().optional(),
+});
+
 const ImportDataSchema = z.object({
   exportedAt: z.string().optional(),
   assets: z.array(ImportAssetSchema).max(5000),
   transactions: z.array(ImportTransactionSchema).max(50000),
+  properties: z.array(ImportPropertySchema).max(1000).optional(),
 });
 
 type ImportData = z.infer<typeof ImportDataSchema>;
@@ -361,6 +461,8 @@ export async function importPortfolioData(jsonData: string): Promise<{
     transactionsImported: number;
     assetsSkipped: number;
     transactionsSkipped: number;
+    propertiesImported: number;
+    propertiesSkipped: number;
   };
   error?: string;
   code?: ErrorCode;
@@ -392,6 +494,8 @@ export async function importPortfolioData(jsonData: string): Promise<{
     let assetsSkipped = 0;
     let transactionsImported = 0;
     let transactionsSkipped = 0;
+    let propertiesImported = 0;
+    let propertiesSkipped = 0;
 
     // Map to track ISIN -> assetId for transaction creation
     const isinToAssetId = new Map<string, string>();
@@ -472,12 +576,102 @@ export async function importPortfolioData(jsonData: string): Promise<{
       }
     }
 
+    // Import real estate properties (skip duplicates by name + purchase date)
+    if (data.properties && data.properties.length > 0) {
+      // Key existing properties by name + purchase date to avoid duplicates on re-import.
+      const existingProperties = await db.property.findMany({
+        where: { userId },
+        select: { name: true, purchaseDate: true },
+      });
+      const propertyKey = (name: string, purchaseDate: Date) =>
+        `${name} ${purchaseDate.toISOString().split("T")[0]}`;
+      const existingPropertyKeys = new Set(
+        existingProperties.map((p) => propertyKey(p.name, p.purchaseDate))
+      );
+
+      for (const property of data.properties) {
+        if (existingPropertyKeys.has(propertyKey(property.name, new Date(property.purchaseDate)))) {
+          propertiesSkipped++;
+          continue;
+        }
+
+        try {
+          const mortgage = property.mortgage;
+          await db.property.create({
+            data: {
+              userId,
+              name: property.name,
+              purchaseDate: new Date(property.purchaseDate),
+              currency: property.currency || "EUR",
+              purchasePrice: property.purchasePrice ?? 0,
+              vatRate: property.vatRate ?? 0.1,
+              transferTaxRate: property.transferTaxRate ?? 0.015,
+              purchaseCosts: property.purchaseCosts ?? 0,
+              owners: property.owners
+                ? {
+                    create: property.owners.map((o) => ({
+                      userId,
+                      name: o.name,
+                      sharePct: o.sharePct,
+                      isSelf: o.isSelf ?? false,
+                    })),
+                  }
+                : undefined,
+              valuations: property.valuations
+                ? {
+                    create: property.valuations.map((v) => ({
+                      userId,
+                      date: new Date(v.date),
+                      value: v.value,
+                      note: v.note ?? null,
+                    })),
+                  }
+                : undefined,
+              mortgage: mortgage
+                ? {
+                    create: {
+                      userId,
+                      loanAmount: mortgage.loanAmount,
+                      downPayment: mortgage.downPayment,
+                      termMonths: mortgage.termMonths,
+                      annualInterestRate: mortgage.annualInterestRate,
+                      type: mortgage.type || "FIXED",
+                      startDate: new Date(mortgage.startDate),
+                      initialInterestAmount: mortgage.initialInterestAmount ?? null,
+                      initialInterestDate: mortgage.initialInterestDate
+                        ? new Date(mortgage.initialInterestDate)
+                        : null,
+                      partialAmortizations: mortgage.partialAmortizations
+                        ? {
+                            create: mortgage.partialAmortizations.map((a) => ({
+                              userId,
+                              date: new Date(a.date),
+                              amount: a.amount,
+                              mode: a.mode || "REDUCE_TERM",
+                            })),
+                          }
+                        : undefined,
+                    },
+                  }
+                : undefined,
+            },
+          });
+          existingPropertyKeys.add(propertyKey(property.name, new Date(property.purchaseDate)));
+          propertiesImported++;
+        } catch (error) {
+          console.error(`Failed to import property ${property.name}:`, error);
+          propertiesSkipped++;
+        }
+      }
+    }
+
     // Recalculate holdings for all affected assets
     const { recalculateAllHoldings } = await import("@/services/holdings.service");
     await recalculateAllHoldings(userId);
 
     revalidatePath("/");
     revalidatePath("/transactions");
+    revalidatePath("/real-estate");
     revalidatePath("/settings");
 
     return {
@@ -487,6 +681,8 @@ export async function importPortfolioData(jsonData: string): Promise<{
         transactionsImported,
         assetsSkipped,
         transactionsSkipped,
+        propertiesImported,
+        propertiesSkipped,
       },
     };
   } catch (error) {

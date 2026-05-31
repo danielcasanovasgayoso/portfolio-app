@@ -33,14 +33,23 @@ export function ImportData() {
       const response = await importPortfolioData(text);
 
       if (response.success && response.data) {
-        const { assetsImported, transactionsImported, assetsSkipped, transactionsSkipped } = response.data;
+        const {
+          assetsImported,
+          transactionsImported,
+          assetsSkipped,
+          transactionsSkipped,
+          propertiesImported,
+          propertiesSkipped,
+        } = response.data;
         setResult({
           success: true,
           message: t("importSuccess", {
             assets: assetsImported,
             transactions: transactionsImported,
+            properties: propertiesImported,
             assetsSkipped,
             transactionsSkipped,
+            propertiesSkipped,
           }),
         });
       } else {
