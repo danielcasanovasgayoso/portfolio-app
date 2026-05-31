@@ -150,6 +150,8 @@
     "synced": "Synced",
     "error": "Error",
     "marketValue": "Market Value",
+    "marketValueFull": "Market Value",
+    "othersFull": "Other Assets",
     "profitLoss": "Profit/Loss",
     "updatingCount": "{updated}/{total}"
   },

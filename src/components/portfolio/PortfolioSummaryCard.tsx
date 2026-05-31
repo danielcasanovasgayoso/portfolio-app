@@ -3,7 +3,15 @@ import { useTranslations } from "next-intl";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
 import type { CategoryTotal } from "@/types/portfolio";
 import { cn } from "@/lib/utils";
-import { ChevronRight } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  Building2,
+  ChevronRight,
+  TrendingUp,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 
 /** A single breakdown row: market value plus its gain/loss and return. */
 interface BreakdownRow {
@@ -46,14 +54,20 @@ export function PortfolioSummaryCard({
 
   const netWorth = (grand?.marketValue ?? 0) + realEstateEquity;
 
-  // One row per asset group; each mirrors the market / gain / return triplet.
-  const rows: { key: string; label: string; data: BreakdownRow }[] = [];
+  // One card per asset group, each rendered with its own icon badge.
+  const cards: {
+    key: string;
+    label: string;
+    icon: LucideIcon;
+    data: BreakdownRow;
+  }[] = [];
 
   const market = invested ?? grand;
   if (market) {
-    rows.push({
+    cards.push({
       key: "market",
-      label: t("marketValue"),
+      label: t("marketValueFull"),
+      icon: TrendingUp,
       data: {
         value: market.marketValue,
         gainLoss: market.gainLoss,
@@ -63,9 +77,10 @@ export function PortfolioSummaryCard({
   }
 
   if (other && other.marketValue !== 0) {
-    rows.push({
+    cards.push({
       key: "other",
-      label: t("others"),
+      label: t("othersFull"),
+      icon: User,
       data: {
         value: other.marketValue,
         gainLoss: other.gainLoss,
@@ -75,9 +90,10 @@ export function PortfolioSummaryCard({
   }
 
   if (realEstate && realEstate.value !== 0) {
-    rows.push({
+    cards.push({
       key: "realEstate",
       label: t("realEstate"),
+      icon: Building2,
       data: realEstate,
     });
   }
@@ -94,98 +110,55 @@ export function PortfolioSummaryCard({
         </div>
 
         {/* Main Value */}
-        <div className="mb-4 sm:mb-8">
+        <div className="mb-6 sm:mb-8">
           <p className="text-4xl sm:text-5xl md:text-6xl font-mono font-bold tracking-tighter text-foreground">
             {formatCurrency(netWorth)}
           </p>
         </div>
 
-        {/* Mobile: section title on its own line, then value / gain / return
-            together on a single row below it. Giving the figures the full row
-            width (instead of sharing it with the label) keeps the three wide
-            monospace numbers on one line without colliding. */}
-        <div className="space-y-3 sm:hidden">
-          {rows.map((row) => {
-            const isPositive = row.data.gainLoss >= 0;
+        {/* Breakdown: icon-badged cards. Stacked on mobile (separated by a
+            horizontal rule), laid out as equal columns with vertical dividers
+            on tablet and up — mirroring the reference design. */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y divide-white/10 sm:divide-y-0 sm:divide-x">
+          {cards.map((card) => {
+            const Icon = card.icon;
+            const isPositive = card.data.gainLoss >= 0;
             const gainColor = isPositive ? "text-gain" : "text-loss";
-            return (
-              <div key={row.key} className="space-y-1">
-                <span className="label-sm text-foreground">{row.label}</span>
-                <div className="flex items-baseline justify-start gap-3">
-                  <span className="text-sm font-mono font-semibold text-foreground tabular-nums">
-                    {formatCurrency(row.data.value)}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-sm font-mono font-semibold tabular-nums",
-                      gainColor
-                    )}
-                  >
-                    {isPositive ? "+" : ""}
-                    {formatCurrency(row.data.gainLoss)}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-sm font-mono font-semibold tabular-nums",
-                      gainColor
-                    )}
-                  >
-                    {formatPercent(row.data.gainLossPercent)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+            const TrendIcon = isPositive ? ArrowUpRight : ArrowDownRight;
+            const hasMovement = card.data.gainLoss !== 0;
 
-        {/* Desktop / tablet: breakdown table — one row per group,
-            columns = value / gain / return */}
-        <div className="hidden sm:block space-y-3">
-          {/* Column headers */}
-          <div className="grid grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,1fr))] gap-4">
-            <span />
-            <span className="label-sm text-muted-foreground text-right">
-              {t("marketValue")}
-            </span>
-            <span className="label-sm text-muted-foreground text-right">
-              {t("gainLoss")}
-            </span>
-            <span className="label-sm text-muted-foreground text-right">
-              {t("return")}
-            </span>
-          </div>
-
-          {rows.map((row) => {
-            const isPositive = row.data.gainLoss >= 0;
-            const gainColor = isPositive ? "text-gain" : "text-loss";
             return (
               <div
-                key={row.key}
-                className="grid grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,1fr))] gap-4 items-baseline"
+                key={card.key}
+                className="flex items-start gap-3 py-3 first:pt-0 last:pb-0 sm:flex-col sm:items-stretch sm:gap-2 sm:py-0 sm:px-5 sm:first:pl-0 sm:last:pr-0"
               >
-                <span className="label-sm text-foreground truncate">
-                  {row.label}
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#A9ABFF]">
+                  <Icon className="h-4 w-4" />
                 </span>
-                <span className="text-base md:text-lg font-mono font-semibold text-foreground tabular-nums text-right">
-                  {formatCurrency(row.data.value)}
-                </span>
-                <span
-                  className={cn(
-                    "text-base md:text-lg font-mono font-semibold tabular-nums text-right",
-                    gainColor
-                  )}
-                >
-                  {isPositive ? "+" : ""}
-                  {formatCurrency(row.data.gainLoss)}
-                </span>
-                <span
-                  className={cn(
-                    "text-base md:text-lg font-mono font-semibold tabular-nums text-right",
-                    gainColor
-                  )}
-                >
-                  {formatPercent(row.data.gainLossPercent)}
-                </span>
+
+                <div className="min-w-0 space-y-1">
+                  <span className="label-sm block text-muted-foreground">
+                    {card.label}
+                  </span>
+                  <p className="text-lg font-mono font-bold tracking-tight text-foreground tabular-nums">
+                    {formatCurrency(card.data.value)}
+                  </p>
+                  <div
+                    className={cn(
+                      "flex items-center gap-1.5 text-xs font-mono font-semibold tabular-nums",
+                      gainColor
+                    )}
+                  >
+                    <span>
+                      {isPositive ? "+" : ""}
+                      {formatCurrency(card.data.gainLoss)}
+                    </span>
+                    <span className="flex items-center gap-0.5">
+                      {formatPercent(card.data.gainLossPercent)}
+                      {hasMovement && <TrendIcon className="h-3 w-3" />}
+                    </span>
+                  </div>
+                </div>
               </div>
             );
           })}
