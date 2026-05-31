@@ -130,22 +130,22 @@ export function PortfolioSummaryCard({
             return (
               <div
                 key={card.key}
-                className="flex items-start gap-4 py-4 first:pt-0 last:pb-0 sm:flex-col sm:items-stretch sm:gap-3 sm:py-0 sm:px-6 sm:first:pl-0 sm:last:pr-0"
+                className="flex items-start gap-3 py-3 first:pt-0 last:pb-0 sm:flex-col sm:items-stretch sm:gap-2 sm:py-0 sm:px-5 sm:first:pl-0 sm:last:pr-0"
               >
-                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#A9ABFF]">
-                  <Icon className="h-5 w-5" />
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#A9ABFF]">
+                  <Icon className="h-4 w-4" />
                 </span>
 
-                <div className="min-w-0 space-y-1.5">
+                <div className="min-w-0 space-y-1">
                   <span className="label-sm block text-muted-foreground">
                     {card.label}
                   </span>
-                  <p className="text-2xl font-mono font-bold tracking-tight text-foreground tabular-nums">
+                  <p className="text-lg font-mono font-bold tracking-tight text-foreground tabular-nums">
                     {formatCurrency(card.data.value)}
                   </p>
                   <div
                     className={cn(
-                      "flex items-center gap-2 text-sm font-mono font-semibold tabular-nums",
+                      "flex items-center gap-1.5 text-xs font-mono font-semibold tabular-nums",
                       gainColor
                     )}
                   >
@@ -155,7 +155,7 @@ export function PortfolioSummaryCard({
                     </span>
                     <span className="flex items-center gap-0.5">
                       {formatPercent(card.data.gainLossPercent)}
-                      {hasMovement && <TrendIcon className="h-3.5 w-3.5" />}
+                      {hasMovement && <TrendIcon className="h-3 w-3" />}
                     </span>
                   </div>
                 </div>
