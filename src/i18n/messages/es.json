@@ -150,6 +150,8 @@
     "synced": "Sincronizado",
     "error": "Error",
     "marketValue": "Mercado",
+    "marketValueFull": "Valor de mercado",
+    "othersFull": "Otros activos",
     "profitLoss": "Gan./Perd.",
     "updatingCount": "{updated}/{total}"
   },
