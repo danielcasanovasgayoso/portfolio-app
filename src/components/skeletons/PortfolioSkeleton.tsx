@@ -2,33 +2,36 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function PortfolioSummarySkeleton() {
   return (
-    <div className="hero-card mx-4 p-6">
-      <div className="relative z-10">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-muted-foreground/30 animate-pulse" />
-            <Skeleton className="h-3 w-24" />
-          </div>
-          <Skeleton className="h-3 w-12" />
-        </div>
-
-        {/* Main value */}
-        <div className="mb-8">
-          <Skeleton className="h-14 w-64" />
-        </div>
-
-        {/* Stats grid */}
-        <div className="grid grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="space-y-2">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-6 w-24" />
-            </div>
-          ))}
-        </div>
+    <article className="dark bg-hero-gradient rounded-xl border-0 shadow-ambient p-6 sm:p-8 h-full">
+      {/* Header: label + chevron */}
+      <div className="flex items-center justify-between mb-3 sm:mb-6">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-4 w-4 rounded" />
       </div>
-    </div>
+
+      {/* Main value */}
+      <div className="mb-6 sm:mb-8">
+        <Skeleton className="h-10 sm:h-12 md:h-14 w-56" />
+      </div>
+
+      {/* Breakdown: icon-badged cards mirroring the live card layout */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y divide-white/10 sm:divide-y-0 sm:divide-x">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="flex items-start gap-2.5 py-2.5 first:pt-0 last:pb-0 sm:flex-col sm:items-stretch sm:gap-1.5 sm:py-0 sm:px-4 sm:first:pl-0 sm:last:pr-0"
+          >
+            <Skeleton className="h-7 w-7 flex-shrink-0 rounded-lg" />
+
+            <div className="min-w-0 space-y-0.5">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </article>
   );
 }
 
