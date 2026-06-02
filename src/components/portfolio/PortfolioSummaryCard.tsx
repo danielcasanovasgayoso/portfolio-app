@@ -3,15 +3,7 @@ import { useTranslations } from "next-intl";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
 import type { CategoryTotal } from "@/types/portfolio";
 import { cn } from "@/lib/utils";
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  Building2,
-  ChevronRight,
-  TrendingUp,
-  User,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ChevronRight } from "lucide-react";
 
 /** A single breakdown row: market value plus its gain/loss and return. */
 interface BreakdownRow {
@@ -54,11 +46,10 @@ export function PortfolioSummaryCard({
 
   const netWorth = (grand?.marketValue ?? 0) + realEstateEquity;
 
-  // One card per asset group, each rendered with its own icon badge.
+  // One card per asset group.
   const cards: {
     key: string;
     label: string;
-    icon: LucideIcon;
     data: BreakdownRow;
   }[] = [];
 
@@ -67,7 +58,6 @@ export function PortfolioSummaryCard({
     cards.push({
       key: "market",
       label: t("marketValueFull"),
-      icon: TrendingUp,
       data: {
         value: market.marketValue,
         gainLoss: market.gainLoss,
@@ -80,7 +70,6 @@ export function PortfolioSummaryCard({
     cards.push({
       key: "other",
       label: t("othersFull"),
-      icon: User,
       data: {
         value: other.marketValue,
         gainLoss: other.gainLoss,
@@ -93,7 +82,6 @@ export function PortfolioSummaryCard({
     cards.push({
       key: "realEstate",
       label: t("realEstate"),
-      icon: Building2,
       data: realEstate,
     });
   }
@@ -116,12 +104,11 @@ export function PortfolioSummaryCard({
           </p>
         </div>
 
-        {/* Breakdown: icon-badged cards. Stacked on mobile (separated by a
-            horizontal rule), laid out as equal columns with vertical dividers
-            on tablet and up — mirroring the reference design. */}
+        {/* Breakdown columns. Stacked on mobile (separated by a horizontal
+            rule), laid out as equal columns with vertical dividers on tablet
+            and up. */}
         <div className="grid grid-cols-1 sm:grid-cols-3 divide-y divide-white/10 sm:divide-y-0 sm:divide-x">
           {cards.map((card) => {
-            const Icon = card.icon;
             const isPositive = card.data.gainLoss >= 0;
             const gainColor = isPositive ? "text-gain" : "text-loss";
             const TrendIcon = isPositive ? ArrowUpRight : ArrowDownRight;
@@ -130,34 +117,28 @@ export function PortfolioSummaryCard({
             return (
               <div
                 key={card.key}
-                className="flex items-start gap-2.5 py-2.5 first:pt-0 last:pb-0 sm:flex-col sm:items-stretch sm:gap-1.5 sm:py-0 sm:px-4 sm:first:pl-0 sm:last:pr-0"
+                className="min-w-0 space-y-0.5 py-2.5 first:pt-0 last:pb-0 sm:py-0 sm:px-4 sm:first:pl-0 sm:last:pr-0"
               >
-                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#A9ABFF]">
-                  <Icon className="h-3.5 w-3.5" />
+                <span className="label-sm block text-muted-foreground">
+                  {card.label}
                 </span>
-
-                <div className="min-w-0 space-y-0.5">
-                  <span className="label-sm block text-muted-foreground">
-                    {card.label}
+                <p className="text-sm font-mono font-bold tracking-tight text-foreground tabular-nums">
+                  {formatCurrency(card.data.value)}
+                </p>
+                <div
+                  className={cn(
+                    "flex items-center gap-1 text-[11px] font-mono font-semibold tabular-nums",
+                    gainColor
+                  )}
+                >
+                  <span>
+                    {isPositive ? "+" : ""}
+                    {formatCurrency(card.data.gainLoss)}
                   </span>
-                  <p className="text-sm font-mono font-bold tracking-tight text-foreground tabular-nums">
-                    {formatCurrency(card.data.value)}
-                  </p>
-                  <div
-                    className={cn(
-                      "flex items-center gap-1 text-[11px] font-mono font-semibold tabular-nums",
-                      gainColor
-                    )}
-                  >
-                    <span>
-                      {isPositive ? "+" : ""}
-                      {formatCurrency(card.data.gainLoss)}
-                    </span>
-                    <span className="flex items-center gap-0.5">
-                      {formatPercent(card.data.gainLossPercent)}
-                      {hasMovement && <TrendIcon className="h-2.5 w-2.5" />}
-                    </span>
-                  </div>
+                  <span className="flex items-center gap-0.5">
+                    {formatPercent(card.data.gainLossPercent)}
+                    {hasMovement && <TrendIcon className="h-2.5 w-2.5" />}
+                  </span>
                 </div>
               </div>
             );

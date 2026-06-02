@@ -14,20 +14,16 @@ export function PortfolioSummarySkeleton() {
         <Skeleton className="h-10 sm:h-12 md:h-14 w-56" />
       </div>
 
-      {/* Breakdown: icon-badged cards mirroring the live card layout */}
+      {/* Breakdown columns mirroring the live card layout */}
       <div className="grid grid-cols-1 sm:grid-cols-3 divide-y divide-white/10 sm:divide-y-0 sm:divide-x">
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="flex items-start gap-2.5 py-2.5 first:pt-0 last:pb-0 sm:flex-col sm:items-stretch sm:gap-1.5 sm:py-0 sm:px-4 sm:first:pl-0 sm:last:pr-0"
+            className="min-w-0 space-y-0.5 py-2.5 first:pt-0 last:pb-0 sm:py-0 sm:px-4 sm:first:pl-0 sm:last:pr-0"
           >
-            <Skeleton className="h-7 w-7 flex-shrink-0 rounded-lg" />
-
-            <div className="min-w-0 space-y-0.5">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-3 w-20" />
-            </div>
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-20" />
           </div>
         ))}
       </div>
