@@ -12,6 +12,7 @@ import {
   type TransactionFiltersInput,
 } from "@/lib/validators";
 import { recalculateHolding } from "@/services/holdings.service";
+import { scopedDb } from "@/lib/scoped-db";
 import type { ActionResult } from "@/lib/action-utils";
 import type {
   TransactionWithAsset,
@@ -43,7 +44,8 @@ export async function getTransactions(
   const validated = TransactionFiltersSchema.parse(filters);
   const { types, dateFrom, dateTo, assetId, page, perPage } = validated;
 
-  const where: Prisma.TransactionWhereInput = { userId };
+  // userId is injected by the scoped client below.
+  const where: Prisma.TransactionWhereInput = {};
 
   if (types && types.length > 0) {
     where.type = { in: types };
@@ -59,8 +61,9 @@ export async function getTransactions(
     where.assetId = assetId;
   }
 
+  const sdb = scopedDb(userId);
   const [transactions, total] = await Promise.all([
-    db.transaction.findMany({
+    sdb.transaction.findMany({
       where,
       include: {
         asset: {
@@ -77,7 +80,7 @@ export async function getTransactions(
       skip: (page - 1) * perPage,
       take: perPage,
     }),
-    db.transaction.count({ where }),
+    sdb.transaction.count({ where }),
   ]);
 
   return {
@@ -92,8 +95,8 @@ export async function getTransactions(
 // Get all assets for dropdown (user-specific)
 export async function getAssets() {
   const userId = await getUserId();
-  return db.asset.findMany({
-    where: { userId, isActive: true },
+  return scopedDb(userId).asset.findMany({
+    where: { isActive: true },
     select: {
       id: true,
       name: true,
@@ -321,8 +324,8 @@ export async function getTransaction(
   id: string
 ): Promise<TransactionWithAsset | null> {
   const userId = await getUserId();
-  return db.transaction.findFirst({
-    where: { id, userId },
+  return scopedDb(userId).transaction.findFirst({
+    where: { id },
     include: {
       asset: {
         select: {
