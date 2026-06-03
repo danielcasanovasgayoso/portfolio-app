@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Decimal } from "@prisma/client/runtime/client";
 import { db } from "@/lib/db";
+import { scopedDb } from "@/lib/scoped-db";
 import type { ActionResult } from "@/lib/action-utils";
 import type { AssetCategory } from "@prisma/client";
 import { getUserId } from "@/lib/auth";
@@ -18,9 +19,9 @@ export async function updateAssetCategory(
   try {
     const userId = await getUserId();
 
-    // Verify asset belongs to user
-    const asset = await db.asset.findFirst({
-      where: { id: assetId, userId },
+    // Verify asset belongs to user; update-by-id then runs on the raw client.
+    const asset = await scopedDb(userId).asset.findFirst({
+      where: { id: assetId },
     });
     if (!asset) {
       return { success: false, error: "Asset not found", code: "ASSET_NOT_FOUND" };
@@ -55,6 +56,8 @@ export async function createManualAsset(data: {
     const isin = `MANUAL-${crypto.randomUUID()}`;
     const value = new Decimal(data.value);
 
+    // Nested create (asset + holding): scopedDb only injects userId at the top
+    // level, so both levels set userId explicitly on the raw client.
     const asset = await db.asset.create({
       data: {
         userId,
@@ -97,8 +100,8 @@ export async function updateManualAsset(
   try {
     const userId = await getUserId();
 
-    const asset = await db.asset.findFirst({
-      where: { id: assetId, userId, manualPricing: true },
+    const asset = await scopedDb(userId).asset.findFirst({
+      where: { id: assetId, manualPricing: true },
     });
     if (!asset) {
       return { success: false, error: "Manual asset not found", code: "MANUAL_ASSET_NOT_FOUND" };
@@ -119,8 +122,8 @@ export async function updateManualAsset(
     // Update holding value
     if (data.value !== undefined) {
       const value = new Decimal(data.value);
-      await db.holding.updateMany({
-        where: { assetId, userId },
+      await scopedDb(userId).holding.updateMany({
+        where: { assetId },
         data: {
           costBasis: value,
           avgPrice: value,
@@ -150,14 +153,14 @@ export async function deleteManualAsset(
   try {
     const userId = await getUserId();
 
-    const asset = await db.asset.findFirst({
-      where: { id: assetId, userId, manualPricing: true },
+    const asset = await scopedDb(userId).asset.findFirst({
+      where: { id: assetId, manualPricing: true },
     });
     if (!asset) {
       return { success: false, error: "Manual asset not found", code: "MANUAL_ASSET_NOT_FOUND" };
     }
 
-    // Cascade delete will remove the holding too
+    // Cascade delete will remove the holding too; delete-by-id on the raw client.
     await db.asset.delete({ where: { id: assetId } });
 
     revalidatePath("/");
@@ -180,8 +183,8 @@ export async function refreshSingleAssetPrice(
   try {
     const userId = await getUserId();
 
-    const asset = await db.asset.findFirst({
-      where: { id: assetId, userId },
+    const asset = await scopedDb(userId).asset.findFirst({
+      where: { id: assetId },
       select: { id: true, ticker: true, manualPricing: true },
     });
 

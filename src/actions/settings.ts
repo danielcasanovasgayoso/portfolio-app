@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
+import { scopedDb } from "@/lib/scoped-db";
 import { testApiKey } from "@/lib/eodhd";
 import { revalidatePath } from "next/cache";
 import { getUserId } from "@/lib/auth";
@@ -213,18 +214,19 @@ export async function resetDatabase(): Promise<{
     // Each deleteMany runs independently to avoid Supabase pooler's
     // idle_in_transaction_session_timeout on accounts with many rows.
     // Order respects foreign keys; on partial failure the user can retry.
-    const userAssets = await db.asset.findMany({
-      where: { userId },
+    const sdb = scopedDb(userId);
+    const userAssets = await sdb.asset.findMany({
       select: { id: true, ticker: true },
     });
     const assetIds = userAssets.map((a) => a.id);
     const tickers = userAssets.map((a) => a.ticker).filter(Boolean) as string[];
 
     // 1. Transactions (reference assets and importBatches)
-    await db.transaction.deleteMany({ where: { userId } });
+    await sdb.transaction.deleteMany({});
     // 2. Holdings (reference assets)
-    await db.holding.deleteMany({ where: { userId } });
-    // 3. Prices and PriceCache (reference assets/tickers)
+    await sdb.holding.deleteMany({});
+    // 3. Prices and PriceCache are global tables keyed by assetId/ticker (not
+    //    userId), so they stay on the raw client, scoped to this user's assets.
     if (assetIds.length > 0) {
       await db.price.deleteMany({ where: { assetId: { in: assetIds } } });
     }
@@ -232,11 +234,11 @@ export async function resetDatabase(): Promise<{
       await db.priceCache.deleteMany({ where: { ticker: { in: tickers } } });
     }
     // 4. Assets
-    await db.asset.deleteMany({ where: { userId } });
+    await sdb.asset.deleteMany({});
     // 5. Import batches (now safe since transactions are deleted)
-    await db.importBatch.deleteMany({ where: { userId } });
+    await sdb.importBatch.deleteMany({});
 
-    // Reset Gmail connection in settings
+    // Reset Gmail connection in settings (keyed by userId on the raw client)
     await db.settings.update({
       where: { userId },
       data: {
@@ -272,15 +274,14 @@ export async function exportPortfolioData(): Promise<{
     const userId = await getUserId();
 
     // Fetch all user's data
+    const sdb = scopedDb(userId);
     const [assets, transactions, properties] = await Promise.all([
-      db.asset.findMany({ where: { userId }, orderBy: { name: "asc" } }),
-      db.transaction.findMany({
-        where: { userId },
+      sdb.asset.findMany({ orderBy: { name: "asc" } }),
+      sdb.transaction.findMany({
         orderBy: { date: "desc" },
         include: { asset: { select: { name: true, isin: true } } },
       }),
-      db.property.findMany({
-        where: { userId },
+      sdb.property.findMany({
         orderBy: { name: "asc" },
         include: {
           owners: true,
@@ -499,10 +500,10 @@ export async function importPortfolioData(jsonData: string): Promise<{
 
     // Map to track ISIN -> assetId for transaction creation
     const isinToAssetId = new Map<string, string>();
+    const sdb = scopedDb(userId);
 
     // Get existing assets for this user
-    const existingAssets = await db.asset.findMany({
-      where: { userId },
+    const existingAssets = await sdb.asset.findMany({
       select: { id: true, isin: true },
     });
     for (const asset of existingAssets) {
@@ -579,8 +580,7 @@ export async function importPortfolioData(jsonData: string): Promise<{
     // Import real estate properties (skip duplicates by name + purchase date)
     if (data.properties && data.properties.length > 0) {
       // Key existing properties by name + purchase date to avoid duplicates on re-import.
-      const existingProperties = await db.property.findMany({
-        where: { userId },
+      const existingProperties = await sdb.property.findMany({
         select: { name: true, purchaseDate: true },
       });
       const propertyKey = (name: string, purchaseDate: Date) =>
@@ -597,6 +597,9 @@ export async function importPortfolioData(jsonData: string): Promise<{
 
         try {
           const mortgage = property.mortgage;
+          // Nested create (owners/valuations/mortgage/partials): scopedDb only
+          // injects userId at the top level, so every level sets it explicitly
+          // on the raw client.
           await db.property.create({
             data: {
               userId,

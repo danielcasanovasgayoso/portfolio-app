@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { scopedDb } from "@/lib/scoped-db";
 import { Decimal } from "@prisma/client/runtime/client";
 import { MARKET_HOURS, PRICE_CACHE } from "@/lib/constants";
 
@@ -59,9 +60,8 @@ export function todayDate(): Date {
  * Get active holdings with tickers (excludes manual-priced assets)
  */
 export async function getActiveTradedAssets(userId: string): Promise<TradedAsset[]> {
-  const holdings = await db.holding.findMany({
+  const holdings = await scopedDb(userId).holding.findMany({
     where: {
-      userId,
       shares: { gt: 0 },
       asset: { manualPricing: false, ticker: { not: null } },
     },
@@ -123,7 +123,10 @@ export async function persistAssetPrice(
       },
     });
 
-    // Read holding inside transaction to avoid race conditions
+    // Read holding inside transaction to avoid race conditions. PriceCache,
+    // Price and Holding are all addressed here by their unique keys
+    // (ticker / assetId+date / assetId), so they stay on the interactive `tx`
+    // client; scopedDb rejects unique-selector ops by design.
     const holding = await tx.holding.findUnique({ where: { assetId: write.assetId } });
     if (holding && !holding.shares.equals(0)) {
       const marketValue = holding.shares.times(priceDecimal);

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
+import { scopedDb } from "@/lib/scoped-db";
 import { fetchMyInvestorEmails, testGmailConnection } from "@/services/gmail.service";
 import { parseMyInvestorEmails } from "@/services/myinvestor-parser.service";
 import type { ActionResult } from "@/lib/action-utils";
@@ -96,9 +97,8 @@ export async function fetchGmailTransactions(options?: {
     const parsedEmails = parseMyInvestorEmails(emails);
 
     // Get user's existing transactions and check for duplicates
-    const existingMessageIds = await db.transaction.findMany({
+    const existingMessageIds = await scopedDb(userId).transaction.findMany({
       where: {
-        userId,
         gmailMessageId: { not: null },
       },
       select: { gmailMessageId: true },
@@ -126,7 +126,8 @@ export async function fetchGmailTransactions(options?: {
       }
     }
 
-    // Create import batch
+    // Create import batch (create requires userId, so the type system already
+    // prevents forgetting it; it stays on the raw client).
     const batch = await db.importBatch.create({
       data: {
         userId,
@@ -196,8 +197,8 @@ export async function getImportPreview(
   try {
     const userId = await getUserId();
 
-    const batch = await db.importBatch.findFirst({
-      where: { id: batchId, userId },
+    const batch = await scopedDb(userId).importBatch.findFirst({
+      where: { id: batchId },
     });
 
     if (!batch) {
@@ -224,8 +225,10 @@ export async function confirmImport(
   try {
     const userId = await getUserId();
 
-    const batch = await db.importBatch.findFirst({
-      where: { id: batchId, userId },
+    // Ownership verified via the scoped read; subsequent updates target the
+    // batch by id on the raw client (update-by-id is rejected by scopedDb).
+    const batch = await scopedDb(userId).importBatch.findFirst({
+      where: { id: batchId },
     });
 
     if (!batch) {
@@ -251,8 +254,9 @@ export async function confirmImport(
 
     // Step 1: Resolve all unique ISINs to assets upfront (batch)
     const uniqueIsins = [...new Set(selectedItems.map((item) => item.transaction.isin))];
-    const existingAssets = await db.asset.findMany({
-      where: { userId, isin: { in: uniqueIsins } },
+    const sdb = scopedDb(userId);
+    const existingAssets = await sdb.asset.findMany({
+      where: { isin: { in: uniqueIsins } },
     });
     const isinToAsset = new Map(existingAssets.map((a) => [a.isin, a]));
 
@@ -363,9 +367,9 @@ export async function confirmImport(
   } catch (error) {
     const userId = await getUserId().catch(() => null);
     if (userId) {
-      // Mark batch as failed
-      await db.importBatch.updateMany({
-        where: { id: batchId, userId },
+      // Mark batch as failed (updateMany is user-scoped by the client)
+      await scopedDb(userId).importBatch.updateMany({
+        where: { id: batchId },
         data: { status: "FAILED" },
       });
     }
@@ -384,9 +388,9 @@ export async function cancelImport(batchId: string): Promise<ActionResult<void>>
   try {
     const userId = await getUserId();
 
-    // Verify batch belongs to user
-    const batch = await db.importBatch.findFirst({
-      where: { id: batchId, userId },
+    // Verify batch belongs to user (delete-by-id then runs on the raw client)
+    const batch = await scopedDb(userId).importBatch.findFirst({
+      where: { id: batchId },
     });
 
     if (!batch) {

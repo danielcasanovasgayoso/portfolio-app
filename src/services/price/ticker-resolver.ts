@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { scopedDb } from "@/lib/scoped-db";
 import { resolveIsinToSymbol } from "@/lib/eodhd";
 import { getSettings } from "../settings.service";
 
@@ -15,15 +16,17 @@ export async function resolveAssetTicker(
     });
 
     if (resolved) {
+      // Verify the asset belongs to the user before mutating it; the
+      // update-by-id then runs on the raw client.
+      const asset = await scopedDb(userId).asset.findFirst({ where: { id: assetId } });
+      if (!asset) return null;
+
       const updateData: { ticker: string; name?: string } = {
         ticker: resolved.symbol,
       };
 
-      if (resolved.name) {
-        const asset = await db.asset.findUnique({ where: { id: assetId } });
-        if (asset && asset.name === asset.isin) {
-          updateData.name = resolved.name;
-        }
+      if (resolved.name && asset.name === asset.isin) {
+        updateData.name = resolved.name;
       }
 
       await db.asset.update({
@@ -44,8 +47,8 @@ export async function resolveAllMissingTickers(userId: string): Promise<{
   failed: number;
   results: Array<{ isin: string; ticker: string | null; error?: string }>;
 }> {
-  const assetsWithoutTickers = await db.asset.findMany({
-    where: { userId, ticker: null, isActive: true },
+  const assetsWithoutTickers = await scopedDb(userId).asset.findMany({
+    where: { ticker: null, isActive: true },
   });
 
   const results: Array<{ isin: string; ticker: string | null; error?: string }> = [];
