@@ -113,67 +113,74 @@ export async function createTransaction(
     const userId = await getUserId();
     const validated = TransactionCreateSchema.parse(data);
 
-    let assetId = validated.assetId;
+    const creatingNewAsset = validated.assetId === "__new__" && !!validated.newAssetName;
 
-    if (assetId === "__new__" && validated.newAssetName) {
-      // Create a new asset first
-      const hasIsin = validated.newAssetIsin && validated.newAssetIsin.trim() !== "";
-      const isin = hasIsin ? validated.newAssetIsin!.trim() : `MANUAL-${crypto.randomUUID()}`;
-      const newAsset = await db.asset.create({
-        data: {
-          userId,
-          isin,
-          ticker: null,
-          name: validated.newAssetName.trim(),
-          category: validated.newAssetCategory || "OTHERS",
-          manualPricing: !hasIsin,
-        },
-      });
-      assetId = newAsset.id;
-    } else {
-      // Verify asset belongs to user
+    // Read-only ownership check before opening the write transaction.
+    if (!creatingNewAsset) {
       const asset = await db.asset.findFirst({
-        where: { id: assetId, userId },
+        where: { id: validated.assetId, userId },
       });
       if (!asset) {
         return { success: false, error: "Asset not found", code: "ASSET_NOT_FOUND" };
       }
     }
 
+    // Asset creation (if any), the transaction insert, and the holding
+    // recalculation must commit or roll back together, otherwise a failed
+    // recalculation would leave a persisted transaction with a stale holding.
+    const transaction = await db.$transaction(async (tx) => {
+      let assetId = validated.assetId;
 
-    const transaction = await db.transaction.create({
-      data: {
-        userId,
-        assetId,
-        type: validated.type,
-        date: toUtcMidnight(validated.date),
-        shares: new Decimal(validated.shares),
-        pricePerShare: validated.pricePerShare
-          ? new Decimal(validated.pricePerShare)
-          : null,
-        totalAmount: new Decimal(validated.totalAmount),
-        fees: validated.fees ? new Decimal(validated.fees) : new Decimal(0),
-        transferType: validated.transferType || null,
-      },
-      include: {
-        asset: {
-          select: {
-            id: true,
-            name: true,
-            isin: true,
-            ticker: true,
-            category: true,
+      if (creatingNewAsset) {
+        const hasIsin = validated.newAssetIsin && validated.newAssetIsin.trim() !== "";
+        const isin = hasIsin ? validated.newAssetIsin!.trim() : `MANUAL-${crypto.randomUUID()}`;
+        const newAsset = await tx.asset.create({
+          data: {
+            userId,
+            isin,
+            ticker: null,
+            name: validated.newAssetName!.trim(),
+            category: validated.newAssetCategory || "OTHERS",
+            manualPricing: !hasIsin,
+          },
+        });
+        assetId = newAsset.id;
+      }
+
+      const created = await tx.transaction.create({
+        data: {
+          userId,
+          assetId,
+          type: validated.type,
+          date: toUtcMidnight(validated.date),
+          shares: new Decimal(validated.shares),
+          pricePerShare: validated.pricePerShare
+            ? new Decimal(validated.pricePerShare)
+            : null,
+          totalAmount: new Decimal(validated.totalAmount),
+          fees: validated.fees ? new Decimal(validated.fees) : new Decimal(0),
+          transferType: validated.transferType || null,
+        },
+        include: {
+          asset: {
+            select: {
+              id: true,
+              name: true,
+              isin: true,
+              ticker: true,
+              category: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    // Recalculate holdings for the affected asset
-    await recalculateHolding(userId, assetId);
+      await recalculateHolding(userId, assetId, tx);
+      return created;
+    });
 
     revalidatePath("/transactions");
     revalidatePath("/");
-    revalidatePath(`/portfolio/${assetId}`);
+    revalidatePath(`/portfolio/${transaction.assetId}`);
 
     return { success: true, data: serializeTransaction(transaction) };
   } catch (error) {
@@ -231,27 +238,32 @@ export async function updateTransaction(
       updateData.transferType = validated.transferType || null;
     }
 
-    const transaction = await db.transaction.update({
-      where: { id },
-      data: updateData,
-      include: {
-        asset: {
-          select: {
-            id: true,
-            name: true,
-            isin: true,
-            ticker: true,
-            category: true,
+    // The update and recalculation of every affected holding (both the new and
+    // the previous asset when the transaction is reassigned) must be atomic.
+    const transaction = await db.$transaction(async (tx) => {
+      const updated = await tx.transaction.update({
+        where: { id },
+        data: updateData,
+        include: {
+          asset: {
+            select: {
+              id: true,
+              name: true,
+              isin: true,
+              ticker: true,
+              category: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    // Recalculate holdings for affected assets
-    await recalculateHolding(userId, transaction.assetId);
-    if (existingTx.assetId !== transaction.assetId) {
-      await recalculateHolding(userId, existingTx.assetId);
-    }
+      await recalculateHolding(userId, updated.assetId, tx);
+      if (existingTx.assetId !== updated.assetId) {
+        await recalculateHolding(userId, existingTx.assetId, tx);
+      }
+
+      return updated;
+    });
 
     revalidatePath("/transactions");
     revalidatePath("/");
@@ -284,10 +296,11 @@ export async function deleteTransaction(
       return { success: false, error: "Transaction not found", code: "TRANSACTION_NOT_FOUND" };
     }
 
-    await db.transaction.delete({ where: { id } });
-
-    // Recalculate holdings for the affected asset
-    await recalculateHolding(userId, transaction.assetId);
+    // Delete and holding recalculation must commit or roll back together.
+    await db.$transaction(async (tx) => {
+      await tx.transaction.delete({ where: { id } });
+      await recalculateHolding(userId, transaction.assetId, tx);
+    });
 
     revalidatePath("/transactions");
     revalidatePath("/");

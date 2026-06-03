@@ -1,153 +1,74 @@
 import { db } from "@/lib/db";
 import { Decimal } from "@prisma/client/runtime/client";
+import type { Prisma } from "@prisma/client";
+import { computeHolding } from "./holdings.calc";
 
-interface CostBasisLot {
-  shares: Decimal;
-  pricePerShare: Decimal;
-  date: Date;
-}
-
-interface FifoRemovalResult {
-  costBasisRemoved: Decimal;
-  sharesRemoved: Decimal;
-}
+// Either the root client or an interactive-transaction client. Accepting both
+// lets callers run a recalculation inside a larger transaction (so a write and
+// its holding update commit or roll back together).
+type PrismaClientOrTx = typeof db | Prisma.TransactionClient;
 
 /**
- * Remove shares from lots using FIFO method
- * Mutates the lots array in place
- * @returns The cost basis of removed shares
+ * Reads an asset's transactions, recomputes its holding via FIFO, and persists
+ * the result using the provided client. Assumes it is already running inside a
+ * transaction (no nested transaction is opened here).
  */
-function removeFifoShares(
-  lots: CostBasisLot[],
-  sharesToRemove: Decimal
-): FifoRemovalResult {
-  let costBasisRemoved = new Decimal(0);
-  let sharesRemoved = new Decimal(0);
-  let remaining = sharesToRemove;
-
-  while (remaining.greaterThan(0) && lots.length > 0) {
-    const oldestLot = lots[0];
-
-    if (oldestLot.shares.lessThanOrEqualTo(remaining)) {
-      // Remove entire lot
-      remaining = remaining.minus(oldestLot.shares);
-      costBasisRemoved = costBasisRemoved.plus(
-        oldestLot.shares.times(oldestLot.pricePerShare)
-      );
-      sharesRemoved = sharesRemoved.plus(oldestLot.shares);
-      lots.shift();
-    } else {
-      // Partial lot removal
-      costBasisRemoved = costBasisRemoved.plus(
-        remaining.times(oldestLot.pricePerShare)
-      );
-      sharesRemoved = sharesRemoved.plus(remaining);
-      oldestLot.shares = oldestLot.shares.minus(remaining);
-      remaining = new Decimal(0);
-    }
-  }
-
-  return { costBasisRemoved, sharesRemoved };
-}
-
-/**
- * Add shares to lots
- */
-function addToLots(
-  lots: CostBasisLot[],
-  shares: Decimal,
-  pricePerShare: Decimal,
-  date: Date
-): void {
-  lots.push({ shares, pricePerShare, date });
-}
-
-/**
- * Recalculates holdings for a specific asset using FIFO method
- * FIFO: First In, First Out - oldest shares are sold first
- */
-export async function recalculateHolding(userId: string, assetId: string): Promise<void> {
-  // Get all transactions for this asset and user, ordered by date
-  const transactions = await db.transaction.findMany({
+async function persistHolding(
+  client: PrismaClientOrTx,
+  userId: string,
+  assetId: string
+): Promise<void> {
+  // Ordered chronologically so FIFO lots are consumed oldest-first.
+  const transactions = await client.transaction.findMany({
     where: { userId, assetId },
     orderBy: [{ date: "asc" }, { createdAt: "asc" }],
   });
 
-  // Initialize cost basis lots (for FIFO tracking)
-  const lots: CostBasisLot[] = [];
-  let totalShares = new Decimal(0);
-  let totalCostBasis = new Decimal(0);
+  const { totalShares, totalCostBasis, avgPrice } = computeHolding(transactions);
 
-  for (const txn of transactions) {
-    const shares = txn.shares;
-    const pricePerShare = txn.pricePerShare || new Decimal(0);
-
-    switch (txn.type) {
-      case "BUY":
-      case "TRANSFER": {
-        if (txn.type === "TRANSFER" && txn.transferType === "OUT") {
-          // Transfer out - remove shares using FIFO
-          const { costBasisRemoved } = removeFifoShares(lots, shares);
-          totalCostBasis = totalCostBasis.minus(costBasisRemoved);
-          totalShares = totalShares.minus(shares);
-        } else {
-          // BUY or TRANSFER IN - add to lots
-          addToLots(lots, shares, pricePerShare, txn.date);
-          totalShares = totalShares.plus(shares);
-          totalCostBasis = totalCostBasis.plus(shares.times(pricePerShare));
-        }
-        break;
-      }
-
-      case "SELL": {
-        // FIFO: remove shares from oldest lots first
-        const { costBasisRemoved } = removeFifoShares(lots, shares);
-        totalCostBasis = totalCostBasis.minus(costBasisRemoved);
-        totalShares = totalShares.minus(shares);
-        break;
-      }
-
-      case "DIVIDEND":
-      case "FEE":
-        // These don't affect share count or cost basis
-        break;
-    }
+  if (totalShares.equals(0)) {
+    await client.holding.deleteMany({ where: { assetId } });
+    return;
   }
 
-  // Ensure non-negative values
-  totalShares = Decimal.max(totalShares, new Decimal(0));
-  totalCostBasis = Decimal.max(totalCostBasis, new Decimal(0));
-
-  // Calculate average price
-  const avgPrice = totalShares.greaterThan(0)
-    ? totalCostBasis.div(totalShares)
-    : new Decimal(0);
-
-  // Upsert + zero-shares cleanup must be atomic so the holding never lingers
-  // momentarily as a zero-shares row visible to concurrent readers.
-  await db.$transaction(async (tx) => {
-    if (totalShares.equals(0)) {
-      await tx.holding.deleteMany({ where: { assetId } });
-      return;
-    }
-
-    await tx.holding.upsert({
-      where: { assetId },
-      update: {
-        shares: totalShares,
-        costBasis: totalCostBasis,
-        avgPrice,
-        lastCalculatedAt: new Date(),
-      },
-      create: {
-        userId,
-        assetId,
-        shares: totalShares,
-        costBasis: totalCostBasis,
-        avgPrice,
-      },
-    });
+  await client.holding.upsert({
+    where: { assetId },
+    update: {
+      shares: totalShares,
+      costBasis: totalCostBasis,
+      avgPrice,
+      lastCalculatedAt: new Date(),
+    },
+    create: {
+      userId,
+      assetId,
+      shares: totalShares,
+      costBasis: totalCostBasis,
+      avgPrice,
+    },
   });
+}
+
+/**
+ * Recalculates the holding for a specific asset using the FIFO method.
+ *
+ * When `client` is supplied (an interactive-transaction client), the work joins
+ * that transaction so the triggering write and the holding update are atomic.
+ * When omitted, a dedicated transaction is opened — this also keeps the
+ * upsert/zero-shares cleanup atomic so the holding never momentarily lingers as
+ * a zero-shares row visible to concurrent readers.
+ */
+export async function recalculateHolding(
+  userId: string,
+  assetId: string,
+  client?: Prisma.TransactionClient
+): Promise<void> {
+  if (client) {
+    await persistHolding(client, userId, assetId);
+    return;
+  }
+
+  await db.$transaction((tx) => persistHolding(tx, userId, assetId));
 }
 
 /**
