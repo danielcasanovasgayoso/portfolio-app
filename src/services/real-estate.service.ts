@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { scopedDb } from "@/lib/scoped-db";
 import {
   computeSchedule,
   summarize,
@@ -113,8 +113,7 @@ function mortgageBalanceOf(property: DbProperty): number | null {
 }
 
 export async function getProperties(userId: string): Promise<PropertyListItem[]> {
-  const properties = await db.property.findMany({
-    where: { userId },
+  const properties = await scopedDb(userId).property.findMany({
     include: propertyInclude,
     orderBy: { createdAt: "asc" },
   });
@@ -152,8 +151,7 @@ export async function getProperties(userId: string): Promise<PropertyListItem[]>
 export async function getRealEstateSummary(
   userId: string
 ): Promise<RealEstateSummary> {
-  const properties = await db.property.findMany({
-    where: { userId },
+  const properties = await scopedDb(userId).property.findMany({
     include: propertyInclude,
   });
 
@@ -236,8 +234,7 @@ function monthlyDates(start: string, end: string): string[] {
 export async function getRealEstateEquityHistory(
   userId: string
 ): Promise<{ date: string; close: number }[]> {
-  const properties = await db.property.findMany({
-    where: { userId },
+  const properties = await scopedDb(userId).property.findMany({
     include: propertyInclude,
   });
 
@@ -352,8 +349,8 @@ export async function getPropertyDetail(
   userId: string,
   propertyId: string
 ): Promise<PropertyDetail | null> {
-  const property = await db.property.findFirst({
-    where: { id: propertyId, userId },
+  const property = await scopedDb(userId).property.findFirst({
+    where: { id: propertyId },
     include: propertyInclude,
   });
   if (!property) return null;

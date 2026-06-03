@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { scopedDb } from "@/lib/scoped-db";
 import {
   fetchHistoricalPrices,
   fetchRealTimePrice,
@@ -125,8 +125,8 @@ export async function refreshAllPrices(
   }
 
   if (options?.resolveIsins) {
-    const holdingsNeedingResolution = await db.holding.findMany({
-      where: { userId, shares: { gt: 0 }, asset: { manualPricing: false } },
+    const holdingsNeedingResolution = await scopedDb(userId).holding.findMany({
+      where: { shares: { gt: 0 }, asset: { manualPricing: false } },
       include: { asset: true },
     });
     for (const holding of holdingsNeedingResolution) {

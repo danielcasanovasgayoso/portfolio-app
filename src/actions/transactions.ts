@@ -120,8 +120,8 @@ export async function createTransaction(
 
     // Read-only ownership check before opening the write transaction.
     if (!creatingNewAsset) {
-      const asset = await db.asset.findFirst({
-        where: { id: validated.assetId, userId },
+      const asset = await scopedDb(userId).asset.findFirst({
+        where: { id: validated.assetId },
       });
       if (!asset) {
         return { success: false, error: "Asset not found", code: "ASSET_NOT_FOUND" };
@@ -205,8 +205,8 @@ export async function updateTransaction(
     const validated = TransactionUpdateSchema.parse(data);
 
     // Verify transaction belongs to user
-    const existingTx = await db.transaction.findFirst({
-      where: { id, userId },
+    const existingTx = await scopedDb(userId).transaction.findFirst({
+      where: { id },
       select: { assetId: true },
     });
     if (!existingTx) {
@@ -217,8 +217,8 @@ export async function updateTransaction(
 
     if (validated.assetId) {
       // Verify new asset belongs to user
-      const asset = await db.asset.findFirst({
-        where: { id: validated.assetId, userId },
+      const asset = await scopedDb(userId).asset.findFirst({
+        where: { id: validated.assetId },
       });
       if (!asset) {
         return { success: false, error: "Asset not found", code: "ASSET_NOT_FOUND" };
@@ -290,8 +290,8 @@ export async function deleteTransaction(
     const userId = await getUserId();
 
     // Verify transaction belongs to user
-    const transaction = await db.transaction.findFirst({
-      where: { id, userId },
+    const transaction = await scopedDb(userId).transaction.findFirst({
+      where: { id },
       select: { assetId: true },
     });
 

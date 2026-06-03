@@ -3,6 +3,11 @@ import { db } from "@/lib/db";
 import { PRICE_CACHE } from "@/lib/constants";
 import { decryptIfEncrypted } from "@/lib/crypto";
 
+// The Settings table is keyed by a `@unique userId`, so every operation here is
+// already scoped to a single tenant by its unique selector. It therefore stays
+// on the raw `db` client — `scopedDb` deliberately rejects findUnique/upsert/
+// update (unique-selector ops) and would add nothing over the userId key here.
+
 /**
  * Application settings with defaults
  */

@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { scopedDb } from "@/lib/scoped-db";
 import { Decimal } from "@prisma/client/runtime/client";
 import type { Prisma } from "@prisma/client";
 import { computeHolding } from "./holdings.calc";
@@ -79,9 +80,8 @@ export async function recalculateAllHoldings(userId: string): Promise<{
   errors: string[];
 }> {
   // Get all unique asset IDs from user's transactions
-  const assetIds = await db.transaction.groupBy({
+  const assetIds = await scopedDb(userId).transaction.groupBy({
     by: ["assetId"],
-    where: { userId },
   });
 
   let recalculated = 0;
@@ -104,7 +104,12 @@ export async function recalculateAllHoldings(userId: string): Promise<{
 }
 
 /**
- * Updates market value and unrealized gains for a holding
+ * Updates market value and unrealized gains for a holding.
+ *
+ * Holding has a `@unique assetId` (1:1 with Asset), so it is addressed by that
+ * unique key rather than a userId filter. The assetId always originates from
+ * the user's own asset (resolved upstream), so these by-key writes stay on the
+ * raw client — `scopedDb` rejects findUnique/update by design.
  */
 export async function updateHoldingMarketValue(
   assetId: string,
@@ -132,8 +137,8 @@ export async function updateHoldingMarketValue(
  * Gets holding summary for an asset
  */
 export async function getHoldingSummary(userId: string, assetId: string) {
-  const holding = await db.holding.findFirst({
-    where: { userId, assetId },
+  const holding = await scopedDb(userId).holding.findFirst({
+    where: { assetId },
     include: { asset: true },
   });
 

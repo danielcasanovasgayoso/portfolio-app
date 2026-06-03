@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Decimal } from "@prisma/client/runtime/client";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { scopedDb } from "@/lib/scoped-db";
 import { getUserId } from "@/lib/auth";
 import type { ActionResult } from "@/lib/action-utils";
 import {
@@ -26,7 +27,7 @@ function fail(error: unknown, fallback: string): ActionResult<never> {
 }
 
 async function ensurePropertyOwnership(userId: string, propertyId: string) {
-  const property = await db.property.findFirst({ where: { id: propertyId, userId } });
+  const property = await scopedDb(userId).property.findFirst({ where: { id: propertyId } });
   if (!property) throw new Error("Property not found");
   return property;
 }
@@ -40,6 +41,8 @@ export async function createProperty(
     const userId = await getUserId();
     const data = PropertyInputSchema.parse(input);
 
+    // Nested create: scopedDb only injects userId at the top level, so the
+    // property and its nested owners both set userId explicitly on the raw client.
     const property = await db.property.create({
       data: {
         userId,
@@ -167,7 +170,7 @@ export async function deleteMortgage(propertyId: string): Promise<ActionResult<v
   try {
     const userId = await getUserId();
     await ensurePropertyOwnership(userId, propertyId);
-    await db.mortgage.deleteMany({ where: { propertyId } });
+    await scopedDb(userId).mortgage.deleteMany({ where: { propertyId } });
     revalidatePath(`/real-estate/${propertyId}`);
     return { success: true, data: undefined };
   } catch (error) {
@@ -211,8 +214,10 @@ export async function deleteValuation(
 ): Promise<ActionResult<void>> {
   try {
     const userId = await getUserId();
-    const valuation = await db.propertyValuation.findFirst({
-      where: { id: valuationId, userId },
+    // Ownership is enforced by the scoped read; the delete-by-id then runs on
+    // the raw client (delete targets a unique selector, which scopedDb rejects).
+    const valuation = await scopedDb(userId).propertyValuation.findFirst({
+      where: { id: valuationId },
     });
     if (!valuation) return { success: false, error: "Valuation not found" };
     await db.propertyValuation.delete({ where: { id: valuationId } });
@@ -233,7 +238,7 @@ export async function addPartialAmortization(
   try {
     const userId = await getUserId();
     await ensurePropertyOwnership(userId, propertyId);
-    const mortgage = await db.mortgage.findUnique({ where: { propertyId } });
+    const mortgage = await scopedDb(userId).mortgage.findFirst({ where: { propertyId } });
     if (!mortgage) return { success: false, error: "Mortgage not found" };
     const data = PartialAmortizationInputSchema.parse(input);
 
@@ -260,8 +265,8 @@ export async function deletePartialAmortization(
 ): Promise<ActionResult<void>> {
   try {
     const userId = await getUserId();
-    const amortization = await db.partialAmortization.findFirst({
-      where: { id: amortizationId, userId },
+    const amortization = await scopedDb(userId).partialAmortization.findFirst({
+      where: { id: amortizationId },
       include: { mortgage: true },
     });
     if (!amortization) return { success: false, error: "Amortization not found" };
