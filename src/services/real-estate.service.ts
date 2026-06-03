@@ -92,15 +92,14 @@ function latestValuation(property: DbProperty): number | null {
 
 /**
  * Fraction of a property's equity attributable to the app user.
- * - No owners listed → 1.0 (sole implied owner).
  * - One+ owners marked `isSelf` → sum of their shares / 100.
- * - Owners listed but none marked `isSelf` → 1.0 (back-compat default, so
- *   existing properties keep counting fully until the user marks co-owners).
+ * - No owner marked `isSelf` (none listed, or listed but none self) → 0.0,
+ *   so a property contributes nothing to the total until the user marks
+ *   themselves as an owner.
  */
 function userShareFraction(property: DbProperty): number {
-  if (property.owners.length === 0) return 1;
   const selfOwners = property.owners.filter((o) => o.isSelf);
-  if (selfOwners.length === 0) return 1;
+  if (selfOwners.length === 0) return 0;
   const pct = selfOwners.reduce((sum, o) => sum + Number(o.sharePct), 0);
   return pct / 100;
 }
