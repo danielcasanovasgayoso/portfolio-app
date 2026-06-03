@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { scopedDb } from "@/lib/scoped-db";
 import type { PortfolioSummary, Holding, CategoryTotal } from "@/types/portfolio";
 import type { Prisma, TransactionType, TransferType } from "@prisma/client";
 
@@ -56,9 +57,8 @@ function mapDbHoldingToDto(h: DbHoldingWithAsset): Holding {
  * Fetches all holdings for a user and formats them for the portfolio view
  */
 export async function getPortfolioData(userId: string): Promise<PortfolioSummary> {
-  const dbHoldings = await db.holding.findMany({
+  const dbHoldings = await scopedDb(userId).holding.findMany({
     where: {
-      userId,
       shares: { gt: 0 },
     },
     include: holdingInclude,
@@ -116,8 +116,8 @@ function calculateCategoryTotal(holdings: Holding[]): CategoryTotal | null {
  * Gets a single holding by holding ID for a user
  */
 export async function getHoldingById(userId: string, holdingId: string): Promise<Holding | null> {
-  const dbHolding = await db.holding.findFirst({
-    where: { id: holdingId, userId },
+  const dbHolding = await scopedDb(userId).holding.findFirst({
+    where: { id: holdingId },
     include: holdingInclude,
   });
 
@@ -130,8 +130,8 @@ export async function getHoldingById(userId: string, holdingId: string): Promise
  * Gets transactions for a specific asset belonging to a user
  */
 export async function getAssetTransactions(userId: string, assetId: string) {
-  const transactions = await db.transaction.findMany({
-    where: { userId, assetId },
+  const transactions = await scopedDb(userId).transaction.findMany({
+    where: { assetId },
     orderBy: { date: "desc" },
     take: 50,
   });
@@ -184,15 +184,16 @@ export function mergeSeries(
 export async function getPortfolioValueHistory(
   userId: string
 ): Promise<{ date: string; close: number }[]> {
-  // 1. Fetch all data upfront (3 queries)
+  // 1. Fetch all data upfront (3 queries). Transactions and assets are
+  // user-scoped automatically; Price is a global table so it stays on the raw
+  // client and is scoped via its `asset` relation.
+  const sdb = scopedDb(userId);
   const [transactions, assets, prices] = await Promise.all([
-    db.transaction.findMany({
-      where: { userId },
+    sdb.transaction.findMany({
       orderBy: { date: "asc" },
       select: { assetId: true, type: true, date: true, shares: true, transferType: true, totalAmount: true },
     }),
-    db.asset.findMany({
-      where: { userId },
+    sdb.asset.findMany({
       select: { id: true, manualPricing: true },
     }),
     db.price.findMany({
