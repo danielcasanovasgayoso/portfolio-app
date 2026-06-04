@@ -31,6 +31,45 @@ export function PortfolioSummarySkeleton() {
   );
 }
 
+export function PortfolioAllocationBreakdownSkeleton() {
+  const rows = [
+    { nameWidth: "10rem", barWidth: "80%" },
+    { nameWidth: "13rem", barWidth: "60%" },
+    { nameWidth: "8rem", barWidth: "50%" },
+    { nameWidth: "11rem", barWidth: "33%" },
+  ];
+
+  return (
+    <article className="bg-card rounded-xl shadow-ambient p-6 sm:p-8">
+      <div className="flex items-center justify-between mb-6">
+        <Skeleton className="h-3 w-32" />
+      </div>
+
+      <ul className="space-y-3.5">
+        {rows.map((row, index) => (
+          <li
+            key={index}
+            className="grid grid-cols-[minmax(0,1fr)_5rem_3.5rem] items-center gap-3 sm:grid-cols-[minmax(14rem,1fr)_minmax(12rem,0.9fr)_3.5rem_8rem] sm:gap-4"
+          >
+            <Skeleton
+              className="h-4 max-w-full"
+              style={{ width: row.nameWidth }}
+            />
+            <div className="relative h-1.5 min-w-0 overflow-hidden rounded-full bg-muted/50">
+              <Skeleton
+                className="absolute inset-y-0 left-0 rounded-full"
+                style={{ width: row.barWidth }}
+              />
+            </div>
+            <Skeleton className="h-4 w-10 justify-self-end" />
+            <Skeleton className="hidden h-4 w-24 justify-self-end sm:block" />
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
 export function HoldingCardSkeleton() {
   return (
     <div className="bg-card rounded-xl shadow-sm px-4 py-3">
@@ -92,4 +131,3 @@ export function PortfolioSectionSkeleton() {
     </div>
   );
 }
-

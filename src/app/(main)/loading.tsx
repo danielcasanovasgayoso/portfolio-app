@@ -1,5 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  PortfolioAllocationBreakdownSkeleton,
   PortfolioSummarySkeleton,
   PortfolioSectionSkeleton,
 } from "@/components/skeletons";
@@ -15,13 +16,16 @@ export default function MainLoading() {
           <Skeleton className="h-9 w-9 rounded-lg" />
         </div>
 
-        <div className="space-y-6">
-          <div className="px-4 md:px-8">
+        <>
+          <div className="px-4 md:px-8 mb-6">
             <PortfolioSummarySkeleton />
+          </div>
+          <div className="px-4 md:px-8 mb-12">
+            <PortfolioAllocationBreakdownSkeleton />
           </div>
           <PortfolioSectionSkeleton />
           <PortfolioSectionSkeleton />
-        </div>
+        </>
       </main>
     </div>
   );

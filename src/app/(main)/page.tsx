@@ -20,6 +20,7 @@ import {
   REAL_ESTATE_COLOR,
 } from "@/lib/asset-colors";
 import {
+  PortfolioAllocationBreakdownSkeleton,
   PortfolioSummarySkeleton,
   PortfolioSectionSkeleton,
 } from "@/components/skeletons";
@@ -188,12 +189,15 @@ async function PortfolioContent({ userId }: { userId: string }) {
 
 function PortfolioContentSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="px-4 md:px-8">
+    <>
+      <div className="px-4 md:px-8 mb-6">
         <PortfolioSummarySkeleton />
+      </div>
+      <div className="px-4 md:px-8 mb-12">
+        <PortfolioAllocationBreakdownSkeleton />
       </div>
       <PortfolioSectionSkeleton />
       <PortfolioSectionSkeleton />
-    </div>
+    </>
   );
 }
