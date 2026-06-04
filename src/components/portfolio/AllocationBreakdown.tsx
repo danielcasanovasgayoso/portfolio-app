@@ -54,11 +54,11 @@ export function AllocationBreakdown({ items }: AllocationBreakdownProps) {
             <span className="w-24 flex-shrink-0 truncate text-[13px] font-medium text-foreground sm:w-44 sm:text-sm">
               {r.name}
             </span>
-            <div className="h-1.5 min-w-0 flex-1 rounded-full bg-muted">
+            <div className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-foreground/10">
               <div
-                className="h-full rounded-full"
+                className="absolute inset-y-0 left-0 rounded-full"
                 style={{
-                  width: `${Math.min(r.percent, 100)}%`,
+                  width: `${Math.max(Math.min(r.percent, 100), 1.5)}%`,
                   backgroundColor: r.color,
                 }}
               />
