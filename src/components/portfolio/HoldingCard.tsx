@@ -26,12 +26,17 @@ export function HoldingCard({
 }: HoldingCardProps) {
   const t = useTranslations("portfolio");
 
-  const portfolioPercent =
+  const percentNum =
     totalPortfolioValue > 0
-      ? ((holding.marketValue / totalPortfolioValue) * 100).toFixed(1)
-      : "0";
+      ? (holding.marketValue / totalPortfolioValue) * 100
+      : 0;
+  const portfolioPercent = percentNum.toFixed(1);
 
+  // Manual assets (cash / other) have no real cost basis, so gain/loss is
+  // structurally zero and price/date are meaningless — show value + weight only.
+  const isManual = holding.manualPricing === true;
   const hasPrice = holding.currentPrice !== null;
+  const showPerformance = !isManual && hasPrice;
   const isPositive = getGainClass(holding.gainLoss) === "positive";
   const stripeColor = accentColor ?? getAssetAccentColor(holding.id);
 
@@ -51,20 +56,34 @@ export function HoldingCard({
         </div>
 
         {/* Row 2: Details left, value & performance right */}
-        <div className="flex items-end justify-between gap-3 mt-1">
-          <div className="text-[12px] font-mono text-muted-foreground space-y-0.5">
-            {hasPrice && <p>{formatCurrency(holding.currentPrice!)}</p>}
-            <p>
-              {portfolioPercent}% {t("weight").toLowerCase()}
-            </p>
-            {holding.priceDate && <p>{formatDate(holding.priceDate)}</p>}
+        <div className="flex items-end justify-between gap-3 mt-2">
+          <div className="min-w-0 flex-1 text-[12px] font-mono text-muted-foreground space-y-1.5">
+            {showPerformance && <p>{formatCurrency(holding.currentPrice!)}</p>}
+            {/* Weight bar — relative size scannable at a glance */}
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-20 flex-shrink-0 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${Math.min(percentNum, 100)}%`,
+                    backgroundColor: stripeColor,
+                  }}
+                />
+              </div>
+              <span className="tabular-nums">
+                {portfolioPercent}% {t("weight").toLowerCase()}
+              </span>
+            </div>
+            {showPerformance && holding.priceDate && (
+              <p>{formatDate(holding.priceDate)}</p>
+            )}
           </div>
 
           <div className="text-right flex-shrink-0 text-[12px] font-mono space-y-0.5">
             <p className="font-bold text-foreground tabular-nums">
               {formatCurrency(holding.marketValue)}
             </p>
-            {hasPrice && (
+            {showPerformance && (
               <>
                 <p
                   className={cn(

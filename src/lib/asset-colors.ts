@@ -13,6 +13,20 @@ const ACCENT_PALETTE = [
   "#6366f1", // indigo
 ];
 
+/**
+ * Fixed, neutral palette for the top-level asset-class allocation breakdown.
+ * Each class gets a stable color so the allocation bar and its legend stay
+ * consistent across renders. Keys cover the four portfolio categories plus the
+ * folded-in real-estate equity segment.
+ */
+export const CATEGORY_COLORS: Record<string, string> = {
+  funds: "#6366f1", // indigo
+  stocks: "#0ea5e9", // sky
+  pp: "#8b5cf6", // violet
+  others: "#64748b", // slate
+  realEstate: "#14b8a6", // teal
+};
+
 function hashIndex(seed: string): number {
   let hash = 5381;
   for (let i = 0; i < seed.length; i++) {
