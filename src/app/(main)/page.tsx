@@ -4,7 +4,7 @@ import {
   PortfolioSummaryCard,
   PortfolioSection,
   AllocationBreakdown,
-  type AllocationSegment,
+  type AllocationItem,
 } from "@/components/portfolio";
 import { PortfolioEmptyState } from "@/components/portfolio/PortfolioEmptyState";
 import { RefreshPricesButton } from "@/components/portfolio/RefreshPricesButton";
@@ -14,7 +14,11 @@ import { requireAuth } from "@/lib/auth";
 import { formatCurrency } from "@/lib/formatters";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { assignAssetAccentColors, CATEGORY_COLORS } from "@/lib/asset-colors";
+import {
+  assignAssetAccentColors,
+  getAssetAccentColor,
+  REAL_ESTATE_COLOR,
+} from "@/lib/asset-colors";
 import {
   PortfolioSummarySkeleton,
   PortfolioSectionSkeleton,
@@ -65,39 +69,29 @@ async function PortfolioContent({ userId }: { userId: string }) {
     return <PortfolioEmptyState />;
   }
 
-  const accentColors = assignAssetAccentColors([
+  const allHoldings = [
     ...data.holdings.funds,
     ...data.holdings.stocks,
     ...data.holdings.pp,
     ...data.holdings.others,
-  ].map((h) => h.id));
+  ];
+  const accentColors = assignAssetAccentColors(allHoldings.map((h) => h.id));
 
-  // Asset-class breakdown for the allocation bar. Cash/Other has no cost basis,
-  // so its return is suppressed. Real-estate equity is folded in as its own class.
-  const allocationSegments: AllocationSegment[] = [
-    { key: "funds", label: t("funds"), totals: data.totals.funds, showReturn: true },
-    { key: "stocks", label: t("stocksEtfs"), totals: data.totals.stocks, showReturn: true },
-    { key: "pp", label: t("pp"), totals: data.totals.pp, showReturn: true },
-    { key: "others", label: t("others"), totals: data.totals.others, showReturn: false },
-  ]
-    .filter((s) => s.totals && s.totals.marketValue > 0)
-    .map((s) => ({
-      key: s.key,
-      label: s.label,
-      value: s.totals!.marketValue,
-      gainLossPercent: s.totals!.gainLossPercent,
-      showReturn: s.showReturn,
-      color: CATEGORY_COLORS[s.key],
-    }));
+  // Per-holding allocation, by market value, including real-estate equity so the
+  // weights sum to net worth. Each row reuses the holding's accent color.
+  const allocationItems: AllocationItem[] = allHoldings.map((h) => ({
+    id: h.id,
+    name: h.name,
+    value: h.marketValue,
+    color: accentColors.get(h.id) ?? getAssetAccentColor(h.id),
+  }));
 
   if (hasRealEstate && realEstate.userEquity > 0) {
-    allocationSegments.push({
-      key: "realEstate",
-      label: t("realEstate"),
+    allocationItems.push({
+      id: "real-estate",
+      name: t("realEstate"),
       value: realEstate.userEquity,
-      gainLossPercent: realEstate.userGainPercent,
-      showReturn: true,
-      color: CATEGORY_COLORS.realEstate,
+      color: REAL_ESTATE_COLOR,
     });
   }
 
@@ -117,10 +111,10 @@ async function PortfolioContent({ userId }: { userId: string }) {
         />
       </div>
 
-      {/* Asset-class allocation — makes relative sizing (e.g. cash drag) obvious */}
-      {allocationSegments.length > 1 && (
+      {/* Allocation by weight — makes relative sizing (e.g. cash drag) obvious */}
+      {allocationItems.length > 1 && (
         <div className="px-4 md:px-8 mb-12">
-          <AllocationBreakdown segments={allocationSegments} />
+          <AllocationBreakdown items={allocationItems} />
         </div>
       )}
 

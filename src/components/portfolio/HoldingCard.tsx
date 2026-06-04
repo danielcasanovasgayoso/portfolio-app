@@ -56,24 +56,12 @@ export function HoldingCard({
         </div>
 
         {/* Row 2: Details left, value & performance right */}
-        <div className="flex items-end justify-between gap-3 mt-2">
-          <div className="min-w-0 flex-1 text-[12px] font-mono text-muted-foreground space-y-1.5">
+        <div className="flex items-end justify-between gap-3 mt-1">
+          <div className="text-[12px] font-mono text-muted-foreground space-y-0.5">
             {showPerformance && <p>{formatCurrency(holding.currentPrice!)}</p>}
-            {/* Weight bar — relative size scannable at a glance */}
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-20 flex-shrink-0 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${Math.min(percentNum, 100)}%`,
-                    backgroundColor: stripeColor,
-                  }}
-                />
-              </div>
-              <span className="tabular-nums">
-                {portfolioPercent}% {t("weight").toLowerCase()}
-              </span>
-            </div>
+            <p className="tabular-nums">
+              {portfolioPercent}% {t("weight").toLowerCase()}
+            </p>
             {showPerformance && holding.priceDate && (
               <p>{formatDate(holding.priceDate)}</p>
             )}

@@ -1,88 +1,73 @@
+import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { formatCurrency, formatPercent } from "@/lib/formatters";
-import { cn } from "@/lib/utils";
+import { MoreHorizontal } from "lucide-react";
+import { formatCurrency } from "@/lib/formatters";
 
-/** One asset-class slice of the portfolio allocation. */
-export interface AllocationSegment {
-  /** Stable key (also used to look up the segment color). */
-  key: string;
-  /** Human-readable, already-translated label. */
-  label: string;
-  /** Market value of this class. */
+/** One holding's slice of the portfolio, by market value. */
+export interface AllocationItem {
+  id: string;
+  /** Holding name (already resolved). */
+  name: string;
+  /** Market value of this holding. */
   value: number;
-  /** Since-inception return for this class. */
-  gainLossPercent: number;
-  /** Whether a return makes sense for this class (false for cash / no cost basis). */
-  showReturn: boolean;
-  /** Bar + dot color. */
+  /** Bar + accent color (matches the holding card's stripe). */
   color: string;
 }
 
 interface AllocationBreakdownProps {
-  segments: AllocationSegment[];
+  items: AllocationItem[];
 }
 
 /**
- * Flat companion to the hero card: a single proportional bar plus a legend that
- * makes asset-class allocation scannable at a glance — so an oversized cash
- * position reads as a wide slice rather than a number buried at the bottom.
+ * A per-holding "allocation by weight" list: each asset gets a full-width track
+ * with a colored pill sized to its share of net worth, sorted largest first.
+ * Makes relative sizing — e.g. an oversized cash position — scannable instantly.
  */
-export function AllocationBreakdown({ segments }: AllocationBreakdownProps) {
+export function AllocationBreakdown({ items }: AllocationBreakdownProps) {
   const t = useTranslations("portfolio");
 
-  const total = segments.reduce((sum, s) => sum + s.value, 0);
-  if (total <= 0 || segments.length === 0) return null;
+  const total = items.reduce((sum, i) => sum + i.value, 0);
+  if (total <= 0 || items.length === 0) return null;
 
-  const withPercent = segments.map((s) => ({
-    ...s,
-    percent: (s.value / total) * 100,
-  }));
+  const rows = items
+    .map((i) => ({ ...i, percent: (i.value / total) * 100 }))
+    .sort((a, b) => b.percent - a.percent);
 
   return (
     <article className="bg-card rounded-xl shadow-ambient p-6 sm:p-8">
-      <span className="label-sm block mb-4">{t("allocation")}</span>
-
-      {/* Proportional bar */}
-      <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
-        {withPercent.map((s) => (
-          <div
-            key={s.key}
-            className="h-full first:rounded-l-full last:rounded-r-full"
-            style={{ width: `${s.percent}%`, backgroundColor: s.color }}
-            title={`${s.label} · ${s.percent.toFixed(1)}%`}
-          />
-        ))}
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <span className="label-sm">{t("allocationByWeight")}</span>
+        <Link
+          href="/portfolio/chart"
+          aria-label={t("allocationByWeight")}
+          className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/60 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </Link>
       </div>
 
-      {/* Legend */}
-      <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
-        {withPercent.map((s) => (
-          <li key={s.key} className="flex items-center gap-3 min-w-0">
-            <span
-              className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-              style={{ backgroundColor: s.color }}
-            />
-            <span className="text-[13px] font-medium text-foreground truncate">
-              {s.label}
+      {/* Per-holding weight bars */}
+      <ul className="space-y-3.5">
+        {rows.map((r) => (
+          <li key={r.id} className="flex items-center gap-3 sm:gap-4">
+            <span className="w-24 flex-shrink-0 truncate text-[13px] font-medium text-foreground sm:w-44 sm:text-sm">
+              {r.name}
             </span>
-            <span className="text-[13px] font-mono font-semibold text-muted-foreground tabular-nums ml-auto flex-shrink-0">
-              {s.percent.toFixed(1)}%
+            <div className="h-1.5 min-w-0 flex-1 rounded-full bg-muted">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${Math.min(r.percent, 100)}%`,
+                  backgroundColor: r.color,
+                }}
+              />
+            </div>
+            <span className="w-14 flex-shrink-0 text-right text-[13px] font-bold tabular-nums text-foreground sm:text-sm">
+              {r.percent.toFixed(1)}%
             </span>
-            <span className="hidden sm:inline w-px self-stretch bg-border" />
-            <span className="hidden sm:inline text-[12px] font-mono text-muted-foreground tabular-nums flex-shrink-0 w-[5.5rem] text-right">
-              {formatCurrency(s.value)}
-            </span>
-            <span
-              className={cn(
-                "text-[12px] font-mono font-medium tabular-nums flex-shrink-0 w-[4.5rem] text-right",
-                s.showReturn
-                  ? s.gainLossPercent >= 0
-                    ? "text-gain"
-                    : "text-loss"
-                  : "text-muted-foreground"
-              )}
-            >
-              {s.showReturn ? formatPercent(s.gainLossPercent) : t("notApplicable")}
+            <span className="hidden w-24 flex-shrink-0 text-right font-mono text-sm text-muted-foreground tabular-nums sm:block">
+              {formatCurrency(r.value)}
             </span>
           </li>
         ))}
