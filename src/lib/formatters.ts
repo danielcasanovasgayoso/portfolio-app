@@ -17,15 +17,28 @@ const sharesFormatter = new Intl.NumberFormat("es-ES", {
   maximumFractionDigits: 4,
 });
 
+// Date-only values (YYYY-MM-DD) are anchored to UTC midnight, so format in UTC to
+// avoid a timezone-dependent day shift between the server and the client.
 const dateFormatter = new Intl.DateTimeFormat("es-ES", {
   day: "2-digit",
   month: "short",
   year: "numeric",
+  timeZone: "UTC",
 });
+
+/**
+ * Collapses the non-breaking / narrow-no-break spaces that ICU emits (e.g.
+ * between the amount and the € sign) to a regular space. Node and the browser
+ * can disagree on which space they use, which causes React hydration mismatches;
+ * normalizing here makes the output deterministic across both.
+ */
+function normalizeSpaces(s: string): string {
+  return s.replace(/[  ]/g, " ");
+}
 
 export function formatCurrency(value: number | null | undefined): string {
   if (value == null) return "—";
-  return currencyFormatter.format(value);
+  return normalizeSpaces(currencyFormatter.format(value));
 }
 
 export function formatPercent(value: number | null | undefined): string {
@@ -37,12 +50,12 @@ export function formatPercent(value: number | null | undefined): string {
 
 export function formatNumber(value: number | null | undefined): string {
   if (value == null) return "—";
-  return numberFormatter.format(value);
+  return normalizeSpaces(numberFormatter.format(value));
 }
 
 export function formatShares(value: number | null | undefined): string {
   if (value == null) return "—";
-  return sharesFormatter.format(value);
+  return normalizeSpaces(sharesFormatter.format(value));
 }
 
 export function formatDate(value: string | null | undefined): string {
@@ -59,4 +72,3 @@ export function formatDate(value: string | null | undefined): string {
 export function getGainClass(value: number): "positive" | "negative" {
   return value >= 0 ? "positive" : "negative";
 }
-

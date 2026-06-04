@@ -3,6 +3,8 @@ import { getTranslations } from "next-intl/server";
 import {
   PortfolioSummaryCard,
   PortfolioSection,
+  AllocationBreakdown,
+  type AllocationItem,
 } from "@/components/portfolio";
 import { PortfolioEmptyState } from "@/components/portfolio/PortfolioEmptyState";
 import { RefreshPricesButton } from "@/components/portfolio/RefreshPricesButton";
@@ -12,7 +14,11 @@ import { requireAuth } from "@/lib/auth";
 import { formatCurrency } from "@/lib/formatters";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { assignAssetAccentColors } from "@/lib/asset-colors";
+import {
+  assignAssetAccentColors,
+  getAssetAccentColor,
+  REAL_ESTATE_COLOR,
+} from "@/lib/asset-colors";
 import {
   PortfolioSummarySkeleton,
   PortfolioSectionSkeleton,
@@ -63,17 +69,36 @@ async function PortfolioContent({ userId }: { userId: string }) {
     return <PortfolioEmptyState />;
   }
 
-  const accentColors = assignAssetAccentColors([
+  const allHoldings = [
     ...data.holdings.funds,
     ...data.holdings.stocks,
     ...data.holdings.pp,
     ...data.holdings.others,
-  ].map((h) => h.id));
+  ];
+  const accentColors = assignAssetAccentColors(allHoldings.map((h) => h.id));
+
+  // Per-holding allocation, by market value, including real-estate equity so the
+  // weights sum to net worth. Each row reuses the holding's accent color.
+  const allocationItems: AllocationItem[] = allHoldings.map((h) => ({
+    id: h.id,
+    name: h.name,
+    value: h.marketValue,
+    color: accentColors.get(h.id) ?? getAssetAccentColor(h.id),
+  }));
+
+  if (hasRealEstate && realEstate.userEquity > 0) {
+    allocationItems.push({
+      id: "real-estate",
+      name: t("realEstate"),
+      value: realEstate.userEquity,
+      color: REAL_ESTATE_COLOR,
+    });
+  }
 
   return (
     <>
       {/* Summary Card */}
-      <div className="px-4 md:px-8 mb-12">
+      <div className="px-4 md:px-8 mb-6">
         <PortfolioSummaryCard
           grand={data.totals.grand}
           invested={data.totals.invested}
@@ -85,6 +110,13 @@ async function PortfolioContent({ userId }: { userId: string }) {
           }}
         />
       </div>
+
+      {/* Allocation by weight — makes relative sizing (e.g. cash drag) obvious */}
+      {allocationItems.length > 1 && (
+        <div className="px-4 md:px-8 mb-12">
+          <AllocationBreakdown items={allocationItems} />
+        </div>
+      )}
 
       {/* Holdings by Category */}
       <PortfolioSection

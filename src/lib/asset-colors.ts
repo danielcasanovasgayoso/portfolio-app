@@ -13,6 +13,9 @@ const ACCENT_PALETTE = [
   "#6366f1", // indigo
 ];
 
+/** Stable accent for the folded-in real-estate equity row in the allocation list. */
+export const REAL_ESTATE_COLOR = "#14b8a6"; // teal
+
 function hashIndex(seed: string): number {
   let hash = 5381;
   for (let i = 0; i < seed.length; i++) {
