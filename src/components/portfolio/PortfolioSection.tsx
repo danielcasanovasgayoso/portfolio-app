@@ -120,11 +120,6 @@ export function PortfolioSection({
                 </p>
               </div>
             </div>
-
-            {/* Anchor the gain/return figures to a time period */}
-            <p className="mt-4 text-center text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-              {t("sinceInception")}
-            </p>
           </div>
         )}
       </header>
