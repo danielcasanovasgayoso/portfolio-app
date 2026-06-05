@@ -296,6 +296,15 @@
     filter: blur(0.45em);
     user-select: none;
     pointer-events: none;
+    /* `filter: blur` bleeds beyond the text box. Amounts are often right-
+       aligned and flush to a card that uses `overflow-hidden` (to clip its
+       coloured accent stripe to the rounded corners), so the horizontal bleed
+       gets chopped into a hard rectangle — the "cut" edges. Pad the box out
+       horizontally by the blur radius so the bleed lands inside the element,
+       cancelled by an equal negative margin so position and layout (incl.
+       `space-y` vertical gaps) are unchanged. */
+    padding-inline: 0.55em;
+    margin-inline: -0.55em;
   }
 }
 
