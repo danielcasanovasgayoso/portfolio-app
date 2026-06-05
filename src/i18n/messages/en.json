@@ -129,6 +129,8 @@
     "others": "Others",
     "assetCount": "{count, plural, one {1 asset} other {# assets}}",
     "invested": "Invested",
+    "hideAmounts": "Hide amounts",
+    "showAmounts": "Show amounts",
     "weight": "Weight",
     "allocationByWeight": "Allocation by weight",
     "gainLoss": "Gain/Loss",

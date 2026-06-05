@@ -99,7 +99,7 @@ export function PortfolioSummaryCard({
 
         {/* Main Value */}
         <div className="mb-6 sm:mb-8">
-          <p className="text-4xl sm:text-5xl md:text-6xl font-mono font-bold tracking-tighter text-foreground">
+          <p className="text-4xl sm:text-5xl md:text-6xl font-mono font-bold tracking-tighter text-foreground sensitive-amount">
             {formatCurrency(netWorth)}
           </p>
         </div>
@@ -122,7 +122,7 @@ export function PortfolioSummaryCard({
                 <span className="label-sm block text-muted-foreground">
                   {card.label}
                 </span>
-                <p className="text-sm font-mono font-bold tracking-tight text-foreground tabular-nums">
+                <p className="text-sm font-mono font-bold tracking-tight text-foreground tabular-nums sensitive-amount">
                   {formatCurrency(card.data.value)}
                 </p>
                 <div
@@ -131,7 +131,7 @@ export function PortfolioSummaryCard({
                     gainColor
                   )}
                 >
-                  <span>
+                  <span className="sensitive-amount">
                     {isPositive ? "+" : ""}
                     {formatCurrency(card.data.gainLoss)}
                   </span>

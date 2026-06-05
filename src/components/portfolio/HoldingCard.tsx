@@ -58,7 +58,11 @@ export function HoldingCard({
         {/* Row 2: Details left, value & performance right */}
         <div className="flex items-end justify-between gap-3 mt-1">
           <div className="text-[12px] font-mono text-muted-foreground space-y-0.5">
-            {showPerformance && <p>{formatCurrency(holding.currentPrice!)}</p>}
+            {showPerformance && (
+              <p className="sensitive-amount">
+                {formatCurrency(holding.currentPrice!)}
+              </p>
+            )}
             <p className="tabular-nums">
               {portfolioPercent}% {t("weight").toLowerCase()}
             </p>
@@ -68,14 +72,14 @@ export function HoldingCard({
           </div>
 
           <div className="text-right flex-shrink-0 text-[12px] font-mono space-y-0.5">
-            <p className="font-bold text-foreground tabular-nums">
+            <p className="font-bold text-foreground tabular-nums sensitive-amount">
               {formatCurrency(holding.marketValue)}
             </p>
             {showPerformance && (
               <>
                 <p
                   className={cn(
-                    "font-medium tabular-nums",
+                    "font-medium tabular-nums sensitive-amount",
                     isPositive ? "text-gain" : "text-loss"
                   )}
                 >

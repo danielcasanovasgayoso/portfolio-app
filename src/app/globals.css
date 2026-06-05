@@ -253,6 +253,19 @@
   .pb-nav {
     padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
   }
+
+  /* Privacy blur: hide euro amounts when showing the app to others. The
+     `privacy-blur` class is toggled on <html> (PrivacyToggle); only elements
+     carrying `sensitive-amount` blur, so percentages stay readable. Blur is in
+     `em` so it scales with each amount's font size. */
+  .sensitive-amount {
+    transition: filter 0.15s ease;
+  }
+  .privacy-blur .sensitive-amount {
+    filter: blur(0.45em);
+    user-select: none;
+    pointer-events: none;
+  }
 }
 
 /* Snappier, eased cross-document/view transitions */
