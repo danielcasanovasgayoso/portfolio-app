@@ -269,14 +269,18 @@
     inset-inline: 0;
     bottom: 0;
     z-index: 40;
-    height: calc(7.5rem + env(safe-area-inset-bottom));
+    height: calc(10.5rem + env(safe-area-inset-bottom));
     pointer-events: none;
+    /* Solid background up to ~the top of the pill so content is fully hidden
+       behind/around the bar (no half-faded text peeking out next to it), then
+       a long, eased ramp to transparent so there's no perceptible edge. */
     background: linear-gradient(
       to top,
       var(--background) 0%,
-      var(--background) 18%,
-      color-mix(in srgb, var(--background) 70%, transparent) 48%,
-      color-mix(in srgb, var(--background) 28%, transparent) 72%,
+      var(--background) 42%,
+      color-mix(in srgb, var(--background) 78%, transparent) 58%,
+      color-mix(in srgb, var(--background) 45%, transparent) 72%,
+      color-mix(in srgb, var(--background) 18%, transparent) 86%,
       transparent 100%
     );
   }
@@ -292,6 +296,15 @@
     filter: blur(0.45em);
     user-select: none;
     pointer-events: none;
+    /* `filter: blur` bleeds beyond the text box. Amounts are often right-
+       aligned and flush to a card that uses `overflow-hidden` (to clip its
+       coloured accent stripe to the rounded corners), so the horizontal bleed
+       gets chopped into a hard rectangle — the "cut" edges. Pad the box out
+       horizontally by the blur radius so the bleed lands inside the element,
+       cancelled by an equal negative margin so position and layout (incl.
+       `space-y` vertical gaps) are unchanged. */
+    padding-inline: 0.55em;
+    margin-inline: -0.55em;
   }
 }
 
