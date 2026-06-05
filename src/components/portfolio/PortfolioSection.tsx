@@ -51,7 +51,7 @@ export function PortfolioSection({
 
           {/* Section total */}
           <div className="text-right">
-            <p className="text-xl font-mono font-bold text-foreground tabular-nums">
+            <p className="text-xl font-mono font-bold text-foreground tabular-nums sensitive-amount">
               {totals ? formatCurrency(totals.marketValue) : "—"}
             </p>
           </div>
@@ -67,7 +67,7 @@ export function PortfolioSection({
                   <Wallet className="w-3 h-3 text-muted-foreground" />
                   <span className="label-sm">{t("invested")}</span>
                 </div>
-                <p className="text-sm font-mono font-semibold text-foreground tabular-nums">
+                <p className="text-sm font-mono font-semibold text-foreground tabular-nums sensitive-amount">
                   {formatCurrency(totals.costBasis)}
                 </p>
               </div>
@@ -95,7 +95,7 @@ export function PortfolioSection({
                 </div>
                 <p
                   className={cn(
-                    "text-sm font-mono font-semibold tabular-nums",
+                    "text-sm font-mono font-semibold tabular-nums sensitive-amount",
                     isPositive ? "text-gain" : "text-loss"
                   )}
                 >

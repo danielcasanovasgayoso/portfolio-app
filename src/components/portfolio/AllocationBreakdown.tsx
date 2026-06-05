@@ -66,7 +66,7 @@ export function AllocationBreakdown({ items }: AllocationBreakdownProps) {
             <span className="text-right text-[13px] font-bold tabular-nums text-foreground sm:text-sm">
               {r.percent.toFixed(1)}%
             </span>
-            <span className="hidden whitespace-nowrap text-right font-mono text-sm text-muted-foreground tabular-nums sm:block">
+            <span className="hidden whitespace-nowrap text-right font-mono text-sm text-muted-foreground tabular-nums sm:block sensitive-amount">
               {formatCurrency(r.value)}
             </span>
           </li>

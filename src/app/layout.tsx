@@ -65,7 +65,7 @@ export default async function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme')||'system';var d=t==='system'?window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light':t;document.documentElement.classList.add(d)}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('theme')||'system';var d=t==='system'?window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light':t;document.documentElement.classList.add(d);if(localStorage.getItem('privacy-blur')==='1'){document.documentElement.classList.add('privacy-blur')}}catch(e){}})()`,
           }}
         />
       </head>

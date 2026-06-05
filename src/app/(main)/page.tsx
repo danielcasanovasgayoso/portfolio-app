@@ -4,6 +4,7 @@ import {
   PortfolioSummaryCard,
   PortfolioSection,
   AllocationBreakdown,
+  PrivacyToggle,
   type AllocationItem,
 } from "@/components/portfolio";
 import { PortfolioEmptyState } from "@/components/portfolio/PortfolioEmptyState";
@@ -37,7 +38,8 @@ export default async function PortfolioPage() {
           <div className="flex flex-col max-w-[60%]">
              <h1 className="text-[1.75rem] font-bold tracking-tight">{t("title")}</h1>
           </div>
-          <div>
+          <div className="flex items-center gap-2">
+            <PrivacyToggle />
             <RefreshPricesButton />
           </div>
         </div>
@@ -157,7 +159,7 @@ async function PortfolioContent({ userId }: { userId: string }) {
               <h2 className="text-lg font-bold text-foreground tracking-tight">
                 {t("realEstate")}
               </h2>
-              <p className="text-xl font-mono font-bold text-foreground tabular-nums">
+              <p className="text-xl font-mono font-bold text-foreground tabular-nums sensitive-amount">
                 {formatCurrency(realEstate.userEquity)}
               </p>
             </div>
@@ -174,7 +176,7 @@ async function PortfolioContent({ userId }: { userId: string }) {
                   <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 </div>
                 <div className="flex items-end justify-end gap-3 mt-1">
-                  <p className="text-[12px] font-mono font-bold text-foreground tabular-nums">
+                  <p className="text-[12px] font-mono font-bold text-foreground tabular-nums sensitive-amount">
                     {formatCurrency(realEstate.userEquity)}
                   </p>
                 </div>

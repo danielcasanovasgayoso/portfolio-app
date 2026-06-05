@@ -129,6 +129,8 @@
     "others": "Otros",
     "assetCount": "{count, plural, one {1 activo} other {# activos}}",
     "invested": "Invertido",
+    "hideAmounts": "Ocultar importes",
+    "showAmounts": "Mostrar importes",
     "weight": "Peso",
     "allocationByWeight": "Distribución por peso",
     "gainLoss": "Gan./Perd.",
