@@ -1,4 +1,4 @@
-import type { TransactionType, TransferType } from "@prisma/client";
+import type { TransactionType } from "@prisma/client";
 
 /**
  * Email types from MyInvestor notifications
@@ -31,7 +31,6 @@ export interface GmailEmail {
 export interface ParsedTransaction {
   date: Date;
   type: TransactionType;
-  transferType?: TransferType;
   isin: string;
   name: string;
   shares: number;

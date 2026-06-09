@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     console.error("Gmail OAuth error:", error);
     return NextResponse.redirect(
       new URL(
-        `/import?error=${encodeURIComponent("Gmail authorization was denied")}`,
+        `/investments/import?error=${encodeURIComponent("Gmail authorization was denied")}`,
         request.url
       )
     );
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     console.error("Gmail OAuth state mismatch — possible CSRF attack");
     return NextResponse.redirect(
       new URL(
-        `/import?error=${encodeURIComponent("Invalid OAuth state. Please try again.")}`,
+        `/investments/import?error=${encodeURIComponent("Invalid OAuth state. Please try again.")}`,
         request.url
       )
     );
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   if (!code) {
     return NextResponse.redirect(
       new URL(
-        `/import?error=${encodeURIComponent("No authorization code received")}`,
+        `/investments/import?error=${encodeURIComponent("No authorization code received")}`,
         request.url
       )
     );
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
       console.error("No refresh token received from Google");
       return NextResponse.redirect(
         new URL(
-          `/import?error=${encodeURIComponent("Failed to get refresh token. Please try again.")}`,
+          `/investments/import?error=${encodeURIComponent("Failed to get refresh token. Please try again.")}`,
           request.url
         )
       );
@@ -81,12 +81,12 @@ export async function GET(request: NextRequest) {
         gmailRefreshToken: encryptedToken,
       },
     });
-    revalidatePath("/import");
+    revalidatePath("/investments/import");
 
     // Redirect to import page with success message; clear the one-time state cookie
     const successResponse = NextResponse.redirect(
       new URL(
-        `/import?success=${encodeURIComponent("Gmail connected successfully!")}`,
+        `/investments/import?success=${encodeURIComponent("Gmail connected successfully!")}`,
         request.url
       )
     );
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     console.error("Failed to exchange Gmail auth code:", error);
     return NextResponse.redirect(
       new URL(
-        `/import?error=${encodeURIComponent("Failed to connect Gmail. Please try again.")}`,
+        `/investments/import?error=${encodeURIComponent("Failed to connect Gmail. Please try again.")}`,
         request.url
       )
     );

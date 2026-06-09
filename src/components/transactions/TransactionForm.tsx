@@ -41,10 +41,9 @@ const defaultValues: TransactionCreateInput = {
   pricePerShare: "",
   totalAmount: "",
   fees: "",
-  transferType: undefined,
   newAssetName: "",
   newAssetIsin: "",
-  newAssetCategory: "OTHERS",
+  newAssetCategory: "FUND",
 };
 
 export function TransactionForm({
@@ -95,10 +94,9 @@ export function TransactionForm({
           : "",
         totalAmount: String(transaction.totalAmount),
         fees: transaction.fees ? String(transaction.fees) : "",
-        transferType: transaction.transferType || undefined,
         newAssetName: "",
         newAssetIsin: "",
-        newAssetCategory: "OTHERS",
+        newAssetCategory: "FUND",
       });
     } else {
       form.reset(defaultValues);

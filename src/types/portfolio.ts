@@ -1,4 +1,4 @@
-export type AssetCategory = "FUNDS" | "STOCKS" | "PP" | "OTHERS";
+export type AssetClass = "FUND" | "ETF" | "STOCK" | "PENSION";
 
 export interface Holding {
   id: string;
@@ -6,7 +6,7 @@ export interface Holding {
   name: string;
   isin: string;
   ticker: string | null;
-  category: AssetCategory;
+  category: AssetClass;
   shares: number;
   costBasis: number;
   avgPrice: number;
@@ -28,17 +28,16 @@ export interface CategoryTotal {
 export interface PortfolioSummary {
   holdings: {
     funds: Holding[];
+    etfs: Holding[];
     stocks: Holding[];
-    pp: Holding[];
-    others: Holding[];
+    pensions: Holding[];
   };
   totals: {
     funds: CategoryTotal | null;
+    etfs: CategoryTotal | null;
     stocks: CategoryTotal | null;
-    pp: CategoryTotal | null;
-    others: CategoryTotal | null;
-    invested: CategoryTotal | null;
-    grand: CategoryTotal | null;
+    pensions: CategoryTotal | null;
+    total: CategoryTotal | null;
   };
 }
 

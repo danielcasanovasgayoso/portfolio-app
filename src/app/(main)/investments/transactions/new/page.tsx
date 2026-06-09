@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { SubPageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import {
@@ -19,7 +20,6 @@ import type { Asset } from "@prisma/client";
 
 export default function AddTransactionPage() {
   const t = useTranslations("transactions");
-  const tAdd = useTranslations("add");
   const translateError = useActionError();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -38,10 +38,9 @@ export default function AddTransactionPage() {
       pricePerShare: "",
       totalAmount: "",
       fees: "",
-      transferType: undefined,
       newAssetName: "",
       newAssetIsin: "",
-      newAssetCategory: "OTHERS",
+      newAssetCategory: "FUND",
     },
   });
 
@@ -74,7 +73,7 @@ export default function AddTransactionPage() {
     startTransition(async () => {
       const result = await createTransaction(data);
       if (result.success) {
-        router.push("/");
+        router.push("/investments/transactions");
       } else {
         form.setError("root", { message: translateError(result) });
       }
@@ -83,20 +82,11 @@ export default function AddTransactionPage() {
 
   return (
     <div className="min-h-screen pb-nav">
-      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            aria-label={tAdd("goBack")}
-            className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <h1 className="text-lg font-bold tracking-tight text-foreground">
-            {t("addTransaction")}
-          </h1>
-        </div>
-      </header>
+      <SubPageHeader
+        title={t("newTransaction")}
+        backHref="/investments/transactions"
+        backLabel={t("backToInvestments")}
+      />
 
       <main className="p-4 max-w-lg mx-auto">
         {loading ? (

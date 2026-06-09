@@ -30,9 +30,15 @@ import type { TransactionCreateInput } from "@/lib/validators";
 import type { Asset } from "@prisma/client";
 
 const NEW_ASSET_ID = "__new__";
-const transactionTypeKeys = ["BUY", "SELL", "DIVIDEND", "FEE", "TRANSFER"] as const;
-const transferTypeKeys = ["IN", "OUT"] as const;
-const categoryKeys = ["OTHERS", "FUNDS", "STOCKS", "PP"] as const;
+const transactionTypeKeys = [
+  "BUY",
+  "SELL",
+  "TRANSFER_IN",
+  "TRANSFER_OUT",
+  "DIVIDEND",
+  "FEE",
+] as const;
+const categoryKeys = ["FUND", "ETF", "STOCK", "PENSION"] as const;
 
 interface TransactionFormFieldsProps {
   form: UseFormReturn<TransactionCreateInput>;
@@ -45,28 +51,23 @@ export function TransactionFormFields({ form, assets }: TransactionFormFieldsPro
   const t = useTranslations("transactions");
   const tAssets = useTranslations("assets");
 
-  const watchedType = form.watch("type");
   const watchedAssetId = form.watch("assetId");
   const isNewAsset = watchedAssetId === NEW_ASSET_ID;
 
   const typeLabels: Record<string, string> = {
     BUY: t("typeBuy"),
     SELL: t("typeSell"),
+    TRANSFER_IN: t("typeTransferIn"),
+    TRANSFER_OUT: t("typeTransferOut"),
     DIVIDEND: t("typeDividend"),
     FEE: t("typeFee"),
-    TRANSFER: t("typeTransfer"),
-  };
-
-  const transferLabels: Record<string, string> = {
-    IN: t("transferIn"),
-    OUT: t("transferOut"),
   };
 
   const categoryLabels: Record<string, string> = {
-    OTHERS: tAssets("categoryOthers"),
-    FUNDS: tAssets("categoryFunds"),
-    STOCKS: tAssets("categoryStocks"),
-    PP: tAssets("categoryPP"),
+    FUND: tAssets("classFund"),
+    ETF: tAssets("classEtf"),
+    STOCK: tAssets("classStock"),
+    PENSION: tAssets("classPension"),
   };
 
   return (
@@ -147,13 +148,13 @@ export function TransactionFormFields({ form, assets }: TransactionFormFieldsPro
               <FormItem>
                 <FormLabel>{tAssets("category")}</FormLabel>
                 <Select
-                  value={field.value || "OTHERS"}
+                  value={field.value || "FUND"}
                   onValueChange={field.onChange}
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
                       <SelectValue>
-                        {categoryLabels[field.value || "OTHERS"]}
+                        {categoryLabels[field.value || "FUND"]}
                       </SelectValue>
                     </SelectTrigger>
                   </FormControl>
@@ -238,40 +239,6 @@ export function TransactionFormFields({ form, assets }: TransactionFormFieldsPro
           )}
         />
       </div>
-
-      {watchedType === "TRANSFER" && (
-        <FormField
-          control={form.control}
-          name="transferType"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t("direction")}</FormLabel>
-              <Select
-                value={field.value || ""}
-                onValueChange={field.onChange}
-              >
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue>
-                      {field.value
-                        ? transferLabels[field.value]
-                        : t("selectDirection")}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {transferTypeKeys.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {transferLabels[type]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      )}
 
       {/* Shares and Price per Share */}
       <div className="grid grid-cols-2 gap-4">

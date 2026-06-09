@@ -1,16 +1,11 @@
-import Link from "next/link";
-import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SubPageHeader } from "@/components/layout/PageHeader";
 import {
   getPortfolioData,
   getPortfolioValueHistory,
-  mergeSeries,
 } from "@/services/portfolio.service";
-import {
-  getRealEstateEquityHistory,
-  getRealEstateSummary,
-} from "@/services/real-estate.service";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { PriceChart } from "@/components/charts";
@@ -77,49 +72,32 @@ function computeMonthlyChanges(
   return result;
 }
 
-export default async function PortfolioChartPage() {
+export default async function InvestmentsChartPage() {
   const user = await requireAuth();
   const t = await getTranslations("portfolioChart");
 
-  const [data, investmentHistory, realEstateHistory, realEstateSummary] =
-    await Promise.all([
-      getPortfolioData(user.id),
-      getPortfolioValueHistory(user.id),
-      getRealEstateEquityHistory(user.id),
-      getRealEstateSummary(user.id),
-    ]);
+  // Investments domain only — wallet cash and real-estate equity are
+  // aggregated exclusively on the dashboard.
+  const [data, chartData] = await Promise.all([
+    getPortfolioData(user.id),
+    getPortfolioValueHistory(user.id),
+  ]);
 
-  // Fold real-estate equity into the historical net-worth line.
-  const chartData =
-    realEstateHistory.length > 0
-      ? mergeSeries(investmentHistory, realEstateHistory)
-      : investmentHistory;
-
-  const netWorth =
-    (data.totals.grand?.marketValue ?? 0) + realEstateSummary.userEquity;
+  const totalValue = data.totals.total?.marketValue ?? 0;
   const monthlyChanges = computeMonthlyChanges(chartData).reverse(); // Most recent first
 
   return (
     <div className="min-h-screen pb-nav">
-      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            aria-label={t("backToPortfolio")}
-            className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold tracking-tight text-foreground">
-              {t("title")}
-            </h1>
-            <p className="text-sm text-muted-foreground font-mono">
-              {formatCurrency(netWorth)}
-            </p>
-          </div>
-        </div>
-      </header>
+      <SubPageHeader
+        title={t("title")}
+        backHref="/investments"
+        backLabel={t("backToInvestments")}
+        actions={
+          <p className="text-sm text-muted-foreground font-mono sensitive-amount">
+            {formatCurrency(totalValue)}
+          </p>
+        }
+      />
 
       <main className="p-4 space-y-4">
         {chartData.length > 1 ? (

@@ -143,7 +143,7 @@ export async function createTransaction(
             isin,
             ticker: null,
             name: validated.newAssetName!.trim(),
-            category: validated.newAssetCategory || "OTHERS",
+            category: validated.newAssetCategory || "FUND",
             manualPricing: !hasIsin,
           },
         });
@@ -162,7 +162,6 @@ export async function createTransaction(
             : null,
           totalAmount: new Decimal(validated.totalAmount),
           fees: validated.fees ? new Decimal(validated.fees) : new Decimal(0),
-          transferType: validated.transferType || null,
         },
         include: {
           asset: {
@@ -181,9 +180,10 @@ export async function createTransaction(
       return created;
     });
 
-    revalidatePath("/transactions");
+    revalidatePath("/investments/transactions");
     revalidatePath("/");
-    revalidatePath(`/portfolio/${transaction.assetId}`);
+    revalidatePath(`/investments/assets/${transaction.assetId}`);
+    revalidatePath("/investments");
 
     return { success: true, data: serializeTransaction(transaction) };
   } catch (error) {
@@ -237,9 +237,6 @@ export async function updateTransaction(
     if (validated.fees !== undefined) {
       updateData.fees = validated.fees ? new Decimal(validated.fees) : new Decimal(0);
     }
-    if (validated.transferType !== undefined) {
-      updateData.transferType = validated.transferType || null;
-    }
 
     // The update and recalculation of every affected holding (both the new and
     // the previous asset when the transaction is reassigned) must be atomic.
@@ -268,9 +265,10 @@ export async function updateTransaction(
       return updated;
     });
 
-    revalidatePath("/transactions");
+    revalidatePath("/investments/transactions");
     revalidatePath("/");
-    revalidatePath(`/portfolio/${transaction.assetId}`);
+    revalidatePath(`/investments/assets/${transaction.assetId}`);
+    revalidatePath("/investments");
 
     return { success: true, data: serializeTransaction(transaction) };
   } catch (error) {
@@ -305,9 +303,10 @@ export async function deleteTransaction(
       await recalculateHolding(userId, transaction.assetId, tx);
     });
 
-    revalidatePath("/transactions");
+    revalidatePath("/investments/transactions");
     revalidatePath("/");
-    revalidatePath(`/portfolio/${transaction.assetId}`);
+    revalidatePath(`/investments/assets/${transaction.assetId}`);
+    revalidatePath("/investments");
 
     return { success: true, data: { id } };
   } catch (error) {

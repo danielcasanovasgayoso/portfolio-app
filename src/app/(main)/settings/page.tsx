@@ -1,13 +1,12 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import {
-  ArrowLeft,
   Database,
   Download,
   Globe,
   Key,
   Palette,
+  Upload,
   User,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +15,8 @@ import { ThemeToggle } from "@/components/settings/ThemeToggle";
 import { LanguageSwitcher } from "@/components/settings/LanguageSwitcher";
 import { DatabaseReset } from "@/components/settings/DatabaseReset";
 import { ExportData } from "@/components/settings/ExportData";
+import { ImportData } from "@/components/settings/ImportData";
+import { PageHeader } from "@/components/layout/PageHeader";
 import {
   SettingRow,
   SettingSection,
@@ -31,24 +32,9 @@ export default async function SettingsPage() {
 
   return (
     <div className="min-h-screen pb-nav">
-      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              aria-label={t("backToPortfolio")}
-              className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <h1 className="text-lg font-bold tracking-tight text-foreground">
-              {t("title")}
-            </h1>
-          </div>
-        </div>
-      </header>
+      <PageHeader title={t("title")} />
 
-      <main className="p-4 space-y-5">
+      <main className="p-4 space-y-5 max-w-5xl mx-auto md:px-8">
         {/* Account section — renders instantly */}
         <SettingSection title={t("account")}>
           <SettingRow
@@ -104,8 +90,16 @@ async function SettingsContent() {
         <SettingRow
           icon={Download}
           label={t("exportData")}
+          description={t("exportDataDesc")}
           right={<ExportData />}
         />
+        <SettingRow
+          icon={Upload}
+          label={t("importData")}
+          description={t("importDataDesc")}
+        >
+          <ImportData />
+        </SettingRow>
       </SettingSection>
 
       <SettingSection title={t("dangerZone")}>

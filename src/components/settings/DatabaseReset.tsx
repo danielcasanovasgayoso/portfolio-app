@@ -74,6 +74,7 @@ export function DatabaseReset() {
 
         <div className="space-y-2 py-4">
           <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+            <li>{t("resetItems.cash")}</li>
             <li>{t("resetItems.transactions")}</li>
             <li>{t("resetItems.holdings")}</li>
             <li>{t("resetItems.assets")}</li>

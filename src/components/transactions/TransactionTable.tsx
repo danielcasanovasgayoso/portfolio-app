@@ -36,15 +36,17 @@ const typeColors: Record<string, string> = {
   SELL: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
   DIVIDEND: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
   FEE: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
-  TRANSFER: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+  TRANSFER_IN: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+  TRANSFER_OUT: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
 };
 
 const typeLabels: Record<string, string> = {
   BUY: "Buy",
   SELL: "Sell",
+  TRANSFER_IN: "Transfer in",
+  TRANSFER_OUT: "Transfer out",
   DIVIDEND: "Dividend",
   FEE: "Fee",
-  TRANSFER: "Transfer",
 };
 
 export function TransactionTable({
@@ -139,10 +141,6 @@ export function TransactionTable({
                 typeColors[transaction.type] || typeColors.BUY;
               const typeLabel =
                 typeLabels[transaction.type] || transaction.type;
-              const transferSuffix =
-                transaction.type === "TRANSFER" && transaction.transferType
-                  ? ` ${transaction.transferType === "IN" ? "In" : "Out"}`
-                  : "";
 
               return (
                 <TableRow key={transaction.id}>
@@ -155,7 +153,6 @@ export function TransactionTable({
                       className={cn("text-[11px] font-medium border", typeColor)}
                     >
                       {typeLabel}
-                      {transferSuffix}
                     </Badge>
                   </TableCell>
                   <TableCell>

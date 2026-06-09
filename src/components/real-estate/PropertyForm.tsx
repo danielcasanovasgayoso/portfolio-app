@@ -483,7 +483,13 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
         )}
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              router.push(property ? `/real-estate/${property.id}` : "/real-estate")
+            }
+          >
             {tCommon("cancel")}
           </Button>
           <Button type="submit" disabled={isPending}>

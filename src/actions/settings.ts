@@ -237,6 +237,8 @@ export async function resetDatabase(): Promise<{
     await sdb.asset.deleteMany({});
     // 5. Import batches (now safe since transactions are deleted)
     await sdb.importBatch.deleteMany({});
+    // 6. Wallet movements (independent domain, no FKs)
+    await sdb.cashMovement.deleteMany({});
 
     // Reset Gmail connection in settings (keyed by userId on the raw client)
     await db.settings.update({
@@ -249,8 +251,10 @@ export async function resetDatabase(): Promise<{
     });
 
     revalidatePath("/");
-    revalidatePath("/transactions");
-    revalidatePath("/import");
+    revalidatePath("/wallet");
+    revalidatePath("/investments");
+    revalidatePath("/investments/transactions");
+    revalidatePath("/investments/import");
     revalidatePath("/settings");
 
     return { success: true };
@@ -275,12 +279,13 @@ export async function exportPortfolioData(): Promise<{
 
     // Fetch all user's data
     const sdb = scopedDb(userId);
-    const [assets, transactions, properties] = await Promise.all([
+    const [assets, transactions, cashMovements, properties] = await Promise.all([
       sdb.asset.findMany({ orderBy: { name: "asc" } }),
       sdb.transaction.findMany({
         orderBy: { date: "desc" },
         include: { asset: { select: { name: true, isin: true } } },
       }),
+      sdb.cashMovement.findMany({ orderBy: { date: "desc" } }),
       sdb.property.findMany({
         orderBy: { name: "asc" },
         include: {
@@ -298,6 +303,7 @@ export async function exportPortfolioData(): Promise<{
       summary: {
         totalAssets: assets.length,
         totalTransactions: transactions.length,
+        totalCashMovements: cashMovements.length,
         totalProperties: properties.length,
       },
       assets: assets.map((a) => ({
@@ -313,11 +319,16 @@ export async function exportPortfolioData(): Promise<{
         asset: t.asset.name,
         isin: t.asset.isin,
         type: t.type,
-        transferType: t.transferType,
         shares: Number(t.shares),
         pricePerShare: t.pricePerShare ? Number(t.pricePerShare) : null,
         totalAmount: Number(t.totalAmount),
         fees: t.fees ? Number(t.fees) : 0,
+      })),
+      cashMovements: cashMovements.map((m) => ({
+        date: m.date.toISOString().split("T")[0],
+        type: m.type,
+        amount: Number(m.amount),
+        note: m.note,
       })),
       properties: properties.map((p) => ({
         name: p.name,
@@ -383,7 +394,7 @@ const ImportAssetSchema = z.object({
   isin: z.string().min(1).max(100),
   ticker: z.string().max(20).nullable().optional(),
   name: z.string().min(1).max(200),
-  category: z.enum(["FUNDS", "STOCKS", "PP", "OTHERS"]).optional(),
+  category: z.enum(["FUND", "ETF", "STOCK", "PENSION"]).optional(),
   currency: z.string().length(3).optional(),
   manualPricing: z.boolean().optional(),
 });
@@ -393,8 +404,7 @@ const ImportTransactionSchema = z.object({
   asset: z.string().optional(),
   // Matches the asset import schema so manual assets can be restored from backups.
   isin: z.string().min(1).max(100),
-  type: z.enum(["BUY", "SELL", "DIVIDEND", "FEE", "TRANSFER"]),
-  transferType: z.enum(["IN", "OUT"]).nullable().optional(),
+  type: z.enum(["BUY", "SELL", "TRANSFER_IN", "TRANSFER_OUT", "DIVIDEND", "FEE"]),
   shares: z.number().finite(),
   pricePerShare: z.number().finite().nullable().optional(),
   totalAmount: z.number().finite(),
@@ -402,6 +412,13 @@ const ImportTransactionSchema = z.object({
 });
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD");
+
+const ImportCashMovementSchema = z.object({
+  date: dateOnly,
+  type: z.enum(["DEPOSIT", "WITHDRAWAL"]),
+  amount: z.number().finite().positive(),
+  note: z.string().max(200).nullable().optional(),
+});
 
 const ImportPropertyOwnerSchema = z.object({
   name: z.string().min(1).max(200),
@@ -450,6 +467,7 @@ const ImportDataSchema = z.object({
   exportedAt: z.string().optional(),
   assets: z.array(ImportAssetSchema).max(5000),
   transactions: z.array(ImportTransactionSchema).max(50000),
+  cashMovements: z.array(ImportCashMovementSchema).max(50000).optional(),
   properties: z.array(ImportPropertySchema).max(1000).optional(),
 });
 
@@ -462,6 +480,8 @@ export async function importPortfolioData(jsonData: string): Promise<{
     transactionsImported: number;
     assetsSkipped: number;
     transactionsSkipped: number;
+    cashMovementsImported: number;
+    cashMovementsSkipped: number;
     propertiesImported: number;
     propertiesSkipped: number;
   };
@@ -497,6 +517,8 @@ export async function importPortfolioData(jsonData: string): Promise<{
     let transactionsSkipped = 0;
     let propertiesImported = 0;
     let propertiesSkipped = 0;
+    let cashMovementsImported = 0;
+    let cashMovementsSkipped = 0;
 
     // Map to track ISIN -> assetId for transaction creation
     const isinToAssetId = new Map<string, string>();
@@ -529,7 +551,7 @@ export async function importPortfolioData(jsonData: string): Promise<{
             isin: asset.isin,
             ticker: asset.ticker || null,
             name: asset.name,
-            category: asset.category || "OTHERS",
+            category: asset.category || "FUND",
             currency: asset.currency || "EUR",
             manualPricing: asset.manualPricing || false,
           },
@@ -562,7 +584,6 @@ export async function importPortfolioData(jsonData: string): Promise<{
             userId,
             assetId,
             type: txn.type,
-            transferType: txn.transferType || null,
             date: new Date(txn.date),
             shares: txn.shares,
             pricePerShare: txn.pricePerShare ?? null,
@@ -577,6 +598,42 @@ export async function importPortfolioData(jsonData: string): Promise<{
       }
     }
 
+    // Import wallet movements (skip exact duplicates by date + type + amount)
+    if (data.cashMovements && data.cashMovements.length > 0) {
+      const existingMovements = await sdb.cashMovement.findMany({
+        select: { date: true, type: true, amount: true },
+      });
+      const movementKey = (date: string, type: string, amount: number) =>
+        `${date}|${type}|${amount.toFixed(4)}`;
+      const existingMovementKeys = new Set(
+        existingMovements.map((m) =>
+          movementKey(m.date.toISOString().split("T")[0], m.type, Number(m.amount))
+        )
+      );
+
+      for (const movement of data.cashMovements) {
+        if (existingMovementKeys.has(movementKey(movement.date, movement.type, movement.amount))) {
+          cashMovementsSkipped++;
+          continue;
+        }
+        try {
+          await sdb.cashMovement.create({
+            data: {
+              userId,
+              type: movement.type,
+              date: new Date(movement.date),
+              amount: movement.amount,
+              note: movement.note ?? null,
+            },
+          });
+          cashMovementsImported++;
+        } catch (error) {
+          console.error("Failed to import cash movement:", error);
+          cashMovementsSkipped++;
+        }
+      }
+    }
+
     // Import real estate properties (skip duplicates by name + purchase date)
     if (data.properties && data.properties.length > 0) {
       // Key existing properties by name + purchase date to avoid duplicates on re-import.
@@ -584,7 +641,7 @@ export async function importPortfolioData(jsonData: string): Promise<{
         select: { name: true, purchaseDate: true },
       });
       const propertyKey = (name: string, purchaseDate: Date) =>
-        `${name} ${purchaseDate.toISOString().split("T")[0]}`;
+        `${name}|${purchaseDate.toISOString().split("T")[0]}`;
       const existingPropertyKeys = new Set(
         existingProperties.map((p) => propertyKey(p.name, p.purchaseDate))
       );
@@ -673,7 +730,9 @@ export async function importPortfolioData(jsonData: string): Promise<{
     await recalculateAllHoldings(userId);
 
     revalidatePath("/");
-    revalidatePath("/transactions");
+    revalidatePath("/wallet");
+    revalidatePath("/investments");
+    revalidatePath("/investments/transactions");
     revalidatePath("/real-estate");
     revalidatePath("/settings");
 
@@ -684,6 +743,8 @@ export async function importPortfolioData(jsonData: string): Promise<{
         transactionsImported,
         assetsSkipped,
         transactionsSkipped,
+        cashMovementsImported,
+        cashMovementsSkipped,
         propertiesImported,
         propertiesSkipped,
       },

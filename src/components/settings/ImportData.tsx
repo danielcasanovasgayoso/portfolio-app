@@ -38,6 +38,8 @@ export function ImportData() {
           transactionsImported,
           assetsSkipped,
           transactionsSkipped,
+          cashMovementsImported,
+          cashMovementsSkipped,
           propertiesImported,
           propertiesSkipped,
         } = response.data;
@@ -46,9 +48,11 @@ export function ImportData() {
           message: t("importSuccess", {
             assets: assetsImported,
             transactions: transactionsImported,
+            cash: cashMovementsImported,
             properties: propertiesImported,
             assetsSkipped,
             transactionsSkipped,
+            cashSkipped: cashMovementsSkipped,
             propertiesSkipped,
           }),
         });

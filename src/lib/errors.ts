@@ -16,7 +16,6 @@ export type ErrorCode =
   | "UNKNOWN_ERROR"
   // Action-level codes (used by early-return server actions; translated client-side via the `errors` i18n namespace)
   | "ASSET_NOT_FOUND"
-  | "MANUAL_ASSET_NOT_FOUND"
   | "ASSET_NO_EXTERNAL_PRICING"
   | "TRANSACTION_NOT_FOUND"
   | "GMAIL_NOT_CONNECTED"

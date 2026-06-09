@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { CopyTickerButton } from "@/components/asset-detail/CopyTickerButton";
+import { AssetCategorySelect } from "@/components/asset-detail/AssetCategorySelect";
+import { SubPageHeader } from "@/components/layout/PageHeader";
 import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { getHoldingById, getAssetTransactions } from "@/services/portfolio.service";
 import { getPriceHistory } from "@/services/price.service";
 import {
@@ -56,31 +55,24 @@ export default async function AssetDetailPage({
 
   return (
     <div className="min-h-screen pb-nav">
-      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            aria-label={t("backToPortfolio")}
-            className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold tracking-tight text-foreground truncate">
-              {holding.name}
-            </h1>
-            <p className="text-sm text-muted-foreground">{holding.isin}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="uppercase">
-              {holding.category}
-            </Badge>
+      <SubPageHeader
+        title={holding.name}
+        backHref="/investments"
+        backLabel={t("backToInvestments")}
+        actions={
+          <>
+            {holding.assetId && (
+              <AssetCategorySelect
+                assetId={holding.assetId}
+                category={holding.category}
+              />
+            )}
             {!holding.manualPricing && holding.assetId && (
               <RefreshAssetButton assetId={holding.assetId} />
             )}
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <main className="p-4 space-y-4">
         {!holding.manualPricing && chartData.length > 0 && (
@@ -159,6 +151,10 @@ export default async function AssetDetailPage({
               <CardTitle>{t("priceInformation")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-muted-foreground">ISIN</span>
+                <span className="font-semibold">{holding.isin}</span>
+              </div>
               <div className="flex justify-between items-center py-2 border-b border-border">
                 <span className="text-muted-foreground">{t("ticker")}</span>
                 <span className="font-semibold flex items-center">

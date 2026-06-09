@@ -41,7 +41,7 @@ export function TransactionsContent({
       params.delete("openForm");
       const newUrl = params.toString()
         ? `/transactions?${params.toString()}`
-        : "/transactions";
+        : "/investments/transactions";
       router.replace(newUrl);
     }
   }, [shouldOpenForm, searchParams, router]);

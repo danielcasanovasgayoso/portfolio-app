@@ -3,21 +3,30 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { PieChart, FileText, Settings, Plus, Home } from "lucide-react";
+import { LayoutDashboard, Wallet, TrendingUp, Home, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// The five app domains, always reachable: Dashboard, Wallet, Investments,
+// Real Estate and Settings. Domain-specific actions (add movement, add
+// transaction, add property) live inside each domain's screens.
 const navItems = [
   {
     href: "/",
-    labelKey: "portfolio" as const,
-    shortLabelKey: "home" as const,
-    icon: PieChart,
+    labelKey: "dashboard" as const,
+    shortLabelKey: "dashboardShort" as const,
+    icon: LayoutDashboard,
   },
   {
-    href: "/transactions",
-    labelKey: "transactions" as const,
-    shortLabelKey: "transactionsShort" as const,
-    icon: FileText,
+    href: "/wallet",
+    labelKey: "wallet" as const,
+    shortLabelKey: "walletShort" as const,
+    icon: Wallet,
+  },
+  {
+    href: "/investments",
+    labelKey: "investments" as const,
+    shortLabelKey: "investmentsShort" as const,
+    icon: TrendingUp,
   },
   {
     href: "/real-estate",
@@ -36,20 +45,19 @@ const navItems = [
 export function BottomNav() {
   const t = useTranslations("nav");
   const pathname = usePathname();
-  const isAddActive = pathname === "/add";
 
   return (
     <>
       <div aria-hidden className="nav-fade" />
       <nav
-        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3"
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50"
         style={{ marginBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="flex items-center gap-1 bg-background/90 border border-border rounded-2xl px-2 py-2 shadow-lg shadow-black/10 dark:shadow-black/30">
           {navItems.map((item) => {
             const isActive =
               item.href === "/"
-                ? pathname === "/" || pathname.startsWith("/portfolio/")
+                ? pathname === "/"
                 : pathname.startsWith(item.href);
 
             return (
@@ -57,8 +65,10 @@ export function BottomNav() {
                 key={item.href}
                 href={item.href}
                 prefetch={true}
+                aria-label={t(item.labelKey)}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "relative flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200",
+                  "relative flex items-center gap-2 px-3.5 py-2.5 rounded-xl transition-all duration-200",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -74,20 +84,6 @@ export function BottomNav() {
             );
           })}
         </div>
-
-        <Link
-          href="/add"
-          prefetch={true}
-          className={cn(
-            "flex items-center justify-center h-11 w-11 rounded-2xl shadow-lg shadow-black/10 dark:shadow-black/30 transition-all duration-200 active:scale-95",
-            isAddActive
-              ? "bg-primary text-primary-foreground"
-              : "bg-primary text-primary-foreground hover:bg-primary/90"
-          )}
-          aria-label={t("addTransactions")}
-        >
-          <Plus className="h-5 w-5" />
-        </Link>
       </nav>
     </>
   );

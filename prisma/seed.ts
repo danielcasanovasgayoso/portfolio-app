@@ -1,4 +1,4 @@
-import { PrismaClient, AssetCategory } from "@prisma/client";
+import { PrismaClient, AssetClass } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -7,74 +7,66 @@ const TICKER_MAPPINGS: Array<{
   isin: string;
   ticker: string;
   displayName: string;
-  category: AssetCategory;
+  category: AssetClass;
 }> = [
   // FUNDS (European Funds ending in .EUFUND)
   {
     isin: "IE00B03HD191",
     ticker: "IE00B03HD191.EUFUND",
     displayName: "Vanguard Global Stock Index Fund EUR Acc",
-    category: "FUNDS",
+    category: "FUND",
   },
   {
     isin: "FR0000447823",
     ticker: "FR0000447823.EUFUND",
     displayName: "Amundi MSCI World (traspasado)",
-    category: "FUNDS",
+    category: "FUND",
   },
   {
     isin: "FR0000989626",
     ticker: "FR0000989626.EUFUND",
     displayName: "Amundi Funds (traspasado)",
-    category: "FUNDS",
+    category: "FUND",
   },
   {
     isin: "FR0013346079",
     ticker: "FR0013346079.EUFUND",
     displayName: "Amundi Funds intermedio (traspasado)",
-    category: "FUNDS",
+    category: "FUND",
   },
   {
     isin: "IE0031786696",
     ticker: "IE0031786696.EUFUND",
     displayName: "Vanguard Emerging Markets Stock Index Fund EUR Acc",
-    category: "FUNDS",
+    category: "FUND",
   },
   {
     isin: "IE00B42W4L06",
     ticker: "IE00B42W4L06.EUFUND",
     displayName: "Vanguard Global Small-Cap Index Fund EUR Acc",
-    category: "FUNDS",
+    category: "FUND",
   },
   {
     isin: "IE000QAZP7L2",
     ticker: "IE000QAZP7L2.EUFUND",
     displayName: "iShares Emerging Markets Index Fund (IE) Acc EUR clase S",
-    category: "FUNDS",
+    category: "FUND",
   },
 
-  // STOCKS & ETFs (European Exchanges)
+  // ETFs / ETCs (European Exchanges)
   {
     isin: "IE00B579F325",
     ticker: "SGLD.AS",
     displayName: "Invesco Physical Gold ETC",
-    category: "STOCKS",
+    category: "ETF",
   },
 
-  // PENSION PLANS (PP)
+  // PENSION PLANS
   {
     isin: "ES0165265002",
     ticker: "0P0001LIG7.MC",
     displayName: "MyInvestor Indexado Global Stock PP",
-    category: "PP",
-  },
-
-  // OTHERS
-  {
-    isin: "CASH",
-    ticker: "CASH",
-    displayName: "Cash",
-    category: "OTHERS",
+    category: "PENSION",
   },
 ];
 

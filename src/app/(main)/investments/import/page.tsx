@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { BackButton } from "@/components/ui/back-button";
+import { SubPageHeader } from "@/components/layout/PageHeader";
 import { getTranslations } from "next-intl/server";
 import { GmailConnectCard, ImportWizard } from "@/components/import";
 import { checkGmailConnection } from "@/actions/import";
@@ -24,14 +24,11 @@ export default async function ImportPage({
 
   return (
     <div className="min-h-screen pb-nav">
-      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center gap-3">
-          <BackButton label={t("goBack")} />
-          <h1 className="text-lg font-bold tracking-tight text-foreground">
-            {t("title")}
-          </h1>
-        </div>
-      </header>
+      <SubPageHeader
+        title={t("title")}
+        backHref="/investments"
+        backLabel={t("goBack")}
+      />
 
       <main className="p-4 space-y-6">
         {/* Status messages */}

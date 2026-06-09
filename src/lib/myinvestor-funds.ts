@@ -12,12 +12,12 @@
  * - 9: Divisa (Currency)
  */
 
-import type { AssetCategory } from "@prisma/client";
+import type { AssetClass } from "@prisma/client";
 
 export interface FundInfo {
   isin: string;
   name: string;
-  category: AssetCategory;
+  category: AssetClass;
   fundType: string; // "Fondo", "Fondo Indexado", "PP"
   assetType: string; // "Renta Variable", "Mixto", etc.
   currency: string;
@@ -52,21 +52,17 @@ function parseCSVLine(line: string): string[] {
 }
 
 /**
- * Maps the "Fondo / PP" column to AssetCategory
+ * Maps the "Fondo / PP" column to AssetClass
  */
-function mapFundTypeToCategory(fundType: string): AssetCategory {
+function mapFundTypeToCategory(fundType: string): AssetClass {
   const normalized = fundType.toUpperCase().trim();
 
   if (normalized === "PP" || normalized.includes("PENSION")) {
-    return "PP";
+    return "PENSION";
   }
 
-  // "Fondo" and "Fondo Indexado" are both FUNDS
-  if (normalized.includes("FONDO")) {
-    return "FUNDS";
-  }
-
-  return "OTHERS";
+  // "Fondo" and "Fondo Indexado" are both funds
+  return "FUND";
 }
 
 /**
@@ -124,12 +120,12 @@ export function getFundByIsin(isin: string): FundInfo | undefined {
 }
 
 /**
- * Gets the asset category for an ISIN
- * Returns "OTHERS" if not found
+ * Gets the asset class for an ISIN
+ * Returns "FUND" if not found (MyInvestor imports are fund-centric)
  */
-export function getCategoryByIsin(isin: string): AssetCategory {
+export function getCategoryByIsin(isin: string): AssetClass {
   const fund = getFundByIsin(isin);
-  return fund?.category || "OTHERS";
+  return fund?.category || "FUND";
 }
 
 /**
@@ -191,7 +187,7 @@ export function resolveIsinFromDgsfp(code: string): string | null {
  * Determines asset category based on ISIN and optional name
  * Uses dynamic cache first, then heuristics based on ISIN prefix and name
  */
-export function determineAssetCategory(isin: string, name?: string): AssetCategory {
+export function determineAssetCategory(isin: string, name?: string): AssetClass {
   // Try dynamic cache if available
   if (fundCache) {
     const cachedFund = fundCache.get(isin);
@@ -203,23 +199,23 @@ export function determineAssetCategory(isin: string, name?: string): AssetCatego
   // Fall back to heuristics based on ISIN prefix and name
   const upperName = (name || "").toUpperCase();
 
-  // Spanish ISIN prefix typically indicates PP or local fund
+  // ETF/ETC indicators take priority over the ISIN prefix
+  if (upperName.includes("ETF") || upperName.includes("ETC") || upperName.includes("PHYSICAL")) {
+    return "ETF";
+  }
+
+  // Spanish ISIN prefix typically indicates a pension plan or local fund
   if (isin.startsWith("ES")) {
     if (upperName.includes(" PP") || upperName.includes("PENSION") || upperName.includes("PLAN DE PENSIONES")) {
-      return "PP";
+      return "PENSION";
     }
-    return "FUNDS";
+    return "FUND";
   }
 
   // European fund ISINs (Ireland, Luxembourg, France, etc.)
   if (isin.startsWith("IE") || isin.startsWith("LU") || isin.startsWith("FR") || isin.startsWith("NL")) {
-    return "FUNDS";
+    return "FUND";
   }
 
-  // Check name for stock/ETF indicators
-  if (upperName.includes("ETF") || upperName.includes("ETC") || upperName.includes("PHYSICAL")) {
-    return "STOCKS";
-  }
-
-  return "OTHERS";
+  return "STOCK";
 }

@@ -22,6 +22,7 @@ import { db } from "./db";
 
 /** Models that carry a `userId` column and must always be user-scoped. */
 export const USER_SCOPED_MODELS = new Set<string>([
+  "CashMovement",
   "Asset",
   "Transaction",
   "Holding",

@@ -182,8 +182,6 @@ export function ImportStepPreview({
                       <TableCell>
                         <Badge variant={getTypeVariant(item.transaction.type)}>
                           {item.transaction.type}
-                          {item.transaction.transferType &&
-                            ` (${item.transaction.transferType})`}
                         </Badge>
                       </TableCell>
                       <TableCell>

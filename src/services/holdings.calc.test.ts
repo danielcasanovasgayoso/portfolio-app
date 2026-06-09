@@ -1,18 +1,16 @@
 import { describe, it, expect } from "vitest";
 import { Decimal } from "@prisma/client/runtime/client";
-import type { TransactionType, TransferType } from "@prisma/client";
+import type { TransactionType } from "@prisma/client";
 import { computeHolding, removeFifoShares, type HoldingTransaction } from "./holdings.calc";
 
 // Concise builder for a transaction in a FIFO history.
 function tx(
   type: TransactionType,
   shares: number | string,
-  pricePerShare: number | string | null = null,
-  transferType: TransferType | null = null
+  pricePerShare: number | string | null = null
 ): HoldingTransaction {
   return {
     type,
-    transferType,
     shares: new Decimal(shares),
     pricePerShare: pricePerShare === null ? null : new Decimal(pricePerShare),
   };
@@ -72,10 +70,10 @@ describe("computeHolding", () => {
     expect(r.avgPrice.toString()).toBe("0");
   });
 
-  it("treats TRANSFER IN like a BUY and TRANSFER OUT like a SELL", () => {
+  it("treats TRANSFER_IN like a BUY and TRANSFER_OUT like a SELL", () => {
     const r = computeHolding([
-      tx("TRANSFER", 10, 50, "IN"),
-      tx("TRANSFER", 4, null, "OUT"),
+      tx("TRANSFER_IN", 10, 50),
+      tx("TRANSFER_OUT", 4, null),
     ]);
     expect(r.totalShares.toString()).toBe("6");
     expect(r.totalCostBasis.toString()).toBe("300"); // 6 @ 50

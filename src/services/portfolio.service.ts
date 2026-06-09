@@ -1,7 +1,10 @@
+// Investments domain: holdings aggregation and value history.
+// This service never touches the wallet or real-estate domains.
+
 import { db } from "@/lib/db";
 import { scopedDb } from "@/lib/scoped-db";
 import type { PortfolioSummary, Holding, CategoryTotal } from "@/types/portfolio";
-import type { Prisma, TransactionType, TransferType } from "@prisma/client";
+import type { Prisma, TransactionType } from "@prisma/client";
 
 /** Prisma return type for a holding with asset + latest price */
 type DbHoldingWithAsset = Prisma.HoldingGetPayload<{
@@ -54,7 +57,7 @@ function mapDbHoldingToDto(h: DbHoldingWithAsset): Holding {
 }
 
 /**
- * Fetches all holdings for a user and formats them for the portfolio view
+ * Fetches all holdings for a user, grouped by asset class
  */
 export async function getPortfolioData(userId: string): Promise<PortfolioSummary> {
   const dbHoldings = await scopedDb(userId).holding.findMany({
@@ -69,34 +72,20 @@ export async function getPortfolioData(userId: string): Promise<PortfolioSummary
   // Sort by market value descending
   const sortByValue = (a: Holding, b: Holding) => b.marketValue - a.marketValue;
 
-  // Group by category and sort each group
-  const funds = holdings.filter((h) => h.category === "FUNDS").sort(sortByValue);
-  const stocks = holdings.filter((h) => h.category === "STOCKS").sort(sortByValue);
-  const pp = holdings.filter((h) => h.category === "PP").sort(sortByValue);
-  const others = holdings.filter((h) => h.category === "OTHERS").sort(sortByValue);
-
-  // Calculate totals
-  const fundsTotals = calculateCategoryTotal(funds);
-  const stocksTotals = calculateCategoryTotal(stocks);
-  const ppTotals = calculateCategoryTotal(pp);
-  const othersTotals = calculateCategoryTotal(others);
-
-  // Invested = funds + stocks + pp (not others like cash)
-  const investedHoldings = [...funds, ...stocks, ...pp];
-  const investedTotals = calculateCategoryTotal(investedHoldings);
-
-  // Grand = all including others
-  const grandTotals = calculateCategoryTotal(holdings);
+  // Group by asset class and sort each group
+  const funds = holdings.filter((h) => h.category === "FUND").sort(sortByValue);
+  const etfs = holdings.filter((h) => h.category === "ETF").sort(sortByValue);
+  const stocks = holdings.filter((h) => h.category === "STOCK").sort(sortByValue);
+  const pensions = holdings.filter((h) => h.category === "PENSION").sort(sortByValue);
 
   return {
-    holdings: { funds, stocks, pp, others },
+    holdings: { funds, etfs, stocks, pensions },
     totals: {
-      funds: fundsTotals,
-      stocks: stocksTotals,
-      pp: ppTotals,
-      others: othersTotals,
-      invested: investedTotals,
-      grand: grandTotals,
+      funds: calculateCategoryTotal(funds),
+      etfs: calculateCategoryTotal(etfs),
+      stocks: calculateCategoryTotal(stocks),
+      pensions: calculateCategoryTotal(pensions),
+      total: calculateCategoryTotal(holdings),
     },
   };
 }
@@ -110,6 +99,34 @@ function calculateCategoryTotal(holdings: Holding[]): CategoryTotal | null {
   const gainLossPercent = costBasis > 0 ? gainLoss / costBasis : 0;
 
   return { costBasis, marketValue, gainLoss, gainLossPercent };
+}
+
+/**
+ * Read-only summary of the investments domain, for cross-domain aggregation
+ * (dashboard). Exposes totals only — no entities leak out.
+ */
+export async function getInvestmentsSummary(userId: string): Promise<{
+  marketValue: number;
+  costBasis: number;
+  gainLoss: number;
+  gainLossPercent: number;
+  holdingsCount: number;
+}> {
+  const data = await getPortfolioData(userId);
+  const total = data.totals.total;
+  const holdingsCount =
+    data.holdings.funds.length +
+    data.holdings.etfs.length +
+    data.holdings.stocks.length +
+    data.holdings.pensions.length;
+
+  return {
+    marketValue: total?.marketValue ?? 0,
+    costBasis: total?.costBasis ?? 0,
+    gainLoss: total?.gainLoss ?? 0,
+    gainLossPercent: total?.gainLossPercent ?? 0,
+    holdingsCount,
+  };
 }
 
 /**
@@ -139,41 +156,11 @@ export async function getAssetTransactions(userId: string, assetId: string) {
   return transactions.map((t) => ({
     id: t.id,
     type: t.type,
-    transferType: t.transferType,
     date: t.date.toISOString().split("T")[0],
     shares: Number(t.shares),
     pricePerShare: t.pricePerShare ? Number(t.pricePerShare) : null,
     totalAmount: Number(t.totalAmount),
     fees: t.fees ? Number(t.fees) : 0,
-  }));
-}
-
-/**
- * Merges two { date, close }[] series into one by summing them over the union
- * of their dates. Each series is forward-filled (its last known value carries
- * forward) so a date present in one series but not the other still sums
- * correctly. Used to fold real-estate equity into the investment net-worth line.
- */
-export function mergeSeries(
-  a: { date: string; close: number }[],
-  b: { date: string; close: number }[]
-): { date: string; close: number }[] {
-  const dates = Array.from(
-    new Set([...a.map((p) => p.date), ...b.map((p) => p.date)])
-  ).sort();
-
-  const stepValue = (series: { date: string; close: number }[], d: string) => {
-    let value = 0;
-    for (const p of series) {
-      if (p.date <= d) value = p.close;
-      else break;
-    }
-    return value;
-  };
-
-  return dates.map((d) => ({
-    date: d,
-    close: Math.round((stepValue(a, d) + stepValue(b, d)) * 100) / 100,
   }));
 }
 
@@ -191,7 +178,7 @@ export async function getPortfolioValueHistory(
   const [transactions, assets, prices] = await Promise.all([
     sdb.transaction.findMany({
       orderBy: { date: "asc" },
-      select: { assetId: true, type: true, date: true, shares: true, transferType: true, totalAmount: true },
+      select: { assetId: true, type: true, date: true, shares: true, totalAmount: true },
     }),
     sdb.asset.findMany({
       select: { id: true, manualPricing: true },
@@ -231,7 +218,7 @@ export async function getPortfolioValueHistory(
   // transaction rather than the first price date — holdings held before any
   // price exists are valued at cost basis (handled in step 5), which avoids a
   // phantom vertical jump on the first day with price data.
-  type TxnEntry = { assetId: string; type: TransactionType; shares: number; transferType: TransferType | null; totalAmount: number };
+  type TxnEntry = { assetId: string; type: TransactionType; shares: number; totalAmount: number };
   const txnsByDate = new Map<string, TxnEntry[]>();
   for (const t of transactions) {
     const dateStr = t.date.toISOString().split("T")[0];
@@ -243,7 +230,6 @@ export async function getPortfolioValueHistory(
       assetId: t.assetId,
       type: t.type,
       shares: Number(t.shares),
-      transferType: t.transferType,
       totalAmount: Number(t.totalAmount),
     });
   }
@@ -254,7 +240,7 @@ export async function getPortfolioValueHistory(
   const sharesMap = new Map<string, number>(); // assetId → cumulative shares
   const costBasisMap = new Map<string, number>(); // assetId → historical costBasis
   const lastKnownPrice = new Map<string, number>(); // assetId → last known close
-  let inTransit = 0; // Tracks value between TRANSFER OUT and TRANSFER IN
+  let inTransit = 0; // Tracks value between TRANSFER_OUT and TRANSFER_IN
   const result: { date: string; close: number }[] = [];
 
   // Collect all txn dates <= current price date
@@ -268,18 +254,18 @@ export async function getPortfolioValueHistory(
       for (const txn of dayTxns) {
         const currentShares = sharesMap.get(txn.assetId) || 0;
         const currentCost = costBasisMap.get(txn.assetId) || 0;
-        if (txn.type === "BUY" || (txn.type === "TRANSFER" && txn.transferType === "IN")) {
+        if (txn.type === "BUY" || txn.type === "TRANSFER_IN") {
           sharesMap.set(txn.assetId, currentShares + txn.shares);
           costBasisMap.set(txn.assetId, currentCost + txn.totalAmount);
-          if (txn.type === "TRANSFER") {
+          if (txn.type === "TRANSFER_IN") {
             inTransit = Math.max(0, inTransit - txn.totalAmount);
           }
-        } else if (txn.type === "SELL" || (txn.type === "TRANSFER" && txn.transferType === "OUT")) {
+        } else if (txn.type === "SELL" || txn.type === "TRANSFER_OUT") {
           const avgCost = currentShares > 0 ? currentCost / currentShares : 0;
           const newShares = currentShares - txn.shares;
           sharesMap.set(txn.assetId, newShares);
           costBasisMap.set(txn.assetId, newShares > 0 ? newShares * avgCost : 0);
-          if (txn.type === "TRANSFER") {
+          if (txn.type === "TRANSFER_OUT") {
             inTransit += txn.totalAmount;
           }
         }

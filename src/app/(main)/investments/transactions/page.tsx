@@ -1,7 +1,6 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { SubPageHeader } from "@/components/layout/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getTransactions, getAssets } from "@/actions/transactions";
 import { TransactionsContent } from "./TransactionsContent";
@@ -26,22 +25,11 @@ export default async function TransactionsPage({
 
   return (
     <div className="min-h-screen pb-nav">
-      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              aria-label={t("backToPortfolio")}
-              className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <h1 className="text-lg font-bold tracking-tight text-foreground">
-              {t("title")}
-            </h1>
-          </div>
-        </div>
-      </header>
+      <SubPageHeader
+        title={t("title")}
+        backHref="/investments"
+        backLabel={t("backToInvestments")}
+      />
 
       <main className="p-4">
         <Suspense fallback={<TransactionsSkeleton />}>
@@ -68,7 +56,7 @@ async function TransactionsLoader({
 
   const filters = {
     types: params.types?.split(",").filter(Boolean) as
-      | ("BUY" | "SELL" | "DIVIDEND" | "FEE" | "TRANSFER")[]
+      | ("BUY" | "SELL" | "TRANSFER_IN" | "TRANSFER_OUT" | "DIVIDEND" | "FEE")[]
       | undefined,
     assetId: params.assetId,
     dateFrom: params.dateFrom ? new Date(params.dateFrom) : undefined,
