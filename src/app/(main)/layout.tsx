@@ -1,3 +1,5 @@
+/// <reference types="react/canary" />
+import { ViewTransition } from "react";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
@@ -8,7 +10,7 @@ export default function MainLayout({
 }) {
   return (
     <ThemeProvider initialTheme="system">
-      {children}
+      <ViewTransition>{children}</ViewTransition>
       <BottomNav />
     </ThemeProvider>
   );

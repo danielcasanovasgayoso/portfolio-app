@@ -311,6 +311,29 @@
   animation-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
 }
 
+/* Page navigations: quick fade-out, content fades up in */
+::view-transition-old(root) {
+  animation: 0.2s cubic-bezier(0.19, 1, 0.22, 1) both fade-in-soft reverse;
+}
+::view-transition-new(root) {
+  animation: 0.25s cubic-bezier(0.19, 1, 0.22, 1) both fade-up;
+}
+
+/* The floating BottomNav stays put during page transitions… */
+.nav-shell {
+  view-transition-name: bottom-nav;
+}
+::view-transition-group(bottom-nav) {
+  animation: none;
+}
+/* …while its active pill morphs from the old tab to the new one. Exactly
+   one element carries this name before and after navigation, so the
+   browser animates position/size between them. Falls back to an instant
+   switch where view transitions are unsupported. */
+.nav-active-pill {
+  view-transition-name: nav-active-pill;
+}
+
 /* Reduced motion: collapse all decorative animation to an instant cut.
    0.01ms (not `none`) so fill-mode `both` animations land on their end
    state — content never stays invisible. Zeroing animation-delay matters
