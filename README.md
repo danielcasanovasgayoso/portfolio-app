@@ -1,13 +1,20 @@
+<div align="center">
+
+<img src="public/icons/icon-512x512-v4.png" width="120" alt="Portfolio Tracker app icon" />
+
 # Portfolio Tracker
 
 A personal net-worth tracker built with Next.js, organized in **three isolated data domains** — Wallet (cash), Investments (funds, ETFs, stocks, pension plans) and Real Estate — aggregated read-only on a single dashboard. Real-time pricing, mortgage amortization and automated email import.
 
+</div>
+
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/portfolio.png" width="240" alt="Portfolio overview" /><br /><em>Portfolio</em></td>
-    <td align="center"><img src="docs/screenshots/asset-detail.png" width="240" alt="Asset detail with price chart" /><br /><em>Asset Detail</em></td>
-    <td align="center"><img src="docs/screenshots/transactions.png" width="240" alt="Transaction list with filters" /><br /><em>Transactions</em></td>
-    <td align="center"><img src="docs/screenshots/settings.png" width="240" alt="Settings page" /><br /><em>Settings</em></td>
+    <td align="center"><img src="docs/screenshots/dashboard.png" width="200" alt="Net worth dashboard" /><br /><em>Dashboard</em></td>
+    <td align="center"><img src="docs/screenshots/wallet.png" width="200" alt="Wallet (cash) domain" /><br /><em>Wallet</em></td>
+    <td align="center"><img src="docs/screenshots/investments.png" width="200" alt="Investments domain" /><br /><em>Investments</em></td>
+    <td align="center"><img src="docs/screenshots/real-estate.png" width="200" alt="Real estate domain" /><br /><em>Real Estate</em></td>
+    <td align="center"><img src="docs/screenshots/settings.png" width="200" alt="Settings page" /><br /><em>Settings</em></td>
   </tr>
 </table>
 
