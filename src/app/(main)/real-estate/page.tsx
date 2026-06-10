@@ -4,7 +4,6 @@ import { Plus, Home } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PrivacyToggle } from "@/components/portfolio";
 import { PriceChart } from "@/components/charts";
 import {
   getProperties,
@@ -29,16 +28,13 @@ export default async function RealEstatePage() {
         <PageHeader
           title={t("title")}
           actions={
-            <>
-              <PrivacyToggle />
-              <Link
-                href="/real-estate/new"
-                aria-label={t("addProperty")}
-                className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors active:scale-95"
-              >
-                <Plus className="h-5 w-5" />
-              </Link>
-            </>
+            <Link
+              href="/real-estate/new"
+              aria-label={t("addProperty")}
+              className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors active:scale-95"
+            >
+              <Plus className="h-5 w-5" />
+            </Link>
           }
         />
 

@@ -6,7 +6,6 @@ import {
   PortfolioSummaryCard,
   PortfolioSection,
   AllocationBreakdown,
-  PrivacyToggle,
   type AllocationItem,
 } from "@/components/portfolio";
 import { PortfolioEmptyState } from "@/components/portfolio/PortfolioEmptyState";
@@ -36,7 +35,6 @@ export default async function InvestmentsPage() {
           title={t("title")}
           actions={
             <>
-              <PrivacyToggle />
               <RefreshPricesButton />
               <Link
                 href="/investments/transactions/new"

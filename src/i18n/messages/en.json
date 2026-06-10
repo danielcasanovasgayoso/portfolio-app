@@ -321,6 +321,8 @@
     "themeUsing": "Using {theme} mode",
     "language": "Language",
     "languageDesc": "Choose the display language for the app",
+    "privacy": "Hide amounts",
+    "privacyDesc": "Blur all monetary values on this device",
     "exportData": "Export Data",
     "exportDataDesc": "Download a full backup of your data",
     "exportButton": "Export Data",

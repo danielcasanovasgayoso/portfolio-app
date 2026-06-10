@@ -3,7 +3,6 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Plus, Wallet, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PrivacyToggle } from "@/components/portfolio";
 import { MovementsList } from "@/components/wallet/MovementsList";
 import { PriceChart } from "@/components/charts";
 import {
@@ -25,16 +24,13 @@ export default async function WalletPage() {
         <PageHeader
           title={t("title")}
           actions={
-            <>
-              <PrivacyToggle />
-              <Link
-                href="/wallet/new"
-                aria-label={t("addMovement")}
-                className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors active:scale-95"
-              >
-                <Plus className="h-5 w-5" />
-              </Link>
-            </>
+            <Link
+              href="/wallet/new"
+              aria-label={t("addMovement")}
+              className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors active:scale-95"
+            >
+              <Plus className="h-5 w-5" />
+            </Link>
           }
         />
 
