@@ -68,15 +68,15 @@ export function PortfolioSummaryCard({ totals }: PortfolioSummaryCardProps) {
             </span>
             <div
               className={cn(
-                "flex items-center gap-1 text-sm font-mono font-bold tabular-nums",
+                "flex flex-col items-start gap-0.5 text-sm font-mono font-bold tabular-nums",
                 isPositive ? "text-gain" : "text-loss"
               )}
             >
-              <span className="sensitive-amount">
+              <span className="whitespace-nowrap sensitive-amount">
                 {isPositive ? "+" : ""}
                 {formatCurrency(totals.gainLoss)}
               </span>
-              <span className="flex items-center gap-0.5 text-[11px]">
+              <span className="flex items-center gap-0.5 whitespace-nowrap text-[11px]">
                 {formatPercent(totals.gainLossPercent)}
                 {totals.gainLoss !== 0 && <TrendIcon className="h-2.5 w-2.5" />}
               </span>
