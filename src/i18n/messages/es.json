@@ -171,7 +171,9 @@
     "pending": "Pendiente",
     "previous": "Anterior",
     "next": "Siguiente",
-    "nameRequired": "El nombre es obligatorio"
+    "nameRequired": "El nombre es obligatorio",
+    "gain": "Plusvalía",
+    "properties": "Propiedades"
   },
   "portfolio": {
     "title": "Inversiones",

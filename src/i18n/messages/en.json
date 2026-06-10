@@ -171,7 +171,9 @@
     "pending": "Pending",
     "previous": "Previous",
     "next": "Next",
-    "nameRequired": "Name is required"
+    "nameRequired": "Name is required",
+    "gain": "Gain",
+    "properties": "Properties"
   },
   "portfolio": {
     "title": "Investments",
