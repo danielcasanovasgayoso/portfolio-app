@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -73,6 +74,31 @@
   --color-loss: var(--loss);
   --color-gain-muted: var(--gain-muted);
   --color-loss-muted: var(--loss-muted);
+
+  /* Motion: compositor-friendly entrances (transform/opacity only).
+     `both` fill-mode keeps staggered items hidden during animation-delay. */
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --animate-fade-up: fade-up 0.3s var(--ease-out-expo) both;
+  --animate-fade-in: fade-in-soft 0.2s ease-out both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade-in-soft {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 }
 
 :root {
@@ -283,5 +309,30 @@
 ::view-transition-new(*) {
   animation-duration: 0.25s;
   animation-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* Reduced motion: collapse all decorative animation to an instant cut.
+   0.01ms (not `none`) so fill-mode `both` animations land on their end
+   state — content never stays invisible. Zeroing animation-delay matters
+   for the same reason on staggered lists. Spinners (`animate-spin`) and
+   `.motion-keep` are exempt: essential motion — a frozen spinner falsely
+   reads as "done". */
+@media (prefers-reduced-motion: reduce) {
+  *:not(.motion-keep, .animate-spin),
+  *:not(.motion-keep, .animate-spin)::before,
+  *:not(.motion-keep, .animate-spin)::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 

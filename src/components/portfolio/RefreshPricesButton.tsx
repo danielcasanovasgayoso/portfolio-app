@@ -117,7 +117,7 @@ export function RefreshPricesButton() {
       {status === "success" && (
         <div
           role="status"
-          className="flex items-center gap-1 px-2 py-1 rounded-md bg-gain-muted"
+          className="flex items-center gap-1 px-2 py-1 rounded-md bg-gain-muted animate-in fade-in-0 slide-in-from-left-1 duration-200"
         >
           <Check aria-hidden="true" className="h-3 w-3 text-gain" />
           <span className="text-[10px] font-mono text-gain uppercase tracking-wider">
@@ -129,7 +129,7 @@ export function RefreshPricesButton() {
       {status === "error" && (
         <div
           role="status"
-          className="flex items-center gap-1 px-2 py-1 rounded-md bg-loss-muted"
+          className="flex items-center gap-1 px-2 py-1 rounded-md bg-loss-muted animate-in fade-in-0 slide-in-from-left-1 duration-200"
         >
           <AlertCircle aria-hidden="true" className="h-3 w-3 text-loss" />
           <span className="text-[10px] font-mono text-loss uppercase tracking-wider">
