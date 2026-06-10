@@ -163,6 +163,7 @@ export async function getRealEstateSummary(
     userCost: 0,
     userGain: 0,
     userGainPercent: 0,
+    propertiesCount: properties.length,
   };
 
   for (const property of properties) {
@@ -204,6 +205,7 @@ export async function getRealEstateSummary(
     userCost: round2(summary.userCost),
     userGain: round2(userGain),
     userGainPercent,
+    propertiesCount: summary.propertiesCount,
   };
 }
 

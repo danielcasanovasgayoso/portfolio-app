@@ -1,7 +1,12 @@
 import type { Asset, Transaction } from "@prisma/client";
 
-export type TransactionType = "BUY" | "SELL" | "DIVIDEND" | "FEE" | "TRANSFER";
-export type TransferType = "IN" | "OUT";
+export type TransactionType =
+  | "BUY"
+  | "SELL"
+  | "TRANSFER_IN"
+  | "TRANSFER_OUT"
+  | "DIVIDEND"
+  | "FEE";
 
 export interface TransactionWithAsset extends Transaction {
   asset: Pick<Asset, "id" | "name" | "isin" | "ticker" | "category">;
@@ -17,7 +22,6 @@ export interface SerializedTransaction {
   pricePerShare: number | null;
   totalAmount: number;
   fees: number | null;
-  transferType: TransferType | null;
   importBatchId: string | null;
   sourceHash: string | null;
   gmailMessageId: string | null;
@@ -54,7 +58,6 @@ export interface TransactionFormData {
   pricePerShare?: string;
   totalAmount: string;
   fees?: string;
-  transferType?: TransferType;
 }
 
 // Re-export ActionResult from centralized location

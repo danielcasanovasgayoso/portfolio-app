@@ -5,12 +5,11 @@
 // transactions. Persistence lives in holdings.service.ts.
 
 import { Decimal } from "@prisma/client/runtime/client";
-import type { TransactionType, TransferType } from "@prisma/client";
+import type { TransactionType } from "@prisma/client";
 
 /** Minimal transaction shape required to compute a holding. */
 export interface HoldingTransaction {
   type: TransactionType;
-  transferType: TransferType | null;
   shares: Decimal;
   pricePerShare: Decimal | null;
 }
@@ -77,8 +76,8 @@ export function removeFifoShares(
  * (date ascending, then createdAt ascending) — the caller is responsible for
  * ordering, mirroring how lots are consumed in real life.
  *
- * - BUY / TRANSFER IN  → add a lot
- * - SELL / TRANSFER OUT → remove shares from the oldest lots
+ * - BUY / TRANSFER_IN   → add a lot
+ * - SELL / TRANSFER_OUT → remove shares from the oldest lots
  * - DIVIDEND / FEE      → no effect on shares or cost basis
  *
  * Results are clamped to non-negative values to guard against histories that
@@ -97,22 +96,15 @@ export function computeHolding(
 
     switch (txn.type) {
       case "BUY":
-      case "TRANSFER": {
-        if (txn.type === "TRANSFER" && txn.transferType === "OUT") {
-          // Transfer out — remove shares using FIFO.
-          const { costBasisRemoved } = removeFifoShares(lots, shares);
-          totalCostBasis = totalCostBasis.minus(costBasisRemoved);
-          totalShares = totalShares.minus(shares);
-        } else {
-          // BUY or TRANSFER IN — add to lots.
-          lots.push({ shares, pricePerShare });
-          totalShares = totalShares.plus(shares);
-          totalCostBasis = totalCostBasis.plus(shares.times(pricePerShare));
-        }
+      case "TRANSFER_IN": {
+        lots.push({ shares, pricePerShare });
+        totalShares = totalShares.plus(shares);
+        totalCostBasis = totalCostBasis.plus(shares.times(pricePerShare));
         break;
       }
 
-      case "SELL": {
+      case "SELL":
+      case "TRANSFER_OUT": {
         const { costBasisRemoved } = removeFifoShares(lots, shares);
         totalCostBasis = totalCostBasis.minus(costBasisRemoved);
         totalShares = totalShares.minus(shares);

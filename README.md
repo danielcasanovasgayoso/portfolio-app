@@ -1,6 +1,6 @@
 # Portfolio Tracker
 
-A personal investment portfolio tracker built with Next.js. Track holdings, transactions, and performance across funds, stocks, and pension plans with real-time pricing and automated email import.
+A personal net-worth tracker built with Next.js, organized in **three isolated data domains** — Wallet (cash), Investments (funds, ETFs, stocks, pension plans) and Real Estate — aggregated read-only on a single dashboard. Real-time pricing, mortgage amortization and automated email import.
 
 <table>
   <tr>
@@ -13,13 +13,14 @@ A personal investment portfolio tracker built with Next.js. Track holdings, tran
 
 ## Features
 
-- **Portfolio dashboard** — Total net worth, category breakdown (Funds, Stocks, Pension Plans), per-asset gain/loss and weight
-- **Asset detail view** — Market value, shares, cost basis, and interactive price history chart with 1W/1M/3M/6M/1Y/ALL timeframes
-- **Transaction management** — Full CRUD with filtering by type (Buy, Sell, Dividend, Fee, Transfer), asset, and date range
-- **FIFO cost accounting** — Automatic cost basis calculation using first-in, first-out method
+- **Dashboard** — Total net worth aggregated read-only across the three domains, with a combined evolution chart and per-domain breakdown
+- **Wallet** — Cash deposits and withdrawals as a standalone domain: available balance, balance evolution and movement history
+- **Investments** — Holdings grouped by asset class (Funds, ETFs, Stocks, Pension Plans), per-asset gain/loss and weight, FIFO cost accounting
+- **Asset detail view** — Market value, shares, cost basis, asset-class reclassification, and interactive price history chart
+- **Transaction management** — Full CRUD with filtering by type (Buy, Sell, Transfer In/Out, Dividend, Fee), asset, and date range
+- **Real estate** — Properties with manual valuations, ownership splits and French-system mortgage amortization (incl. partial repayments)
 - **Real-time prices** — EODHD API integration with smart caching (shorter TTL during trading hours)
 - **Gmail import** — Automatically parse and import MyInvestor transaction emails via OAuth
-- **Multi-currency** — EUR-based with configurable default currency
 - **i18n** — English and Spanish
 - **Mobile-first PWA** — Bottom navigation, safe area support, offline-ready with service worker
 - **Dark mode** — System, light, and dark themes
@@ -86,17 +87,19 @@ npm run dev               # Start dev server at http://localhost:3000
 
 ## Architecture
 
+Three isolated data domains that never share entities or reference each other; the dashboard is the only cross-domain surface, and it is read-only.
+
 ```
 src/
-├── actions/        # Server Actions (data mutations + validation)
+├── actions/        # Server Actions per domain (wallet, transactions, real-estate, ...)
 ├── app/            # App Router pages and layouts
 │   ├── (auth)/     # Login/register (public)
-│   ├── (main)/     # Authenticated pages (portfolio, transactions, settings)
+│   ├── (main)/     # Tabs: / (dashboard), /wallet, /investments, /real-estate, /settings
 │   └── api/        # REST endpoints (OAuth callbacks, cron, prices)
-├── components/     # React components (shadcn/ui based)
+├── components/     # React components (shadcn/ui based), grouped per domain
 ├── i18n/           # next-intl config + message files (en/es)
-├── lib/            # Shared utilities (auth, DB client, validators, email parsing)
-├── services/       # Domain logic (holdings FIFO, price fetching, email parsing)
+├── lib/            # Shared utilities (auth, DB client, validators, series math)
+├── services/       # Domain logic (wallet, holdings FIFO, prices, real estate, dashboard)
 └── types/          # Shared TypeScript types
 ```
 

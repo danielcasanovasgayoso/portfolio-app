@@ -3,16 +3,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function SettingsLoading() {
   return (
     <div className="min-h-screen pb-nav">
-      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-9 w-9 rounded-lg" />
-            <Skeleton className="h-6 w-24" />
-          </div>
-        </div>
-      </header>
+      <div className="flex justify-between items-center px-4 md:px-8 pt-[max(1.5rem,env(safe-area-inset-top))] mb-8 max-w-5xl mx-auto">
+        <Skeleton className="h-8 w-32" />
+      </div>
 
-      <main className="p-4 space-y-5">
+      <main className="p-4 space-y-5 max-w-5xl mx-auto md:px-8">
         {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="space-y-2">
             <Skeleton className="h-3 w-24 ml-2" />

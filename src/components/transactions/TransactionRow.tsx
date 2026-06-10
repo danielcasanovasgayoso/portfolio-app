@@ -24,7 +24,8 @@ const typeColors: Record<string, string> = {
   SELL: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
   DIVIDEND: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
   FEE: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
-  TRANSFER: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+  TRANSFER_IN: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+  TRANSFER_OUT: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
 };
 
 export function TransactionRow({
@@ -39,15 +40,12 @@ export function TransactionRow({
     SELL: t("typeSell"),
     DIVIDEND: t("typeDividend"),
     FEE: t("typeFee"),
-    TRANSFER: t("typeTransfer"),
+    TRANSFER_IN: t("typeTransferIn"),
+    TRANSFER_OUT: t("typeTransferOut"),
   };
 
   const typeColor = typeColors[transaction.type] || typeColors.BUY;
   const typeLabel = typeLabels[transaction.type] || transaction.type;
-  const transferSuffix =
-    transaction.type === "TRANSFER" && transaction.transferType
-      ? ` (${transaction.transferType === "IN" ? t("transferIn").split(" ").pop() : t("transferOut").split(" ").pop()})`
-      : "";
 
   return (
     <article className="p-4 pl-5 relative bg-card rounded-2xl shadow-md border border-border overflow-hidden">
@@ -61,7 +59,6 @@ export function TransactionRow({
               className={cn("text-[11px] font-medium border", typeColor)}
             >
               {typeLabel}
-              {transferSuffix}
             </Badge>
             <span className="text-[12px] text-muted-foreground">
               {formatDate(transaction.date)}

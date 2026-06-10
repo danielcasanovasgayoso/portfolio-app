@@ -14,7 +14,6 @@ import {
 interface Transaction {
   id: string;
   type: string;
-  transferType?: string | null;
   date: string;
   shares: number;
   pricePerShare: number | null;
@@ -27,21 +26,16 @@ interface TransactionTimelineProps {
   currentPrice?: number | null;
 }
 
-function getTransactionIcon(type: string, transferType?: string | null) {
+function getTransactionIcon(type: string) {
   switch (type) {
     case "BUY":
       return <ArrowDownCircle className="h-5 w-5 text-green-500" />;
     case "SELL":
       return <ArrowUpCircle className="h-5 w-5 text-red-500" />;
-    case "TRANSFER":
-      return (
-        <ArrowRightLeft
-          className={cn(
-            "h-5 w-5",
-            transferType === "IN" ? "text-green-500" : "text-orange-500"
-          )}
-        />
-      );
+    case "TRANSFER_IN":
+      return <ArrowRightLeft className="h-5 w-5 text-green-500" />;
+    case "TRANSFER_OUT":
+      return <ArrowRightLeft className="h-5 w-5 text-orange-500" />;
     case "DIVIDEND":
       return <Coins className="h-5 w-5 text-amber-500" />;
     case "FEE":
@@ -51,16 +45,16 @@ function getTransactionIcon(type: string, transferType?: string | null) {
   }
 }
 
-function getTransactionColor(type: string, transferType?: string | null) {
+function getTransactionColor(type: string) {
   switch (type) {
     case "BUY":
       return "text-green-600 dark:text-green-400";
     case "SELL":
       return "text-red-600 dark:text-red-400";
-    case "TRANSFER":
-      return transferType === "IN"
-        ? "text-green-600 dark:text-green-400"
-        : "text-orange-600 dark:text-orange-400";
+    case "TRANSFER_IN":
+      return "text-green-600 dark:text-green-400";
+    case "TRANSFER_OUT":
+      return "text-orange-600 dark:text-orange-400";
     case "DIVIDEND":
       return "text-amber-600 dark:text-amber-400";
     default:
@@ -82,10 +76,9 @@ export function TransactionTimeline({
     );
   }
 
-  const getTransactionLabel = (type: string, transferType?: string | null) => {
-    if (type === "TRANSFER") {
-      return transferType === "IN" ? t("transferIn") : t("transferOut");
-    }
+  const getTransactionLabel = (type: string) => {
+    if (type === "TRANSFER_IN") return t("transferIn");
+    if (type === "TRANSFER_OUT") return t("transferOut");
     return type.charAt(0) + type.slice(1).toLowerCase();
   };
 
@@ -99,16 +92,16 @@ export function TransactionTimeline({
             index < transactions.length - 1 && "border-b border-border"
           )}
         >
-          <div className="mt-0.5">{getTransactionIcon(txn.type, txn.transferType)}</div>
+          <div className="mt-0.5">{getTransactionIcon(txn.type)}</div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <span
                 className={cn(
                   "text-sm font-medium",
-                  getTransactionColor(txn.type, txn.transferType)
+                  getTransactionColor(txn.type)
                 )}
               >
-                {getTransactionLabel(txn.type, txn.transferType)}
+                {getTransactionLabel(txn.type)}
               </span>
               <span className="text-sm text-muted-foreground">
                 {formatDate(txn.date)}
@@ -126,7 +119,7 @@ export function TransactionTimeline({
             </div>
             <div className="mt-1 flex items-center justify-between">
               <span className="text-sm font-semibold">
-                {(txn.type === "BUY" || (txn.type === "TRANSFER" && txn.transferType === "IN"))
+                {txn.type === "BUY" || txn.type === "TRANSFER_IN"
                   ? "-"
                   : txn.type === "SELL" || txn.type === "DIVIDEND"
                     ? "+"
@@ -141,7 +134,7 @@ export function TransactionTimeline({
             </div>
             {currentPrice != null &&
               txn.pricePerShare != null &&
-              (txn.type === "BUY" || (txn.type === "TRANSFER" && txn.transferType === "IN")) && (() => {
+              (txn.type === "BUY" || txn.type === "TRANSFER_IN") && (() => {
                 const gainLoss = (currentPrice - txn.pricePerShare) * txn.shares;
                 const gainLossPercent = (currentPrice - txn.pricePerShare) / txn.pricePerShare;
                 const isPositive = gainLoss >= 0;

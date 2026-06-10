@@ -93,6 +93,8 @@ export interface RealEstateSummary {
   userGain: number;
   /** userGain as a fraction of userCost (0.15 = +15%). */
   userGainPercent: number;
+  /** Number of properties tracked (with or without valuations). */
+  propertiesCount: number;
 }
 
 export interface PropertyDetail {

@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 import { SKIP_PATTERNS } from "@/lib/gmail";
 import type { GmailEmail, ParsedEmail, ParsedTransaction, EmailType } from "@/types/import";
-import type { TransactionType, TransferType } from "@prisma/client";
+import type { TransactionType } from "@prisma/client";
 import { resolveIsinFromDgsfp } from "@/lib/myinvestor-funds";
 
 /**
@@ -13,13 +13,13 @@ const SUBJECT_REGEX = /# (\d{2}\/\d{2}\/\d{4}) # (\w+) # (.+?) # TIT: ([\d.,]+) 
 /**
  * Maps Spanish operation types to transaction types
  */
-const OPERATION_TYPE_MAP: Record<string, { type: TransactionType; transferType?: TransferType }> = {
+const OPERATION_TYPE_MAP: Record<string, { type: TransactionType }> = {
   "COMPRA": { type: "BUY" },
   "SUSCRIPCION": { type: "BUY" },
   "VENTA": { type: "SELL" },
   "REEMBOLSO": { type: "SELL" },
-  "TRASPASO_SALIDA": { type: "TRANSFER", transferType: "OUT" },
-  "TRASPASO_ENTRADA": { type: "TRANSFER", transferType: "IN" },
+  "TRASPASO_SALIDA": { type: "TRANSFER_OUT" },
+  "TRASPASO_ENTRADA": { type: "TRANSFER_IN" },
 };
 
 /**
@@ -113,7 +113,6 @@ function parseSubject(subject: string): Partial<ParsedTransaction> | null {
   return {
     date: parseSpanishDate(dateStr),
     type: operationType.type,
-    transferType: operationType.transferType,
     name: name.trim(),
     shares: parseSpanishNumber(shares),
     pricePerShare: parseSpanishNumber(price),
@@ -271,12 +270,10 @@ function parseTransferEmail(email: GmailEmail): ParsedTransaction[] {
   // For REEMB: use first ISIN (Fondo Reembolsado = source)
   // For SUSCR: use second ISIN (Fondo Suscrito = destination)
   const isin = isRedemption ? uniqueIsins[0] : (uniqueIsins[1] || uniqueIsins[0]);
-  const transferType: TransferType = isRedemption ? "OUT" : "IN";
 
   const transaction: ParsedTransaction = {
     date,
-    type: "TRANSFER",
-    transferType,
+    type: isRedemption ? "TRANSFER_OUT" : "TRANSFER_IN",
     isin,
     name: extractFundName(isin),
     shares,
@@ -472,7 +469,6 @@ export function parseMyInvestorEmail(email: GmailEmail): ParsedEmail {
         result.transactions.push({
           date: subjectData.date || email.date,
           type: subjectData.type || "BUY",
-          transferType: subjectData.transferType,
           isin: isin || "UNKNOWN",
           name,
           shares: subjectData.shares || 0,

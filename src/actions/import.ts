@@ -61,7 +61,7 @@ export async function disconnectGmail(): Promise<ActionResult<void>> {
       },
     });
 
-    revalidatePath("/import");
+    revalidatePath("/investments/import");
     return { success: true, data: undefined };
   } catch (error) {
     return {
@@ -174,7 +174,7 @@ export async function fetchGmailTransactions(options?: {
         })),
     };
 
-    revalidatePath("/import");
+    revalidatePath("/investments/import");
     return { success: true, data: { batchId: batch.id, summary } };
   } catch (error) {
     console.error(
@@ -295,7 +295,6 @@ export async function confirmImport(
             userId,
             assetId: asset.id,
             type: item.transaction.type,
-            transferType: item.transaction.transferType,
             date: item.transaction.date,
             shares: new Decimal(item.transaction.shares),
             pricePerShare: item.transaction.pricePerShare
@@ -351,8 +350,8 @@ export async function confirmImport(
       data: { lastGmailImport: new Date() },
     });
 
-    revalidatePath("/import");
-    revalidatePath("/transactions");
+    revalidatePath("/investments/import");
+    revalidatePath("/investments/transactions");
     revalidatePath("/");
 
     return {
@@ -401,7 +400,7 @@ export async function cancelImport(batchId: string): Promise<ActionResult<void>>
       where: { id: batchId },
     });
 
-    revalidatePath("/import");
+    revalidatePath("/investments/import");
     return { success: true, data: undefined };
   } catch (error) {
     return {

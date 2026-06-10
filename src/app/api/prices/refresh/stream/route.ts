@@ -32,7 +32,7 @@ export async function GET() {
         );
 
         revalidatePath("/");
-        revalidatePath("/portfolio", "layout");
+        revalidatePath("/investments", "layout");
       } catch (error) {
         const msg = error instanceof Error ? error.message : "Unknown error";
         controller.enqueue(

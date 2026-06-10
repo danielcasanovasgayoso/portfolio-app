@@ -49,14 +49,11 @@ export function DeleteTransactionDialog({
     SELL: t("typeSell"),
     DIVIDEND: t("typeDividend"),
     FEE: t("typeFee"),
-    TRANSFER: t("typeTransfer"),
+    TRANSFER_IN: t("typeTransferIn"),
+    TRANSFER_OUT: t("typeTransferOut"),
   };
 
   const typeLabel = typeLabels[transaction.type] || transaction.type;
-  const transferSuffix =
-    transaction.type === "TRANSFER" && transaction.transferType
-      ? ` (${transaction.transferType === "IN" ? t("transferIn").split(" ").pop() : t("transferOut").split(" ").pop()})`
-      : "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -81,7 +78,6 @@ export function DeleteTransactionDialog({
               <span className="text-sm text-muted-foreground">{t("type")}</span>
               <span className="text-sm font-medium">
                 {typeLabel}
-                {transferSuffix}
               </span>
             </div>
             <div className="flex justify-between">

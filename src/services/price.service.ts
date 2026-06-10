@@ -44,7 +44,7 @@ export async function refreshAllData(
   });
 
   revalidatePath("/");
-  revalidatePath("/portfolio", "layout");
+  revalidatePath("/investments", "layout");
 
   await backfillAllHistoricalPrices(userId);
 }

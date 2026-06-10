@@ -143,7 +143,7 @@ export async function createTransaction(
             isin,
             ticker: null,
             name: validated.newAssetName!.trim(),
-            category: validated.newAssetCategory || "OTHERS",
+            category: validated.newAssetCategory || "FUND",
             manualPricing: !hasIsin,
           },
         });
@@ -162,7 +162,6 @@ export async function createTransaction(
             : null,
           totalAmount: new Decimal(validated.totalAmount),
           fees: validated.fees ? new Decimal(validated.fees) : new Decimal(0),
-          transferType: validated.transferType || null,
         },
         include: {
           asset: {
@@ -178,12 +177,39 @@ export async function createTransaction(
       });
 
       await recalculateHolding(userId, assetId, tx);
+
+      // Optional convenience: mirror the cash leg in the Wallet domain so a
+      // BUY funded with wallet cash (or a SELL returning cash) doesn't need a
+      // second manual entry. Application-level orchestration only — there is
+      // no FK or model coupling between the movement and the transaction.
+      const walletMovementType =
+        validated.type === "BUY"
+          ? ("WITHDRAWAL" as const)
+          : validated.type === "SELL"
+            ? ("DEPOSIT" as const)
+            : null;
+      if (validated.walletSync && walletMovementType) {
+        await tx.cashMovement.create({
+          data: {
+            userId,
+            type: walletMovementType,
+            date: toUtcMidnight(validated.date),
+            amount: new Decimal(validated.totalAmount).abs(),
+            note: created.asset.name,
+          },
+        });
+      }
+
       return created;
     });
 
-    revalidatePath("/transactions");
+    revalidatePath("/investments/transactions");
     revalidatePath("/");
-    revalidatePath(`/portfolio/${transaction.assetId}`);
+    revalidatePath(`/investments/assets/${transaction.assetId}`);
+    revalidatePath("/investments");
+    if (validated.walletSync) {
+      revalidatePath("/wallet");
+    }
 
     return { success: true, data: serializeTransaction(transaction) };
   } catch (error) {
@@ -237,9 +263,6 @@ export async function updateTransaction(
     if (validated.fees !== undefined) {
       updateData.fees = validated.fees ? new Decimal(validated.fees) : new Decimal(0);
     }
-    if (validated.transferType !== undefined) {
-      updateData.transferType = validated.transferType || null;
-    }
 
     // The update and recalculation of every affected holding (both the new and
     // the previous asset when the transaction is reassigned) must be atomic.
@@ -268,9 +291,10 @@ export async function updateTransaction(
       return updated;
     });
 
-    revalidatePath("/transactions");
+    revalidatePath("/investments/transactions");
     revalidatePath("/");
-    revalidatePath(`/portfolio/${transaction.assetId}`);
+    revalidatePath(`/investments/assets/${transaction.assetId}`);
+    revalidatePath("/investments");
 
     return { success: true, data: serializeTransaction(transaction) };
   } catch (error) {
@@ -305,9 +329,10 @@ export async function deleteTransaction(
       await recalculateHolding(userId, transaction.assetId, tx);
     });
 
-    revalidatePath("/transactions");
+    revalidatePath("/investments/transactions");
     revalidatePath("/");
-    revalidatePath(`/portfolio/${transaction.assetId}`);
+    revalidatePath(`/investments/assets/${transaction.assetId}`);
+    revalidatePath("/investments");
 
     return { success: true, data: { id } };
   } catch (error) {

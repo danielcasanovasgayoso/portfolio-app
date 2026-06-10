@@ -41,7 +41,7 @@ export function HoldingCard({
   const stripeColor = accentColor ?? getAssetAccentColor(holding.id);
 
   return (
-    <Link href={`/portfolio/${holding.id}`} className="block group">
+    <Link href={`/investments/assets/${holding.id}`} className="block group">
       <article className="relative bg-card rounded-xl shadow-sm px-4 py-3 pl-5 border-0 overflow-hidden transition-transform duration-150 active:scale-[0.98]">
         <div
           className="absolute left-0 top-0 bottom-0 w-[3px]"

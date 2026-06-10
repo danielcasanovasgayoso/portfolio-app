@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { SubPageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAuth } from "@/lib/auth";
 import { getPropertyDetail } from "@/services/real-estate.service";
@@ -132,21 +131,12 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen pb-nav">
-      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/real-estate"
-            aria-label={t("back")}
-            className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <h1 className="flex-1 min-w-0 text-lg font-bold tracking-tight truncate">
-            {property.name}
-          </h1>
-          <PropertyActions propertyId={property.id} />
-        </div>
-      </header>
+      <SubPageHeader
+        title={property.name}
+        backHref="/real-estate"
+        backLabel={t("back")}
+        actions={<PropertyActions propertyId={property.id} />}
+      />
 
       <main className="p-4 space-y-4 max-w-5xl mx-auto">
         {/* Summary stats */}

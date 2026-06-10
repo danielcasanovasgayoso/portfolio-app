@@ -28,7 +28,7 @@ interface TransactionFiltersProps {
   assets: Pick<Asset, "id" | "name" | "isin" | "ticker" | "category">[];
 }
 
-const transactionTypeValues: TransactionType[] = ["BUY", "SELL", "DIVIDEND", "FEE", "TRANSFER"];
+const transactionTypeValues: TransactionType[] = ["BUY", "SELL", "TRANSFER_IN", "TRANSFER_OUT", "DIVIDEND", "FEE"];
 
 export function TransactionFilters({ assets }: TransactionFiltersProps) {
   const t = useTranslations("transactions");
@@ -41,7 +41,8 @@ export function TransactionFilters({ assets }: TransactionFiltersProps) {
     SELL: t("typeSell"),
     DIVIDEND: t("typeDividend"),
     FEE: t("typeFee"),
-    TRANSFER: t("typeTransfer"),
+    TRANSFER_IN: t("typeTransferIn"),
+    TRANSFER_OUT: t("typeTransferOut"),
   };
 
   const currentTypes = searchParams.get("types")?.split(",").filter(Boolean) || [];

@@ -1,6 +1,13 @@
 // Portfolio Tracker Database Schema
 // Using PostgreSQL (Supabase) with Prisma ORM
 // Multi-tenant: Each user has isolated data
+//
+// Three isolated domains, never cross-referencing each other:
+//   1. Wallet      → CashMovement (cash deposits/withdrawals)
+//   2. Investments → Asset / InvestmentTransaction / Holding / Price (+ import pipeline)
+//   3. Real estate → Property / Mortgage / valuations
+// Aggregation across domains happens only at read time (dashboard service),
+// never in the data model.
 
 generator client {
   provider   = "prisma-client-js"
@@ -11,27 +18,53 @@ datasource db {
   provider = "postgresql"
 }
 
-// Asset Categories
-enum AssetCategory {
-  FUNDS
-  STOCKS
-  PP
-  OTHERS
+// ─────────────────────────────────────────────────────────────
+// Domain 1: Wallet (cash)
+// ─────────────────────────────────────────────────────────────
+
+enum CashMovementType {
+  DEPOSIT
+  WITHDRAWAL
 }
 
-// Transaction Types
+// A single cash entry or exit. `amount` is always positive; the sign is
+// derived from `type`. The wallet balance is the running sum of movements.
+model CashMovement {
+  id     String           @id @default(cuid())
+  userId String // Supabase auth user ID
+  type   CashMovementType
+  date   DateTime
+  amount Decimal          @db.Decimal(18, 4)
+  note   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, date])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Domain 2: Investments (real, market-traded assets)
+// ─────────────────────────────────────────────────────────────
+
+// Asset classes — real financial instruments only. Cash lives in Wallet.
+enum AssetClass {
+  FUND // index / mutual funds
+  ETF
+  STOCK
+  PENSION // pension plans (planes de pensiones)
+}
+
+// Investment transaction types. Transfers are flattened into IN/OUT so the
+// type alone fully describes the effect on the position.
 enum TransactionType {
   BUY
   SELL
+  TRANSFER_IN
+  TRANSFER_OUT
   DIVIDEND
   FEE
-  TRANSFER
-}
-
-// Transfer Direction
-enum TransferType {
-  IN
-  OUT
 }
 
 // Price Data Source
@@ -55,29 +88,18 @@ enum ImportStatus {
   FAILED
 }
 
-// Mortgage interest type
-enum MortgageType {
-  FIXED
-  VARIABLE
-}
-
-// Effect of a partial (early) amortization on the loan
-enum AmortizationMode {
-  REDUCE_TERM
-  REDUCE_INSTALLMENT
-}
-
 // Core Asset Model (user-specific)
 model Asset {
-  id        String        @id @default(cuid())
-  userId    String        // Supabase auth user ID
-  isin      String
-  ticker    String?
-  name      String
-  category  AssetCategory @default(OTHERS)
-  currency  String        @default("EUR")
-  isActive  Boolean       @default(true)
-  manualPricing Boolean   @default(false)
+  id            String     @id @default(cuid())
+  userId        String // Supabase auth user ID
+  isin          String
+  ticker        String?
+  name          String
+  category      AssetClass @default(FUND)
+  currency      String     @default("EUR")
+  isActive      Boolean    @default(true)
+  // Assets without a market data feed are valued at cost basis.
+  manualPricing Boolean    @default(false)
 
   transactions Transaction[]
   prices       Price[]
@@ -95,12 +117,12 @@ model Asset {
   @@index([isActive])
 }
 
-// Transaction Model (user-specific)
+// Investment Transaction Model (user-specific)
 model Transaction {
-  id            String          @id @default(cuid())
-  userId        String          // Supabase auth user ID (for direct queries)
-  assetId       String
-  asset         Asset           @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  id      String      @id @default(cuid())
+  userId  String // Supabase auth user ID (for direct queries)
+  assetId String
+  asset   Asset       @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
   type          TransactionType
   date          DateTime
@@ -109,9 +131,8 @@ model Transaction {
   totalAmount   Decimal         @db.Decimal(18, 4)
   fees          Decimal?        @default(0) @db.Decimal(18, 4)
 
-  transferType   TransferType?
   importBatchId  String?
-  importBatch    ImportBatch?   @relation(fields: [importBatchId], references: [id])
+  importBatch    ImportBatch? @relation(fields: [importBatchId], references: [id])
   sourceHash     String?
   gmailMessageId String?
 
@@ -131,14 +152,14 @@ model Transaction {
 
 // Holding Model (user-specific, calculated from transactions)
 model Holding {
-  id             String  @id @default(cuid())
-  userId         String  // Supabase auth user ID
-  assetId        String  @unique
-  asset          Asset   @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  userId  String // Supabase auth user ID
+  assetId String @unique
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
-  shares         Decimal @db.Decimal(18, 8)
-  costBasis      Decimal @db.Decimal(18, 4)
-  avgPrice       Decimal @db.Decimal(18, 8)
+  shares         Decimal  @db.Decimal(18, 8)
+  costBasis      Decimal  @db.Decimal(18, 4)
+  avgPrice       Decimal  @db.Decimal(18, 8)
   marketValue    Decimal? @db.Decimal(18, 4)
   unrealizedGain Decimal? @db.Decimal(18, 4)
 
@@ -150,17 +171,17 @@ model Holding {
 
 // Historical Price Data (shared globally - prices are same for everyone)
 model Price {
-  id      String      @id @default(cuid())
+  id      String @id @default(cuid())
   assetId String
-  asset   Asset       @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
-  date    DateTime    @db.Date
-  open    Decimal?    @db.Decimal(18, 8)
-  high    Decimal?    @db.Decimal(18, 8)
-  low     Decimal?    @db.Decimal(18, 8)
-  close   Decimal     @db.Decimal(18, 8)
-  volume  BigInt?
-  source  PriceSource @default(EODHD)
+  date   DateTime    @db.Date
+  open   Decimal?    @db.Decimal(18, 8)
+  high   Decimal?    @db.Decimal(18, 8)
+  low    Decimal?    @db.Decimal(18, 8)
+  close  Decimal     @db.Decimal(18, 8)
+  volume BigInt?
+  source PriceSource @default(EODHD)
 
   @@unique([assetId, date])
   @@index([date])
@@ -182,18 +203,18 @@ model PriceCache {
 
 // Import Batch for Gmail Import (user-specific)
 model ImportBatch {
-  id              String       @id @default(cuid())
-  userId          String       // Supabase auth user ID
-  source          ImportSource
-  status          ImportStatus @default(PENDING)
+  id     String       @id @default(cuid())
+  userId String // Supabase auth user ID
+  source ImportSource
+  status ImportStatus @default(PENDING)
 
   gmailQuery      String?
   oldestEmailDate DateTime?
   newestEmailDate DateTime?
 
-  totalRows    Int @default(0)
-  importedRows Int @default(0)
-  skippedRows  Int @default(0)
+  totalRows    Int   @default(0)
+  importedRows Int   @default(0)
+  skippedRows  Int   @default(0)
   errors       Json?
   preview      Json?
 
@@ -206,37 +227,48 @@ model ImportBatch {
   @@index([status])
 }
 
-// User Settings (one per user)
-model Settings {
-  id                    String   @id @default(cuid())
-  userId                String   @unique  // One settings record per user
-  eodhdApiKey           String?
-  defaultCurrency       String   @default("EUR")
-  priceUpdateEnabled    Boolean  @default(true)
-  priceCacheDurationMin Int      @default(60)
-  theme                 String   @default("system")
-  locale                String   @default("es-ES")
-
-  gmailConnected    Boolean   @default(false)
-  gmailRefreshToken String?
-  lastGmailImport   DateTime?
+// Ticker Mapping (shared globally - reference data)
+model TickerMapping {
+  id          String     @id @default(cuid())
+  isin        String     @unique
+  ticker      String
+  displayName String
+  category    AssetClass
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([ticker])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Domain 3: Real estate
+// ─────────────────────────────────────────────────────────────
+
+// Mortgage interest type
+enum MortgageType {
+  FIXED
+  VARIABLE
+}
+
+// Effect of a partial (early) amortization on the loan
+enum AmortizationMode {
+  REDUCE_TERM
+  REDUCE_INSTALLMENT
 }
 
 // Real Estate Property (user-specific)
 model Property {
   id           String   @id @default(cuid())
-  userId       String   // Supabase auth user ID
+  userId       String // Supabase auth user ID
   name         String
   purchaseDate DateTime
   currency     String   @default("EUR")
   // Base price (excluding taxes) and the rates applied on top of it
-  purchasePrice    Decimal @default(0) @db.Decimal(18, 4)
-  vatRate          Decimal @default(0.10) @db.Decimal(9, 6)
-  transferTaxRate  Decimal @default(0.015) @db.Decimal(9, 6)
-  purchaseCosts    Decimal @default(0) @db.Decimal(18, 4)
+  purchasePrice   Decimal @default(0) @db.Decimal(18, 4)
+  vatRate         Decimal @default(0.10) @db.Decimal(9, 6)
+  transferTaxRate Decimal @default(0.015) @db.Decimal(9, 6)
+  purchaseCosts   Decimal @default(0) @db.Decimal(18, 4)
 
   owners     PropertyOwner[]
   valuations PropertyValuation[]
@@ -325,16 +357,25 @@ model PartialAmortization {
   @@index([mortgageId])
 }
 
-// Ticker Mapping (shared globally - reference data)
-model TickerMapping {
-  id          String        @id @default(cuid())
-  isin        String        @unique
-  ticker      String
-  displayName String
-  category    AssetCategory
+// ─────────────────────────────────────────────────────────────
+// Cross-cutting: Settings
+// ─────────────────────────────────────────────────────────────
+
+// User Settings (one per user)
+model Settings {
+  id                    String  @id @default(cuid())
+  userId                String  @unique // One settings record per user
+  eodhdApiKey           String?
+  defaultCurrency       String  @default("EUR")
+  priceUpdateEnabled    Boolean @default(true)
+  priceCacheDurationMin Int     @default(60)
+  theme                 String  @default("system")
+  locale                String  @default("es-ES")
+
+  gmailConnected    Boolean   @default(false)
+  gmailRefreshToken String?
+  lastGmailImport   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([ticker])
 }

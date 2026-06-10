@@ -1,15 +1,14 @@
 import { z } from "zod";
 
-// Transaction types enum
+// Investment transaction types enum (transfers are flattened into IN/OUT)
 export const TransactionTypeEnum = z.enum([
   "BUY",
   "SELL",
+  "TRANSFER_IN",
+  "TRANSFER_OUT",
   "DIVIDEND",
   "FEE",
-  "TRANSFER",
 ]);
-
-export const TransferTypeEnum = z.enum(["IN", "OUT"]);
 
 // Decimal string validator (accepts numbers or numeric strings, allows comma as decimal separator)
 const decimalString = z
@@ -17,7 +16,7 @@ const decimalString = z
   .transform((val) => val.replace(",", "."))
   .pipe(z.string().regex(/^-?\d*\.?\d+$/, "Must be a valid number"));
 
-export const AssetCategoryEnum = z.enum(["FUNDS", "STOCKS", "PP", "OTHERS"]);
+export const AssetClassEnum = z.enum(["FUND", "ETF", "STOCK", "PENSION"]);
 
 // Base transaction schema (without refinements)
 const TransactionBaseSchema = z.object({
@@ -28,20 +27,13 @@ const TransactionBaseSchema = z.object({
   pricePerShare: decimalString.optional().or(z.literal("")),
   totalAmount: decimalString,
   fees: decimalString.optional().or(z.literal("")),
-  transferType: TransferTypeEnum.optional(),
+  // Mirror the cash leg in the Wallet domain (BUY → withdrawal, SELL → deposit)
+  walletSync: z.boolean().optional(),
   // New asset fields (when assetId === "__new__")
   newAssetName: z.string().optional(),
   newAssetIsin: z.string().optional(),
-  newAssetCategory: AssetCategoryEnum.optional(),
+  newAssetCategory: AssetClassEnum.optional(),
 });
-
-// Transfer type refinement
-const transferTypeRefinement = (data: { type?: string; transferType?: string }) => {
-  if (data.type === "TRANSFER" && !data.transferType) {
-    return false;
-  }
-  return true;
-};
 
 // New asset name required when assetId is "__new__"
 const newAssetRefinement = (data: { assetId?: string; newAssetName?: string }) => {
@@ -52,28 +44,37 @@ const newAssetRefinement = (data: { assetId?: string; newAssetName?: string }) =
 };
 
 // Create transaction schema with refinements
-export const TransactionCreateSchema = TransactionBaseSchema
-  .refine(transferTypeRefinement, {
-    message: "Transfer type is required for transfers",
-    path: ["transferType"],
-  })
-  .refine(newAssetRefinement, {
+export const TransactionCreateSchema = TransactionBaseSchema.refine(
+  newAssetRefinement,
+  {
     message: "Asset name is required when creating a new asset",
     path: ["newAssetName"],
-  });
-
-export type TransactionCreateInput = z.infer<typeof TransactionCreateSchema>;
-
-// Update transaction schema (partial, then refined)
-export const TransactionUpdateSchema = TransactionBaseSchema.partial().refine(
-  transferTypeRefinement,
-  {
-    message: "Transfer type is required for transfers",
-    path: ["transferType"],
   }
 );
 
+export type TransactionCreateInput = z.infer<typeof TransactionCreateSchema>;
+
+// Update transaction schema (partial)
+export const TransactionUpdateSchema = TransactionBaseSchema.partial();
+
 export type TransactionUpdateInput = z.infer<typeof TransactionUpdateSchema>;
+
+// ---------------------------------------------------------------------------
+// Wallet (cash)
+// ---------------------------------------------------------------------------
+
+export const CashMovementTypeEnum = z.enum(["DEPOSIT", "WITHDRAWAL"]);
+
+export const CashMovementInputSchema = z.object({
+  type: CashMovementTypeEnum,
+  date: z.date(),
+  amount: decimalString.refine((v) => parseFloat(v) > 0, {
+    message: "Amount must be greater than zero",
+  }),
+  note: z.string().max(200).optional().or(z.literal("")),
+});
+
+export type CashMovementInput = z.infer<typeof CashMovementInputSchema>;
 
 // ---------------------------------------------------------------------------
 // Real Estate

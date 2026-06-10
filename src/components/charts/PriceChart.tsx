@@ -123,7 +123,7 @@ export function PriceChart({
           <div className="flex items-center gap-2">
             <span
               className={cn(
-                "text-lg font-semibold",
+                "text-lg font-semibold sensitive-amount",
                 isPositive ? "text-green-600" : "text-red-600"
               )}
             >
