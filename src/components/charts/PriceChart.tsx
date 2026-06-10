@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
+import { useReducedMotion } from "@/lib/use-reduced-motion";
 
 interface PriceDataPoint {
   date: string;
@@ -68,6 +69,10 @@ export function PriceChart({
   variant = "default",
 }: PriceChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>("YTD");
+  // Recharts animates SVG attributes (not compositor-friendly): keep the
+  // entrance draw short, and skip it under prefers-reduced-motion since
+  // the global CSS kill switch can't reach JS-driven animations.
+  const prefersReducedMotion = useReducedMotion();
 
   // On the hero gradient the default muted gray is hard to read, so brighten
   // the axis ticks and grid lines with a semi-transparent white instead.
@@ -249,6 +254,9 @@ export function PriceChart({
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4 }}
+              isAnimationActive={!prefersReducedMotion}
+              animationDuration={400}
+              animationEasing="ease-out"
             />
           </LineChart>
         </ResponsiveContainer>

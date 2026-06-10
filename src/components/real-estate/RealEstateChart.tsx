@@ -11,6 +11,7 @@ import {
   Legend,
 } from "recharts";
 import { formatCurrency } from "@/lib/formatters";
+import { useReducedMotion } from "@/lib/use-reduced-motion";
 
 export interface RealEstateChartPoint {
   date: string;
@@ -49,6 +50,16 @@ interface RealEstateChartProps {
 }
 
 export function RealEstateChart({ data, labels }: RealEstateChartProps) {
+  // Recharts animates SVG attributes (not compositor-friendly): keep the
+  // entrance draw short, and skip it under prefers-reduced-motion since
+  // the global CSS kill switch can't reach JS-driven animations.
+  const prefersReducedMotion = useReducedMotion();
+  const lineAnimation = {
+    isAnimationActive: !prefersReducedMotion,
+    animationDuration: 400,
+    animationEasing: "ease-out" as const,
+  };
+
   if (data.length === 0) {
     return null;
   }
@@ -103,6 +114,7 @@ export function RealEstateChart({ data, labels }: RealEstateChartProps) {
           dot={<ValuationDot />}
           activeDot={{ r: 5 }}
           connectNulls
+          {...lineAnimation}
         />
         <Line
           type="monotone"
@@ -112,6 +124,7 @@ export function RealEstateChart({ data, labels }: RealEstateChartProps) {
           strokeWidth={2}
           dot={false}
           connectNulls
+          {...lineAnimation}
         />
         <Line
           type="monotone"
@@ -121,6 +134,7 @@ export function RealEstateChart({ data, labels }: RealEstateChartProps) {
           strokeWidth={2}
           dot={false}
           connectNulls
+          {...lineAnimation}
         />
       </LineChart>
     </ResponsiveContainer>
