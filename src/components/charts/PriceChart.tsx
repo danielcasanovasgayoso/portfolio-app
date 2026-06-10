@@ -28,6 +28,12 @@ interface PriceChartProps {
   avgPrice?: number;
   className?: string;
   showTimeframes?: boolean;
+  /**
+   * Visual variant. "onDark" brightens axis labels and grid lines for use on
+   * the dark hero gradient, where the default muted-foreground gray is too low
+   * contrast to read. Defaults to "default" for use on regular card surfaces.
+   */
+  variant?: "default" | "onDark";
 }
 
 type Timeframe = "1W" | "1M" | "3M" | "6M" | "YTD" | "1Y" | "2Y" | "ALL";
@@ -59,8 +65,17 @@ export function PriceChart({
   avgPrice,
   className,
   showTimeframes = true,
+  variant = "default",
 }: PriceChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>("YTD");
+
+  // On the hero gradient the default muted gray is hard to read, so brighten
+  // the axis ticks and grid lines with a semi-transparent white instead.
+  const onDark = variant === "onDark";
+  const tick = onDark
+    ? { fontSize: 11, fill: "rgba(255, 255, 255, 0.85)" }
+    : { fontSize: 11 };
+  const axisClassName = onDark ? undefined : "text-muted-foreground";
 
   const filteredData = useMemo(() => {
     const days = TIMEFRAME_DAYS[timeframe];
@@ -164,7 +179,11 @@ export function PriceChart({
             data={filteredData}
             margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              className={onDark ? undefined : "stroke-muted"}
+              stroke={onDark ? "rgba(255, 255, 255, 0.18)" : undefined}
+            />
             <XAxis
               dataKey="date"
               tickFormatter={(date) => {
@@ -174,11 +193,11 @@ export function PriceChart({
                   day: "numeric",
                 });
               }}
-              tick={{ fontSize: 11 }}
+              tick={tick}
               tickLine={false}
               axisLine={false}
               interval="preserveStartEnd"
-              className="text-muted-foreground"
+              className={axisClassName}
             />
             <YAxis
               domain={[minPrice, maxPrice]}
@@ -188,11 +207,11 @@ export function PriceChart({
                   maximumFractionDigits: 2,
                 })
               }
-              tick={{ fontSize: 11 }}
+              tick={tick}
               tickLine={false}
               axisLine={false}
               width={60}
-              className="text-muted-foreground"
+              className={axisClassName}
             />
             <Tooltip
               formatter={(value) => [formatCurrency(Number(value)), "Price"]}
