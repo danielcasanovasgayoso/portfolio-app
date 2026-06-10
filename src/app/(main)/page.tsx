@@ -80,7 +80,7 @@ async function DashboardContent({ userId }: { userId: string }) {
             {formatCurrency(data.netWorth)}
           </p>
           {data.history.length > 1 && (
-            <PriceChart data={data.history} showTimeframes />
+            <PriceChart data={data.history} showTimeframes variant="onDark" />
           )}
         </article>
       </div>
