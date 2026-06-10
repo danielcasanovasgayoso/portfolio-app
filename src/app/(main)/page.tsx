@@ -9,7 +9,7 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PrivacyToggle, AllocationBreakdown, type AllocationItem } from "@/components/portfolio";
+import { AllocationBreakdown, type AllocationItem } from "@/components/portfolio";
 import { PriceChart } from "@/components/charts";
 import { getDashboardData } from "@/services/dashboard.service";
 import { requireAuth } from "@/lib/auth";
@@ -31,7 +31,7 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <main className="pb-nav max-w-5xl mx-auto">
-        <PageHeader title={t("title")} actions={<PrivacyToggle />} />
+        <PageHeader title={t("title")} />
 
         <Suspense fallback={<DashboardSkeleton />}>
           <DashboardContent userId={user.id} />

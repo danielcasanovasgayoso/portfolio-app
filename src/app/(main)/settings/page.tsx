@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import {
   Database,
   Download,
+  EyeOff,
   Globe,
   Key,
   Palette,
@@ -13,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ApiKeyForm } from "@/components/settings/ApiKeyForm";
 import { ThemeToggle } from "@/components/settings/ThemeToggle";
 import { LanguageSwitcher } from "@/components/settings/LanguageSwitcher";
+import { PrivacyToggle } from "@/components/portfolio";
 import { DatabaseReset } from "@/components/settings/DatabaseReset";
 import { ExportData } from "@/components/settings/ExportData";
 import { ImportData } from "@/components/settings/ImportData";
@@ -84,6 +86,12 @@ async function SettingsContent() {
         >
           <LanguageSwitcher />
         </SettingRow>
+        <SettingRow
+          icon={EyeOff}
+          label={t("privacy")}
+          description={t("privacyDesc")}
+          right={<PrivacyToggle />}
+        />
       </SettingSection>
 
       <SettingSection title={t("data")}>

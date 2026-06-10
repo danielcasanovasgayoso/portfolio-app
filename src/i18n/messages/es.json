@@ -321,6 +321,8 @@
     "themeUsing": "Usando modo {theme}",
     "language": "Idioma",
     "languageDesc": "Elige el idioma de la interfaz",
+    "privacy": "Ocultar importes",
+    "privacyDesc": "Difumina todos los importes en este dispositivo",
     "exportData": "Exportar Datos",
     "exportDataDesc": "Descarga una copia de seguridad completa de tus datos",
     "exportButton": "Exportar Datos",
