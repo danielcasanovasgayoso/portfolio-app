@@ -24,7 +24,7 @@ export default async function RealEstatePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="pb-nav max-w-5xl mx-auto">
+      <main className="pb-nav max-w-5xl mx-auto motion-safe:animate-fade-in">
         <PageHeader
           title={t("title")}
           actions={

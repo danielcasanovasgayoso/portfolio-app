@@ -36,7 +36,7 @@ export default async function SettingsPage() {
     <div className="min-h-screen pb-nav">
       <PageHeader title={t("title")} />
 
-      <main className="p-4 space-y-5 max-w-5xl mx-auto md:px-8">
+      <main className="p-4 space-y-5 max-w-5xl mx-auto md:px-8 motion-safe:animate-fade-in">
         {/* Account section — renders instantly */}
         <SettingSection title={t("account")}>
           <SettingRow

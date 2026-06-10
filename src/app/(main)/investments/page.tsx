@@ -29,7 +29,7 @@ export default async function InvestmentsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="pb-nav max-w-5xl mx-auto">
+      <main className="pb-nav max-w-5xl mx-auto motion-safe:animate-fade-in">
         {/* Header renders instantly — no data dependency */}
         <PageHeader
           title={t("title")}

@@ -124,15 +124,20 @@ export function PortfolioSection({
         )}
       </header>
 
-      {/* Holdings list */}
+      {/* Holdings list: staggered entrance, capped so long lists don't lag */}
       <div className="mx-4 flex flex-col gap-3">
-        {holdings.map((holding) => (
-          <HoldingCard
+        {holdings.map((holding, index) => (
+          <div
             key={holding.id}
-            holding={holding}
-            totalPortfolioValue={totalPortfolioValue}
-            accentColor={accentColors?.get(holding.id)}
-          />
+            className="motion-safe:animate-fade-up"
+            style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
+          >
+            <HoldingCard
+              holding={holding}
+              totalPortfolioValue={totalPortfolioValue}
+              accentColor={accentColors?.get(holding.id)}
+            />
+          </div>
         ))}
       </div>
     </section>

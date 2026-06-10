@@ -57,12 +57,13 @@ export function MovementsList({ movements }: MovementsListProps) {
   return (
     <>
       <ul className="flex flex-col gap-3">
-        {movements.map((m) => {
+        {movements.map((m, index) => {
           const isDeposit = m.type === "DEPOSIT";
           return (
             <li
               key={m.id}
-              className="relative bg-card rounded-xl shadow-sm px-4 py-3 overflow-hidden"
+              className="relative bg-card rounded-xl shadow-sm px-4 py-3 overflow-hidden motion-safe:animate-fade-up"
+              style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
             >
               <div
                 className={cn(

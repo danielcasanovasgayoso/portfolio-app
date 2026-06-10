@@ -52,7 +52,7 @@ export function HoldingCard({
           <h3 className="text-[15px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
             {holding.name}
           </h3>
-          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />
         </div>
 
         {/* Row 2: Details left, value & performance right */}
