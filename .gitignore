@@ -26,6 +26,9 @@
 .claude
 CLAUDE.md
 
+# local-only design docs (screenshots stay versioned)
+/docs/*.md
+
 # debug
 npm-debug.log*
 yarn-debug.log*

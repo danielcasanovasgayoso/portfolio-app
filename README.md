@@ -87,7 +87,7 @@ npm run dev               # Start dev server at http://localhost:3000
 
 ## Architecture
 
-Three isolated data domains that never share entities or reference each other; the dashboard is the only cross-domain surface, and it is read-only. See **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** (domains + data model), **[docs/NAVIGATION.md](docs/NAVIGATION.md)** (navigation map) and **[docs/AUDIT.md](docs/AUDIT.md)** (redesign rationale).
+Three isolated data domains that never share entities or reference each other; the dashboard is the only cross-domain surface, and it is read-only.
 
 ```
 src/
