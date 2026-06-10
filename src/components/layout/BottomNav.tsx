@@ -47,13 +47,11 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <>
-      <div aria-hidden className="nav-fade" />
-      <nav
-        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50"
-        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <div className="flex items-center gap-1 bg-background/90 border border-border rounded-2xl px-2 py-2 shadow-lg shadow-black/10 dark:shadow-black/30">
+    <nav
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50"
+      style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="flex items-center gap-1 bg-background/90 border border-border rounded-2xl px-2 py-2 shadow-lg shadow-black/10 dark:shadow-black/30">
           {navItems.map((item) => {
             const isActive =
               item.href === "/"
@@ -83,8 +81,7 @@ export function BottomNav() {
               </Link>
             );
           })}
-        </div>
-      </nav>
-    </>
+      </div>
+    </nav>
   );
 }

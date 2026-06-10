@@ -97,9 +97,8 @@ async function SettingsContent() {
           icon={Upload}
           label={t("importData")}
           description={t("importDataDesc")}
-        >
-          <ImportData />
-        </SettingRow>
+          right={<ImportData />}
+        />
       </SettingSection>
 
       <SettingSection title={t("dangerZone")}>

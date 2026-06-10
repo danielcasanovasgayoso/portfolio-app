@@ -15,10 +15,7 @@ import { getDashboardData } from "@/services/dashboard.service";
 import { requireAuth } from "@/lib/auth";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
-import {
-  PortfolioSummarySkeleton,
-  PortfolioAllocationBreakdownSkeleton,
-} from "@/components/skeletons";
+import { DashboardSkeleton } from "@/components/skeletons";
 
 // Domain accent colors for the breakdown bars.
 const DOMAIN_COLORS = {
@@ -238,18 +235,5 @@ async function DashboardEmptyState() {
         </div>
       </div>
     </div>
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <>
-      <div className="px-4 md:px-8 mb-6">
-        <PortfolioSummarySkeleton />
-      </div>
-      <div className="px-4 md:px-8 mb-12">
-        <PortfolioAllocationBreakdownSkeleton />
-      </div>
-    </>
   );
 }

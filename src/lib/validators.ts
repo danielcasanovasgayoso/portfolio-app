@@ -27,6 +27,8 @@ const TransactionBaseSchema = z.object({
   pricePerShare: decimalString.optional().or(z.literal("")),
   totalAmount: decimalString,
   fees: decimalString.optional().or(z.literal("")),
+  // Mirror the cash leg in the Wallet domain (BUY → withdrawal, SELL → deposit)
+  walletSync: z.boolean().optional(),
   // New asset fields (when assetId === "__new__")
   newAssetName: z.string().optional(),
   newAssetIsin: z.string().optional(),

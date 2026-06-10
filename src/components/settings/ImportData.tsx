@@ -81,7 +81,7 @@ export function ImportData() {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col items-end gap-1">
       <input
         type="file"
         accept=".json"
@@ -92,6 +92,7 @@ export function ImportData() {
 
       <Button
         variant="outline"
+        size="sm"
         onClick={handleClick}
         disabled={isLoading}
         className="gap-2"
@@ -107,15 +108,11 @@ export function ImportData() {
       </Button>
 
       {result && (
-        <div className={`flex items-start gap-2 text-sm ${result.success ? "text-green-600" : "text-destructive"}`}>
+        <div className={`flex items-start justify-end gap-2 text-xs text-right ${result.success ? "text-green-600" : "text-destructive"}`}>
           {!result.success && <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />}
           <p>{result.message}</p>
         </div>
       )}
-
-      <p className="text-xs text-muted-foreground">
-        {t("importHelp")}
-      </p>
     </div>
   );
 }

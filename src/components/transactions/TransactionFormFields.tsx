@@ -25,6 +25,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { UseFormReturn } from "react-hook-form";
 import type { TransactionCreateInput } from "@/lib/validators";
 import type { Asset } from "@prisma/client";
@@ -43,15 +44,28 @@ const categoryKeys = ["FUND", "ETF", "STOCK", "PENSION"] as const;
 interface TransactionFormFieldsProps {
   form: UseFormReturn<TransactionCreateInput>;
   assets: Pick<Asset, "id" | "name" | "isin" | "ticker" | "category">[];
+  /** Offer mirroring the cash leg in the Wallet (create flow only). */
+  showWalletSync?: boolean;
 }
 
 export { NEW_ASSET_ID };
 
-export function TransactionFormFields({ form, assets }: TransactionFormFieldsProps) {
+export function TransactionFormFields({
+  form,
+  assets,
+  showWalletSync = false,
+}: TransactionFormFieldsProps) {
   const t = useTranslations("transactions");
   const tAssets = useTranslations("assets");
 
   const watchedAssetId = form.watch("assetId");
+  const watchedType = form.watch("type");
+  const walletSyncLabel =
+    watchedType === "BUY"
+      ? t("walletSyncBuy")
+      : watchedType === "SELL"
+        ? t("walletSyncSell")
+        : null;
   const isNewAsset = watchedAssetId === NEW_ASSET_ID;
 
   const typeLabels: Record<string, string> = {
@@ -324,6 +338,32 @@ export function TransactionFormFields({ form, assets }: TransactionFormFieldsPro
           </FormItem>
         )}
       />
+
+      {/* Optional cash leg in the Wallet (only on create, for BUY/SELL) */}
+      {showWalletSync && walletSyncLabel && (
+        <FormField
+          control={form.control}
+          name="walletSync"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <label className="flex items-center gap-2.5 rounded-lg border border-border bg-muted/30 p-3 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={!!field.value}
+                    onCheckedChange={(checked) => field.onChange(checked === true)}
+                  />
+                  <span className="flex-1">
+                    {walletSyncLabel}
+                    <span className="block text-xs text-muted-foreground mt-0.5">
+                      {t("walletSyncHint")}
+                    </span>
+                  </span>
+                </label>
+              </FormControl>
+            </FormItem>
+          )}
+        />
+      )}
     </>
   );
 }

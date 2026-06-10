@@ -177,6 +177,29 @@ export async function createTransaction(
       });
 
       await recalculateHolding(userId, assetId, tx);
+
+      // Optional convenience: mirror the cash leg in the Wallet domain so a
+      // BUY funded with wallet cash (or a SELL returning cash) doesn't need a
+      // second manual entry. Application-level orchestration only — there is
+      // no FK or model coupling between the movement and the transaction.
+      const walletMovementType =
+        validated.type === "BUY"
+          ? ("WITHDRAWAL" as const)
+          : validated.type === "SELL"
+            ? ("DEPOSIT" as const)
+            : null;
+      if (validated.walletSync && walletMovementType) {
+        await tx.cashMovement.create({
+          data: {
+            userId,
+            type: walletMovementType,
+            date: toUtcMidnight(validated.date),
+            amount: new Decimal(validated.totalAmount).abs(),
+            note: created.asset.name,
+          },
+        });
+      }
+
       return created;
     });
 
@@ -184,6 +207,9 @@ export async function createTransaction(
     revalidatePath("/");
     revalidatePath(`/investments/assets/${transaction.assetId}`);
     revalidatePath("/investments");
+    if (validated.walletSync) {
+      revalidatePath("/wallet");
+    }
 
     return { success: true, data: serializeTransaction(transaction) };
   } catch (error) {

@@ -38,6 +38,7 @@ export default function AddTransactionPage() {
       pricePerShare: "",
       totalAmount: "",
       fees: "",
+      walletSync: false,
       newAssetName: "",
       newAssetIsin: "",
       newAssetCategory: "FUND",
@@ -73,7 +74,7 @@ export default function AddTransactionPage() {
     startTransition(async () => {
       const result = await createTransaction(data);
       if (result.success) {
-        router.push("/investments/transactions");
+        router.push("/investments");
       } else {
         form.setError("root", { message: translateError(result) });
       }
@@ -84,7 +85,7 @@ export default function AddTransactionPage() {
     <div className="min-h-screen pb-nav">
       <SubPageHeader
         title={t("newTransaction")}
-        backHref="/investments/transactions"
+        backHref="/investments"
         backLabel={t("backToInvestments")}
       />
 
@@ -101,7 +102,7 @@ export default function AddTransactionPage() {
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <TransactionFormFields form={form} assets={assets} />
+              <TransactionFormFields form={form} assets={assets} showWalletSync />
 
               {form.formState.errors.root && (
                 <p className="text-sm text-destructive">
