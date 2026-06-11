@@ -76,7 +76,7 @@ async function DashboardContent({ userId }: { userId: string }) {
       <div className="px-4 md:px-8 mb-6">
         <article className="dark bg-hero-gradient rounded-xl border-0 shadow-ambient p-6 sm:p-8">
           <span className="label-sm block mb-3 sm:mb-6">{t("netWorth")}</span>
-          <p className="text-4xl sm:text-5xl md:text-6xl font-mono font-bold tracking-tighter text-foreground sensitive-amount mb-6">
+          <p className="text-4xl sm:text-5xl md:text-6xl font-mono font-bold tracking-tighter text-foreground sensitive-amount mb-2">
             {formatCurrency(data.netWorth)}
           </p>
           {data.history.length > 1 && (
