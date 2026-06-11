@@ -81,38 +81,17 @@ export function RefreshPricesButton() {
   }, [status, router, debouncedRefresh]);
 
   return (
-    <div className="flex items-center gap-3">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleRefresh}
-        disabled={status === "syncing"}
-        aria-label={
-          status === "syncing"
-            ? progress.total > 0
-              ? t("updatingCount", { updated: progress.updated, total: progress.total })
-              : t("syncing")
-            : t("refresh")
-        }
-        className={cn(
-          "gap-2 h-8 px-3 rounded-lg border-border font-mono text-xs uppercase tracking-wider",
-          "transition-all duration-300",
-          "hover:border-primary/50 hover:bg-primary/5 hover:text-primary",
-          status === "syncing" && "border-primary bg-primary/10 text-primary"
-        )}
-      >
-        <RefreshCw
-          aria-hidden="true"
-          className={cn("h-3.5 w-3.5", status === "syncing" && "animate-spin")}
-        />
-        <span className="hidden sm:inline">
-          {status === "syncing"
-            ? progress.total > 0
-              ? t("updatingCount", { updated: progress.updated, total: progress.total })
-              : t("syncing")
-            : t("refresh")}
-        </span>
-      </Button>
+    <div className="flex items-center gap-2">
+      {status === "syncing" && progress.total > 0 && (
+        <div
+          role="status"
+          className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10"
+        >
+          <span className="text-[10px] font-mono text-primary uppercase tracking-wider">
+            {t("updatingCount", { updated: progress.updated, total: progress.total })}
+          </span>
+        </div>
+      )}
 
       {status === "success" && (
         <div
@@ -137,6 +116,31 @@ export function RefreshPricesButton() {
           </span>
         </div>
       )}
+
+      {/* Matches the sibling add button: h-9 w-9 rounded-lg header action */}
+      <Button
+        variant="outline"
+        size="icon-sm"
+        onClick={handleRefresh}
+        disabled={status === "syncing"}
+        aria-label={
+          status === "syncing"
+            ? progress.total > 0
+              ? t("updatingCount", { updated: progress.updated, total: progress.total })
+              : t("syncing")
+            : t("refresh")
+        }
+        className={cn(
+          "rounded-lg border-border transition-all duration-300",
+          "hover:border-primary/50 hover:bg-primary/5 hover:text-primary",
+          status === "syncing" && "border-primary bg-primary/10 text-primary"
+        )}
+      >
+        <RefreshCw
+          aria-hidden="true"
+          className={cn("h-4 w-4", status === "syncing" && "animate-spin")}
+        />
+      </Button>
     </div>
   );
 }
