@@ -12,7 +12,7 @@ import {
 } from "@/services/real-estate.service";
 import { requireAuth } from "@/lib/auth";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RealEstateSkeleton } from "@/components/skeletons";
 import { cn } from "@/lib/utils";
 
 const addButtonClass =
@@ -185,20 +185,6 @@ async function RealEstateEmptyState() {
         <Plus className="mr-2 h-4 w-4" />
         {t("addProperty")}
       </Link>
-    </div>
-  );
-}
-
-function RealEstateSkeleton() {
-  return (
-    <div className="px-4 md:px-8 space-y-6">
-      <Skeleton className="h-56 w-full rounded-xl" />
-      <Skeleton className="h-64 w-full rounded-xl" />
-      <div className="grid gap-4 sm:grid-cols-2">
-        {Array.from({ length: 2 }).map((_, i) => (
-          <Skeleton key={i} className="h-40 w-full rounded-xl" />
-        ))}
-      </div>
     </div>
   );
 }
