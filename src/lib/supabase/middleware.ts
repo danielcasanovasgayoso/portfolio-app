@@ -58,10 +58,11 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect to home if authenticated and trying to access auth pages
+  // Redirect to the app's start screen if authenticated and trying to access
+  // auth pages.
   if (user && isPublicRoute && request.nextUrl.pathname !== "/auth/callback") {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/investments";
     return NextResponse.redirect(url);
   }
 

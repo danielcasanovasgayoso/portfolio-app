@@ -31,7 +31,7 @@ export async function GET() {
           }
         );
 
-        revalidatePath("/");
+        revalidatePath("/summary");
         revalidatePath("/investments", "layout");
       } catch (error) {
         const msg = error instanceof Error ? error.message : "Unknown error";

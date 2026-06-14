@@ -32,8 +32,8 @@
     "signedIn": "Signed in"
   },
   "nav": {
-    "dashboard": "Home",
-    "dashboardShort": "HOME",
+    "dashboard": "Summary",
+    "dashboardShort": "SUMMARY",
     "wallet": "Wallet",
     "walletShort": "WALLET",
     "investments": "Investments",

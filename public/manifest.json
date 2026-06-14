@@ -2,7 +2,7 @@
   "name": "Portfolio Tracker",
   "short_name": "Portfolio",
   "description": "Track your investment portfolio with real-time prices and analytics",
-  "start_url": "/",
+  "start_url": "/investments",
   "scope": "/",
   "display": "standalone",
   "background_color": "#1e1b4b",

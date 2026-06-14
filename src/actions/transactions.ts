@@ -204,7 +204,7 @@ export async function createTransaction(
     });
 
     revalidatePath("/investments/transactions");
-    revalidatePath("/");
+    revalidatePath("/summary");
     revalidatePath(`/investments/assets/${transaction.assetId}`);
     revalidatePath("/investments");
     if (validated.walletSync) {
@@ -292,7 +292,7 @@ export async function updateTransaction(
     });
 
     revalidatePath("/investments/transactions");
-    revalidatePath("/");
+    revalidatePath("/summary");
     revalidatePath(`/investments/assets/${transaction.assetId}`);
     revalidatePath("/investments");
 
@@ -330,7 +330,7 @@ export async function deleteTransaction(
     });
 
     revalidatePath("/investments/transactions");
-    revalidatePath("/");
+    revalidatePath("/summary");
     revalidatePath(`/investments/assets/${transaction.assetId}`);
     revalidatePath("/investments");
 

@@ -32,7 +32,7 @@ export async function updateAssetCategory(
     });
 
     revalidatePath("/investments");
-    revalidatePath("/");
+    revalidatePath("/summary");
 
     return { success: true, data: undefined };
   } catch (error) {
@@ -73,7 +73,7 @@ export async function refreshSingleAssetPrice(
 
     revalidatePath(`/investments/assets/${assetId}`);
     revalidatePath("/investments");
-    revalidatePath("/");
+    revalidatePath("/summary");
 
     return { success: true, data: { price: result.price } };
   } catch (error) {

@@ -147,7 +147,7 @@ export async function updateLocale(
 ): Promise<{ success: boolean; error?: string; code?: ErrorCode }> {
   try {
     await setUserLocale(locale);
-    revalidatePath("/");
+    revalidatePath("/summary");
     return { success: true };
   } catch (error) {
     console.error("Failed to update locale:", error);
@@ -250,7 +250,7 @@ export async function resetDatabase(): Promise<{
       },
     });
 
-    revalidatePath("/");
+    revalidatePath("/summary");
     revalidatePath("/wallet");
     revalidatePath("/investments");
     revalidatePath("/investments/transactions");
@@ -729,7 +729,7 @@ export async function importPortfolioData(jsonData: string): Promise<{
     const { recalculateAllHoldings } = await import("@/services/holdings.service");
     await recalculateAllHoldings(userId);
 
-    revalidatePath("/");
+    revalidatePath("/summary");
     revalidatePath("/wallet");
     revalidatePath("/investments");
     revalidatePath("/investments/transactions");

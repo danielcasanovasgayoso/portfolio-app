@@ -32,8 +32,8 @@
     "signedIn": "Conectado"
   },
   "nav": {
-    "dashboard": "Inicio",
-    "dashboardShort": "INICIO",
+    "dashboard": "Resumen",
+    "dashboardShort": "RESUMEN",
     "wallet": "Cartera",
     "walletShort": "CARTERA",
     "investments": "Inversiones",

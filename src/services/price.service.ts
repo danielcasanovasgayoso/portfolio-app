@@ -43,7 +43,7 @@ export async function refreshAllData(
     forceRefresh: options?.forceRefresh,
   });
 
-  revalidatePath("/");
+  revalidatePath("/summary");
   revalidatePath("/investments", "layout");
 
   await backfillAllHistoricalPrices(userId);

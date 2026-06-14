@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 // transaction, add property) live inside each domain's screens.
 const navItems = [
   {
-    href: "/",
+    href: "/summary",
     labelKey: "dashboard" as const,
     shortLabelKey: "dashboardShort" as const,
     icon: LayoutDashboard,
@@ -53,10 +53,7 @@ export function BottomNav() {
     >
       <div className="flex items-center gap-1 bg-background/90 border border-border rounded-2xl px-2 py-2 shadow-lg shadow-black/10 dark:shadow-black/30">
           {navItems.map((item) => {
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
+            const isActive = pathname.startsWith(item.href);
 
             return (
               <Link

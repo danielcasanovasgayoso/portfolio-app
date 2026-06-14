@@ -34,7 +34,7 @@ export function LoginForm() {
         return;
       }
 
-      router.push("/");
+      router.push("/investments");
       router.refresh();
     } catch {
       setError(t("unexpectedError"));

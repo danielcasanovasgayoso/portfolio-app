@@ -352,7 +352,7 @@ export async function confirmImport(
 
     revalidatePath("/investments/import");
     revalidatePath("/investments/transactions");
-    revalidatePath("/");
+    revalidatePath("/summary");
 
     return {
       success: true,

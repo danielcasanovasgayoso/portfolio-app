@@ -14,7 +14,7 @@ import type { SerializedCashMovement } from "@/services/wallet.service";
 
 function revalidateWallet() {
   revalidatePath("/wallet");
-  revalidatePath("/"); // dashboard aggregates the wallet balance
+  revalidatePath("/summary"); // summary aggregates the wallet balance
 }
 
 export async function createCashMovement(
