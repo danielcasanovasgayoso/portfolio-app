@@ -6,7 +6,7 @@
   "crons": [
     {
       "path": "/api/cron/update-prices",
-      "schedule": "0 18 * * 1-5"
+      "schedule": "30 8 * * *"
     }
   ],
   "functions": {
