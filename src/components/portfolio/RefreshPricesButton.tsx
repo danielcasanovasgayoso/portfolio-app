@@ -65,6 +65,13 @@ export function RefreshPricesButton() {
         case "done":
           es.close();
           eventSourceRef.current = null;
+          // Cancel any pending debounced refresh so only one router.refresh()
+          // fires after the stream completes, avoiding a race in React's
+          // concurrent renderer where the second call can cancel the first.
+          if (refreshTimerRef.current) {
+            clearTimeout(refreshTimerRef.current);
+            refreshTimerRef.current = null;
+          }
           router.refresh();
           setStatus(data.errors > 0 && data.updated === 0 ? "error" : "success");
           statusTimerRef.current = setTimeout(() => setStatus("idle"), 5000);

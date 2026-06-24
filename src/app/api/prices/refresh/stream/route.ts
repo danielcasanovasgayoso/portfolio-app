@@ -27,12 +27,15 @@ export async function GET() {
           userId,
           { forceRefresh: true, resolveIsins: true },
           (event: SSEEvent) => {
+            // Revalidate before sending "done" so the Next.js cache is already
+            // stale by the time the client calls router.refresh().
+            if (event.type === "done") {
+              revalidatePath("/summary");
+              revalidatePath("/investments", "layout");
+            }
             controller.enqueue(encoder.encode(formatSSE(event)));
           }
         );
-
-        revalidatePath("/summary");
-        revalidatePath("/investments", "layout");
       } catch (error) {
         const msg = error instanceof Error ? error.message : "Unknown error";
         controller.enqueue(
