@@ -12,6 +12,7 @@
  *   --execute     actually write to DB (otherwise dry-run)
  *   --overwrite   overwrite existing Price rows (otherwise skip dates already present)
  *   --user-id=X   target a specific user (otherwise picks the user with most active holdings)
+ *   --all-users   process every user with active holdings, not just one
  *   --years=N     history window (default 2)
  */
 
@@ -26,6 +27,7 @@ const yahooFinance = new YahooFinance();
 const args = new Set(process.argv.slice(2));
 const EXECUTE = args.has("--execute");
 const OVERWRITE = args.has("--overwrite");
+const ALL_USERS = args.has("--all-users");
 const USER_ID_ARG = [...args].find((a) => a.startsWith("--user-id="))?.split("=")[1];
 const YEARS = Number([...args].find((a) => a.startsWith("--years="))?.split("=")[1] ?? 2);
 
@@ -67,8 +69,8 @@ async function tryQuote(symbol: string): Promise<string | null> {
   }
 }
 
-async function pickUser(): Promise<string> {
-  if (USER_ID_ARG) return USER_ID_ARG;
+async function pickUsers(): Promise<string[]> {
+  if (USER_ID_ARG) return [USER_ID_ARG];
   const grouped = await prisma.holding.groupBy({
     by: ["userId"],
     where: { shares: { gt: 0 } },
@@ -76,9 +78,10 @@ async function pickUser(): Promise<string> {
     orderBy: { _count: { userId: "desc" } },
   });
   if (grouped.length === 0) throw new Error("No users with active holdings");
+  if (ALL_USERS) return grouped.map((g) => g.userId);
   const picked = grouped[0].userId;
   console.log(`No --user-id given; defaulting to user with most holdings: ${picked}`);
-  return picked;
+  return [picked];
 }
 
 async function loadActiveAssets(userId: string): Promise<AssetRow[]> {
@@ -120,14 +123,30 @@ async function resolveYahooSymbol(asset: AssetRow): Promise<ResolveResult> {
     if (frankfurt) return { asset, yahooSymbol: frankfurt, method: "0p-frankfurt" };
   }
 
-  // 3. ISIN search fallback
+  // 2b. Same instrument, different exchange listing: if the ticker's own suffix didn't resolve
+  //     (e.g. ".STU" delisted/unsupported on Yahoo), retry the same base symbol on other EU
+  //     exchanges it's commonly cross-listed on before falling back to a generic ISIN search.
+  if (ticker && ticker.includes(".") && !ticker.endsWith(".EUFUND")) {
+    const base = ticker.slice(0, ticker.lastIndexOf("."));
+    for (const suffix of [".DE", ".MI", ".AS", ".MC", ".PA", ".L"]) {
+      const alt = await tryQuote(`${base}${suffix}`);
+      if (alt) return { asset, yahooSymbol: alt, method: "ticker" };
+    }
+  }
+
+  // 3. ISIN search fallback. Prefer a symbol that embeds the ISIN itself (e.g. "IE00B579F325.SG")
+  //    over an unrelated ticker that merely shares the fund family name — Yahoo's search sometimes
+  //    ranks a different listing/instrument (different currency, different ISIN) first.
   try {
     const res = await yahooFinance.search(asset.isin, { quotesCount: 5, newsCount: 0 });
-    const first = res.quotes?.find((q: unknown): q is { symbol: string } =>
-      typeof q === "object" && q !== null && "symbol" in q && typeof (q as { symbol: unknown }).symbol === "string"
+    const candidates = (res.quotes ?? []).filter(
+      (q: unknown): q is { symbol: string } =>
+        typeof q === "object" && q !== null && "symbol" in q && typeof (q as { symbol: unknown }).symbol === "string"
     );
-    if (first?.symbol) {
-      return { asset, yahooSymbol: first.symbol, method: "isin-search" };
+    const isinMatch = candidates.find((q) => q.symbol.includes(asset.isin));
+    const picked = isinMatch ?? candidates[0];
+    if (picked?.symbol) {
+      return { asset, yahooSymbol: picked.symbol, method: "isin-search" };
     }
   } catch (e) {
     return {
@@ -224,43 +243,56 @@ async function writePrices(assetId: string, bars: YahooBar[]): Promise<{ inserte
 }
 
 async function main() {
-  console.log(`Mode: ${EXECUTE ? "EXECUTE" : "DRY RUN"}   overwrite=${OVERWRITE}   years=${YEARS}`);
-  const userId = await pickUser();
-  const assets = await loadActiveAssets(userId);
-  console.log(`Loaded ${assets.length} active traded assets for user ${userId}\n`);
+  console.log(
+    `Mode: ${EXECUTE ? "EXECUTE" : "DRY RUN"}   overwrite=${OVERWRITE}   years=${YEARS}   all-users=${ALL_USERS}`
+  );
+  const userIds = await pickUsers();
 
-  const resolved: ResolveResult[] = [];
-  for (const asset of assets) {
-    const r = await resolveYahooSymbol(asset);
-    resolved.push(r);
-    const tag = r.yahooSymbol ? `✓ ${r.yahooSymbol.padEnd(22)} (${r.method})` : `✗ ${r.reason ?? "failed"}`;
-    console.log(`  ${tag}  ← ${asset.ticker ?? asset.isin}  ${asset.name}`);
-  }
+  let grandInserted = 0;
+  let grandSkipped = 0;
+  let grandResolvable = 0;
+  let grandUnresolved = 0;
 
-  const ok = resolved.filter((r) => r.yahooSymbol);
-  const failed = resolved.filter((r) => !r.yahooSymbol);
-  console.log(`\nResolution: ${ok.length} resolvable, ${failed.length} unresolved`);
+  for (const userId of userIds) {
+    const assets = await loadActiveAssets(userId);
+    console.log(`\n=== User ${userId}: ${assets.length} active traded assets ===`);
 
-  if (!EXECUTE) {
-    console.log("\nDry run complete — rerun with --execute to write prices.");
-    return;
-  }
+    const resolved: ResolveResult[] = [];
+    for (const asset of assets) {
+      const r = await resolveYahooSymbol(asset);
+      resolved.push(r);
+      const tag = r.yahooSymbol ? `✓ ${r.yahooSymbol.padEnd(22)} (${r.method})` : `✗ ${r.reason ?? "failed"}`;
+      console.log(`  ${tag}  ← ${asset.ticker ?? asset.isin}  ${asset.name}`);
+    }
 
-  console.log(`\nFetching ${YEARS}y history from Yahoo and writing to DB...`);
-  let totalInserted = 0;
-  let totalSkipped = 0;
-  for (const r of ok) {
-    try {
-      const bars = await fetchYahooHistory(r.yahooSymbol!, YEARS);
-      const { inserted, skipped } = await writePrices(r.asset.id, bars);
-      totalInserted += inserted;
-      totalSkipped += skipped;
-      console.log(`  ${r.yahooSymbol}: ${bars.length} bars → inserted=${inserted} skipped=${skipped}`);
-    } catch (e) {
-      console.log(`  ${r.yahooSymbol}: ERROR ${e instanceof Error ? e.message : String(e)}`);
+    const ok = resolved.filter((r) => r.yahooSymbol);
+    const failed = resolved.filter((r) => !r.yahooSymbol);
+    grandResolvable += ok.length;
+    grandUnresolved += failed.length;
+    console.log(`Resolution: ${ok.length} resolvable, ${failed.length} unresolved`);
+
+    if (!EXECUTE) continue;
+
+    console.log(`Fetching ${YEARS}y history from Yahoo and writing to DB...`);
+    for (const r of ok) {
+      try {
+        const bars = await fetchYahooHistory(r.yahooSymbol!, YEARS);
+        const { inserted, skipped } = await writePrices(r.asset.id, bars);
+        grandInserted += inserted;
+        grandSkipped += skipped;
+        console.log(`  ${r.yahooSymbol}: ${bars.length} bars → inserted=${inserted} skipped=${skipped}`);
+      } catch (e) {
+        console.log(`  ${r.yahooSymbol}: ERROR ${e instanceof Error ? e.message : String(e)}`);
+      }
     }
   }
-  console.log(`\nDone. inserted=${totalInserted} skipped=${totalSkipped}`);
+
+  console.log(`\nOverall resolution: ${grandResolvable} resolvable, ${grandUnresolved} unresolved`);
+  if (!EXECUTE) {
+    console.log("Dry run complete — rerun with --execute to write prices.");
+    return;
+  }
+  console.log(`Done. inserted=${grandInserted} skipped=${grandSkipped}`);
 }
 
 main()
