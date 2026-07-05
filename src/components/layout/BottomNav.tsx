@@ -69,9 +69,9 @@ export function BottomNav() {
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
-                <item.icon className="h-[18px] w-[18px]" />
+                <item.icon className="h-5 w-5" />
                 {isActive && (
-                  <span className="text-[11px] font-semibold tracking-wide">
+                  <span className="text-xs font-semibold tracking-wide">
                     {t(item.shortLabelKey)}
                   </span>
                 )}
