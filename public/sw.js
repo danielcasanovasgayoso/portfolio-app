@@ -1,5 +1,5 @@
 // Bump this on each deploy to clear stale caches
-const CACHE_VERSION = "2026-07-05b";
+const CACHE_VERSION = "2026-07-05c";
 const STATIC_CACHE = `portfolio-static-${CACHE_VERSION}`;
 const APP_CACHE = `portfolio-app-${CACHE_VERSION}`;
 
