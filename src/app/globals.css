@@ -179,6 +179,10 @@
 
   html {
     @apply font-sans;
+    /* Scale up the whole rem-based system (text + spacing + icons) so the UI
+       reads comfortably on mobile. Everything downstream is in rem, so this is
+       a single global lever. */
+    font-size: 106.25%;
     -webkit-font-smoothing: antialiased;
     scroll-behavior: smooth;
   }
