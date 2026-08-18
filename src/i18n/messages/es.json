@@ -225,7 +225,7 @@
     "totalReturn": "Rendimiento Total",
     "transactionHistory": "Historial de Transacciones",
     "noTransactions": "Sin transacciones aún",
-    "fees": "Comisiones: {amount}",
+    "fees": "Comisiones: <val>{amount}</val>",
     "sharesAt": "{shares} participaciones @ {price}",
     "transferIn": "Traspaso Entrada",
     "transferOut": "Traspaso Salida",

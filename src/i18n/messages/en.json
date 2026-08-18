@@ -225,7 +225,7 @@
     "totalReturn": "Total Return",
     "transactionHistory": "Transaction History",
     "noTransactions": "No transactions yet",
-    "fees": "Fees: {amount}",
+    "fees": "Fees: <val>{amount}</val>",
     "sharesAt": "{shares} shares @ {price}",
     "transferIn": "Transfer In",
     "transferOut": "Transfer Out",

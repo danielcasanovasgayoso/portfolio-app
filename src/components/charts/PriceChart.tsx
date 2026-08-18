@@ -211,9 +211,10 @@ export function PriceChart({
               tickLine={false}
               axisLine={false}
               width={60}
-              className={axisClassName}
+              className={cn(axisClassName, "sensitive-chart")}
             />
             <Tooltip
+              wrapperClassName="sensitive-chart"
               formatter={(value) => [formatCurrency(Number(value)), "Price"]}
               labelFormatter={(date) =>
                 new Date(date).toLocaleDateString("es-ES", {
@@ -239,6 +240,7 @@ export function PriceChart({
                   position: "right",
                   fontSize: 10,
                   fill: "hsl(var(--muted-foreground))",
+                  className: "sensitive-chart",
                 }}
               />
             )}

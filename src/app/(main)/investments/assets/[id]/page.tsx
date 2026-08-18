@@ -95,7 +95,7 @@ export default async function AssetDetailPage({
               <span className="text-muted-foreground">
                 {holding.manualPricing ? t("costBasis") : t("marketValue")}
               </span>
-              <span className="font-semibold">
+              <span className="font-semibold sensitive-amount">
                 {formatCurrency(holding.marketValue)}
               </span>
             </div>
@@ -103,7 +103,7 @@ export default async function AssetDetailPage({
               <>
                 <div className="flex justify-between items-center py-2 border-b border-border">
                   <span className="text-muted-foreground">{t("costBasis")}</span>
-                  <span className="font-semibold">
+                  <span className="font-semibold sensitive-amount">
                     {formatCurrency(holding.costBasis)}
                   </span>
                 </div>
@@ -111,7 +111,7 @@ export default async function AssetDetailPage({
                   <span className="text-muted-foreground">{t("unrealizedGainLoss")}</span>
                   <span
                     className={cn(
-                      "font-semibold",
+                      "font-semibold sensitive-amount",
                       isPositive
                         ? "text-emerald-600 dark:text-emerald-400"
                         : "text-red-600 dark:text-red-400"
@@ -136,7 +136,7 @@ export default async function AssetDetailPage({
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-muted-foreground">{t("shares")}</span>
-                  <span className="font-semibold">
+                  <span className="font-semibold sensitive-amount">
                     {formatShares(holding.shares)}
                   </span>
                 </div>
@@ -164,7 +164,7 @@ export default async function AssetDetailPage({
               </div>
               <div className="flex justify-between items-center py-2 border-b border-border">
                 <span className="text-muted-foreground">{t("currentPrice")}</span>
-                <span className="font-semibold">
+                <span className="font-semibold sensitive-amount">
                   {holding.currentPrice
                     ? formatCurrency(holding.currentPrice)
                     : "—"}
@@ -172,7 +172,7 @@ export default async function AssetDetailPage({
               </div>
               <div className="flex justify-between items-center py-2 border-b border-border">
                 <span className="text-muted-foreground">{t("averagePrice")}</span>
-                <span className="font-semibold">
+                <span className="font-semibold sensitive-amount">
                   {formatCurrency(holding.avgPrice)}
                 </span>
               </div>

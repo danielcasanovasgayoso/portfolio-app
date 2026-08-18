@@ -279,6 +279,20 @@
     padding-inline: 0.55em;
     margin-inline: -0.55em;
   }
+
+  /* Chart counterpart of `sensitive-amount`, for the value axis, the average-
+     price marker and the hover tooltip. Those are SVG <text> / absolutely
+     positioned boxes where the `em`-based radius above would key off the
+     inherited CSS font size rather than the ~10-11px label, so use a small
+     fixed radius. No padding trick is needed: nothing here is clipped by a
+     card edge. */
+  .sensitive-chart {
+    transition: filter 0.15s ease;
+  }
+  .privacy-blur .sensitive-chart {
+    filter: blur(4px);
+    user-select: none;
+  }
 }
 
 /* Snappier, eased cross-document/view transitions */

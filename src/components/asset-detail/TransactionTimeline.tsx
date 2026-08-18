@@ -110,15 +110,23 @@ export function TransactionTimeline({
             <div className="mt-1 text-sm text-muted-foreground">
               {txn.type !== "DIVIDEND" && txn.type !== "FEE" && (
                 <span>
-                  {formatShares(txn.shares)} {t("shares").toLowerCase()}
+                  <span className="sensitive-amount">
+                    {formatShares(txn.shares)}
+                  </span>{" "}
+                  {t("shares").toLowerCase()}
                   {txn.pricePerShare && (
-                    <> @ {formatCurrency(txn.pricePerShare)}</>
+                    <>
+                      {" @ "}
+                      <span className="sensitive-amount">
+                        {formatCurrency(txn.pricePerShare)}
+                      </span>
+                    </>
                   )}
                 </span>
               )}
             </div>
             <div className="mt-1 flex items-center justify-between">
-              <span className="text-sm font-semibold">
+              <span className="text-sm font-semibold sensitive-amount">
                 {txn.type === "BUY" || txn.type === "TRANSFER_IN"
                   ? "-"
                   : txn.type === "SELL" || txn.type === "DIVIDEND"
@@ -128,7 +136,12 @@ export function TransactionTimeline({
               </span>
               {txn.fees > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  {t("fees", { amount: formatCurrency(txn.fees) })}
+                  {t.rich("fees", {
+                    amount: formatCurrency(txn.fees),
+                    val: (chunks) => (
+                      <span className="sensitive-amount">{chunks}</span>
+                    ),
+                  })}
                 </span>
               )}
             </div>
@@ -148,7 +161,12 @@ export function TransactionTimeline({
                           : "text-red-600 dark:text-red-400"
                       )}
                     >
-                      {t("unrealized")}: {isPositive ? "+" : ""}{formatCurrency(gainLoss)} ({formatPercent(gainLossPercent)})
+                      {t("unrealized")}:{" "}
+                      <span className="sensitive-amount">
+                        {isPositive ? "+" : ""}
+                        {formatCurrency(gainLoss)}
+                      </span>{" "}
+                      ({formatPercent(gainLossPercent)})
                     </span>
                   </div>
                 );
