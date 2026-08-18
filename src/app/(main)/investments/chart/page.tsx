@@ -143,7 +143,7 @@ export default async function InvestmentsChartPage() {
                       </span>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-mono font-semibold tabular-nums">
+                      <p className="text-sm font-mono font-semibold tabular-nums sensitive-amount">
                         {formatCurrency(m.endValue)}
                       </p>
                       <p
@@ -154,8 +154,11 @@ export default async function InvestmentsChartPage() {
                             : "text-red-600 dark:text-red-400"
                         )}
                       >
-                        {isPositive ? "+" : ""}
-                        {formatCurrency(m.change)} ({formatPercent(m.changePercent)})
+                        <span className="sensitive-amount">
+                          {isPositive ? "+" : ""}
+                          {formatCurrency(m.change)}
+                        </span>{" "}
+                        ({formatPercent(m.changePercent)})
                       </p>
                     </div>
                   </div>
