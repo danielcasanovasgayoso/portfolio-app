@@ -46,6 +46,7 @@
   "dashboard": {
     "title": "Net Worth",
     "netWorth": "Total net worth",
+    "includeInTotal": "Include in total",
     "evolution": "Evolution",
     "byDomain": "Breakdown by domain",
     "wallet": "Wallet",

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import {
   Wallet,
@@ -10,9 +11,13 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { AllocationBreakdown, type AllocationItem } from "@/components/portfolio";
-import { PriceChart } from "@/components/charts";
+import { NetWorthHero } from "@/components/dashboard/NetWorthHero";
 import { getDashboardData } from "@/services/dashboard.service";
 import { requireAuth } from "@/lib/auth";
+import {
+  NET_WORTH_DOMAINS_COOKIE,
+  parseNetWorthDomains,
+} from "@/lib/net-worth-filter";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { DashboardSkeleton } from "@/components/skeletons";
@@ -42,8 +47,11 @@ export default async function DashboardPage() {
 }
 
 async function DashboardContent({ userId }: { userId: string }) {
-  const data = await getDashboardData(userId);
-  const t = await getTranslations("dashboard");
+  const [data, t, cookieStore] = await Promise.all([
+    getDashboardData(userId),
+    getTranslations("dashboard"),
+    cookies(),
+  ]);
 
   if (data.isEmpty) {
     return <DashboardEmptyState />;
@@ -72,17 +80,36 @@ async function DashboardContent({ userId }: { userId: string }) {
 
   return (
     <>
-      {/* Net worth hero with combined evolution */}
+      {/* Net worth hero with combined evolution, filterable by domain */}
       <div className="px-4 md:px-8 mb-6">
-        <article className="dark bg-hero-gradient rounded-xl border-0 shadow-ambient p-6 sm:p-8">
-          <span className="label-sm block mb-3 sm:mb-6">{t("netWorth")}</span>
-          <p className="text-4xl sm:text-5xl md:text-6xl font-mono font-bold tracking-tighter text-foreground sensitive-amount mb-2">
-            {formatCurrency(data.netWorth)}
-          </p>
-          {data.history.length > 1 && (
-            <PriceChart data={data.history} showTimeframes variant="onDark" />
+        <NetWorthHero
+          initialEnabled={parseNetWorthDomains(
+            cookieStore.get(NET_WORTH_DOMAINS_COOKIE)?.value
           )}
-        </article>
+          domains={[
+            {
+              id: "wallet",
+              label: t("wallet"),
+              color: DOMAIN_COLORS.wallet,
+              value: data.wallet.balance,
+              history: data.histories.wallet,
+            },
+            {
+              id: "investments",
+              label: t("investments"),
+              color: DOMAIN_COLORS.investments,
+              value: data.investments.marketValue,
+              history: data.histories.investments,
+            },
+            {
+              id: "realEstate",
+              label: t("realEstate"),
+              color: DOMAIN_COLORS.realEstate,
+              value: data.realEstate.userEquity,
+              history: data.histories.realEstate,
+            },
+          ]}
+        />
       </div>
 
       {/* One card per domain — the only cross-domain surface, read-only */}

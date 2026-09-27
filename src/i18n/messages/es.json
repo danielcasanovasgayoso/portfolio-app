@@ -46,6 +46,7 @@
   "dashboard": {
     "title": "Patrimonio",
     "netWorth": "Patrimonio neto total",
+    "includeInTotal": "Incluir en el total",
     "evolution": "Evolución",
     "byDomain": "Desglose por dominio",
     "wallet": "Cartera",
