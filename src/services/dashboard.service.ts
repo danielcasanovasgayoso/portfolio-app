@@ -11,7 +11,8 @@ import {
   getRealEstateSummary,
   getRealEstateEquityHistory,
 } from "@/services/real-estate.service";
-import { mergeSeries, type SeriesPoint } from "@/lib/series";
+import type { SeriesPoint } from "@/lib/series";
+import type { NetWorthDomain } from "@/lib/net-worth-filter";
 
 export interface DashboardData {
   netWorth: number;
@@ -31,8 +32,12 @@ export interface DashboardData {
     userGainPercent: number;
     propertiesCount: number;
   };
-  /** Combined net-worth series: wallet balance + investments + RE equity. */
-  history: SeriesPoint[];
+  /**
+   * Per-domain evolution series (wallet balance, investments value, RE
+   * equity), kept separate so the dashboard can fold only the domains the user
+   * chose to include into the net-worth line.
+   */
+  histories: Record<NetWorthDomain, SeriesPoint[]>;
   isEmpty: boolean;
 }
 
@@ -74,7 +79,11 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       userGainPercent: realEstate.userGainPercent,
       propertiesCount: realEstate.propertiesCount,
     },
-    history: mergeSeries(walletHistory, investmentsHistory, realEstateHistory),
+    histories: {
+      wallet: walletHistory,
+      investments: investmentsHistory,
+      realEstate: realEstateHistory,
+    },
     isEmpty:
       wallet.movementsCount === 0 &&
       investments.holdingsCount === 0 &&

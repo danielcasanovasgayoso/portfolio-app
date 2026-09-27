@@ -9,7 +9,12 @@ export function DashboardSkeleton() {
       <div className="px-4 md:px-8 mb-6">
         <article className="dark bg-hero-gradient rounded-xl border-0 shadow-ambient p-6 sm:p-8">
           <Skeleton className="h-3 w-32 mb-3 sm:mb-6" />
-          <Skeleton className="h-10 sm:h-12 md:h-14 w-56 mb-6" />
+          <Skeleton className="h-10 sm:h-12 md:h-14 w-56 mb-2" />
+          <div className="flex gap-2 mb-4">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-7 w-24 rounded-full" />
+            ))}
+          </div>
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Skeleton className="h-6 w-24" />
